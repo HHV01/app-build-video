@@ -624,13 +624,16 @@
           <span>⚙️ Bảng điều khiển luồng</span>
         </div>
 
-        <!-- Start/Stop & Skip -->
+        <!-- Start/Stop & Skip & Audio -->
         <div class="btn-row">
           <button class="btn btn-primary" id="btnToggleStream" onclick="toggleStream()">
             ▶ Bắt đầu chạy
           </button>
           <button class="btn btn-secondary" onclick="skipToNext()">
             ⏭ Qua lượt tiếp
+          </button>
+          <button class="btn btn-secondary" id="btnToggleSound" onclick="toggleAudio()" style="background: rgba(16, 185, 129, 0.15); border-color: var(--success); color: var(--success); font-weight: 600;">
+            🔊 Bật tiếng
           </button>
         </div>
 
@@ -892,10 +895,58 @@
       }, 2000);
     }
 
+    function tryAutoUnmute() {
+      if (player && typeof player.unMute === 'function') {
+        try {
+          if (typeof player.isMuted === 'function' && player.isMuted()) {
+            player.unMute();
+            player.setVolume(70);
+            updateAudioButton(true);
+            log('🔊 Đã tự động kích hoạt âm thanh video.', 'success');
+          } else if (typeof player.isMuted === 'function' && !player.isMuted()) {
+            updateAudioButton(true);
+          }
+        } catch (e) {}
+      }
+    }
+
+    function toggleAudio() {
+      if (!player) return;
+      try {
+        if (typeof player.isMuted === 'function' && player.isMuted()) {
+          player.unMute();
+          player.setVolume(70);
+          updateAudioButton(true);
+          log('🔊 Đã bật âm thanh video.', 'success');
+        } else if (typeof player.mute === 'function') {
+          player.mute();
+          updateAudioButton(false);
+          log('🔇 Đã tắt tiếng video.', 'warning');
+        }
+      } catch (e) {}
+    }
+
+    function updateAudioButton(isUnmuted) {
+      const btn = document.getElementById('btnToggleSound');
+      if (!btn) return;
+      if (isUnmuted) {
+        btn.innerHTML = '🔊 Đang bật tiếng';
+        btn.style.borderColor = 'var(--success)';
+        btn.style.color = 'var(--success)';
+        btn.style.background = 'rgba(16, 185, 129, 0.15)';
+      } else {
+        btn.innerHTML = '🔇 Bật tiếng ngay';
+        btn.style.borderColor = 'var(--warning)';
+        btn.style.color = 'var(--warning)';
+        btn.style.background = 'rgba(245, 158, 11, 0.15)';
+      }
+    }
+
     function onPlayerReady(event) {
       log('Trình phát YouTube đã sẵn sàng. Tự động kích hoạt phát...', 'info');
-      // Mute tạm thời để vượt qua chính sách Autoplay của Chrome/Edge
+      // Mute ban đầu để vượt qua chính sách Autoplay của các trình duyệt
       event.target.mute();
+      updateAudioButton(false);
       ensureKeepAliveAudio();
       
       setTimeout(() => {
@@ -904,21 +955,23 @@
         }
       }, 300);
 
+      // Tự động thử bật tiếng sau khi bắt đầu phát 1.5s
+      setTimeout(() => {
+        tryAutoUnmute();
+      }, 1500);
+
       // Khi người dùng bấm bất kỳ đâu trên trang thì tự động mở tiếng & kích hoạt Audio keep-alive
-      document.body.addEventListener('click', () => {
+      document.addEventListener('click', () => {
         ensureKeepAliveAudio();
-        if (player && player.unMute) {
-          player.unMute();
-          player.setVolume(100);
-          log('🔊 Đã bật âm thanh video.', 'info');
-        }
-      }, { once: true });
+        tryAutoUnmute();
+      });
     }
 
     function onPlayerStateChange(event) {
       if (event.data === YT.PlayerState.PLAYING) {
         updateStatus('Đang phát', 'var(--success)');
         startProgressTracking();
+        tryAutoUnmute();
       } else if (event.data === YT.PlayerState.PAUSED) {
         updateStatus('Tạm dừng (Đang tự phục hồi...)', 'var(--warning)');
         stopProgressTracking();
@@ -987,6 +1040,7 @@
 
       player.loadVideoById(videoId);
       player.playVideo();
+      setTimeout(tryAutoUnmute, 1200);
       log(`Bắt đầu phát: ${title}`, isBuffer ? 'warning' : 'info');
     }
 
@@ -1101,12 +1155,15 @@
         const secs = String(totalSecondsElapsed % 60).padStart(2, '0');
         document.getElementById('statTotalTime').innerText = `${hrs}:${mins}:${secs}`;
 
-        // Watchdog định kỳ mỗi 4 giây: kiểm tra xem player có bị tạm dừng ngầm không
-        if (totalSecondsElapsed % 4 === 0 && isRunning && !isDelaying && player && typeof player.getPlayerState === 'function') {
-          const st = player.getPlayerState();
-          if (st === 2 || st === 5 || st === -1) {
-            player.playVideo();
+        // Watchdog định kỳ mỗi 3 giây: kiểm tra xem player có bị tạm dừng ngầm không & tự động bật âm thanh
+        if (totalSecondsElapsed % 3 === 0 && isRunning && !isDelaying && player) {
+          if (typeof player.getPlayerState === 'function') {
+            const st = player.getPlayerState();
+            if (st === 2 || st === 5 || st === -1) {
+              player.playVideo();
+            }
           }
+          tryAutoUnmute();
         }
       }, 1000);
     }
