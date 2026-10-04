@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kho Bình Luận YouTube - MILO Tuổi Thơ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #151c2e;
+      --card-border: #263352;
+      --accent: #ff0033;
+      --accent-cyan: #00f0ff;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #10b981;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at 10% 20%, #1a1635 0%, var(--bg) 80%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 960px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    header {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    .title-group h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-group p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .btn-yt {
+      background: linear-gradient(135deg, var(--accent), #e60026);
+      color: #fff;
+      text-decoration: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 15px rgba(255, 0, 51, 0.35);
+    }
+
+    .btn-yt:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.15);
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .filter-btn {
+      padding: 8px 16px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .filter-btn.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+      box-shadow: 0 2px 10px rgba(255, 0, 51, 0.4);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 20px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .card:hover {
+      border-color: var(--accent-cyan);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0, 240, 255, 0.12);
+    }
+
+    .tag {
+      align-self: flex-start;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tag-nostalgia {
+      background: rgba(255, 0, 51, 0.15);
+      color: #ff6b81;
+      border: 1px solid rgba(255, 0, 51, 0.3);
+    }
+
+    .tag-marketing {
+      background: rgba(0, 240, 255, 0.12);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+    }
+
+    .tag-casual {
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .comment-text {
+      font-size: 0.92rem;
+      line-height: 1.55;
+      color: #f1f5f9;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px dashed rgba(255, 255, 255, 0.08);
+      padding-top: 10px;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+    }
+
+    .copy-hint {
+      color: var(--accent-cyan);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #0f172a;
+      border: 1px solid var(--accent-cyan);
+      color: #fff;
+      padding: 12px 28px;
+      border-radius: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      font-size: 0.88rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 99999;
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="title-group">
+        <h1>💬 Kho Bình Luận Người Xem Thật</h1>
+        <p>Bấm vào bất kỳ thẻ nào để sao chép ngay nội dung, sau đó dán vào YouTube!</p>
+      </div>
+      <a href="https://www.youtube.com/watch?v=OC4aGfMpViU" target="_blank" class="btn-yt">
+        ▶ Mở Video Trên YouTube
+      </a>
+    </header>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterCategory('all', this)">Tất cả (10)</button>
+      <button class="filter-btn" onclick="filterCategory('nostalgia', this)">🎈 Hoài niệm tuổi thơ</button>
+      <button class="filter-btn" onclick="filterCategory('marketing', this)">📈 Phân tích Marketing</button>
+      <button class="filter-btn" onclick="filterCategory('casual', this)">😄 Ngắn gọn & Vui vẻ</button>
+    </div>
+
+    <div class="grid">
+      <!-- 1 -->
+      <div class="card" data-cat="nostalgia" onclick="copyCard(this)">
+        <span class="tag tag-nostalgia">Hoài niệm tuổi thơ</span>
+        <div class="comment-text">Xem video này mà bao nhiêu ký ức ùa về luôn. Nhớ hồi cấp 1 cứ thấy xe Milo màu xanh đỗ ở sân trường là cả lớp nháo nhào lên, ly Milo nhỏ xíu mà uống ngụm nào đã ngụm đó.</div>
+        <div class="footer">
+          <span>Gợi nhớ ký ức sâu sắc</span>
+          <span class="copy-hint">📋 Bấm để sao chép</span>
+        </div>
+      </div>
+
+      <!-- 2 -->
+      <div class="card" data-cat="nostalgia" onclick="copyCard(this)">
+        <span class="tag tag-nostalgia">Hoài niệm tuổi thơ</span>
+        <div class="comment-text">Công nhận vị Milo trên xe phát miễn phí ở trường ngon lạ lùng. Sau này lớn tự mua lon to về pha đủ cách với sữa đặc mà không tài nào tìm lại được đúng cái vị béo ngậy mát lạnh hồi ấy.</div>
+        <div class="footer">
+          <span>Đồng cảm cao</span>
+          <span class="copy-hint">📋 Bấm để sao chép</span>
+        </div>
+      </div>
+
+      <!-- 3 -->
+      <div class="card" data-cat="nostalgia" onclick="copyCard(this)">
+        <span class="tag tag-nostalgia">Hoài niệm tuổi thơ</span>
+        <div class="comment-text">Ngày xưa đi học háo hức nhất là ngày xe Milo về trường. Có hôm cả đám rủ nhau xếp hàng lần 1 xong cởi áo khoác ra xếp hàng lần 2 để xin thêm ly nữa kkk.</div>
+        <div class="footer">
+          <span>Kỷ niệm học trò</span>
+          <span class="copy-hint">📋 Bấm để sao chép</span>
+        </div>
+      </div>
+
+      <!-- 4 -->
+      <div class="card" data-cat="nostalgia" onclick="copyCard(this)">
+        <span class="tag tag-nostalgia">Hoài niệm tuổi thơ</span>
+        <div class="comment-text">Đến tận bây giờ trong tủ lạnh nhà mình lúc nào cũng có lốc Milo hộp xanh, đúng là thói quen từ thuở nhỏ khó bỏ thật sự.</div>
+        <div class="footer">
+          <span>Thói quen trung thành</span>
+          <span class="copy-hint">📋 Bấm để sao chép</span>
+        </div>
+      </div>
+
+      <!-- 5 -->
+      <div class="card" data-cat="marketing" onclick="copyCard(this)">
+        <span class="tag tag-marketing">Phân tích Marketing</span>
+        <div class="comment-text">Hồi nhỏ chỉ nghĩ đơn giản là được uống sữa free, giờ lớn xem video phân tích của kênh mới thấy đây là nước đi marketing đỉnh cao của Nestlé. Chi phí vài ly sữa nhỏ nhưng đổi lại lòng trung thành của cả một thế hệ suốt hơn 20 năm.</div>
+        <div class="footer">
+          <span>Phân tích kinh doanh</span>
+          <span class="copy-hint">📋 Bấm để sao chép</span>
+        </div>
+      </div>
+
+      <!-- 6 -->
+      <div class="card" data-cat="marketing" onclick="copyCard(this)">
+        <span class="tag tag-marketing">Khen ngợi nội dung</span>
+        <div class="comment-text">Kênh Tích Thông Thái làm video cuốn và tư liệu chỉn chu thật sự. Phân tích rất sâu về tâm lý hành vi tiêu dùng mà lời bình nghe vẫn gần gũi, ấm áp.</div>
+        <div class="footer">
+          <span>Tương tác tích cực</span>
+          <span class="copy-hint">📋 Bấm để sao chép</span>
+        </div>
+      </div>
+
+      <!-- 7 -->
+      <div class="card" data-cat="marketing" onclick="copyCard(this)">
+        <span class="tag tag-marketing">Chiến lược thương hiệu</span>
+        <div class="comment-text">Chiến lược gieo mầm 'Top of Mind' kinh điển. Giờ cứ nhắc đến thức uống cacao lúa mạch là 90% người tiêu dùng Việt Nam nghĩ ngay đến Milo đầu tiên.</div>
+        <div class="footer">
+          <span>Góc nhìn thương hiệu</span>
+          <span class="copy-hint">📋 Bấm để sao chép</span>
+        </div>
+      </div>
+
+      <!-- 8 -->
+      <div class="card" data-cat="casual" onclick="copyCard(this)">
+        <span class="tag tag-casual">Ngắn gọn & Vui vẻ</span>
+        <div class="comment-text">Bao nhiêu năm trôi qua rồi vẫn thắc mắc công thức pha của mấy anh chị trên xe Milo hồi đó là gì mà ngon vượt trội thế nhỉ =))</div>
+        <div class="footer">
+          <span>Gợi mở câu trả lời</span>
+          <span class="copy-hint">📋 Bấm để sao chép</span>
+        </div>
+      </div>
+
+      <!-- 9 -->
+      <div class="card" data-cat="casual" onclick="copyCard(this)">
+        <span class="tag tag-casual">Ngắn gọn & Vui vẻ</span>
+        <div class="comment-text">Video chất lượng quá ad ơi, hóng ad làm thêm một tập về kẹo C hình trái tim hoặc kem chuông tuổi thơ nữa nha!</div>
+        <div class="footer">
+          <span>Gợi ý chủ đề tiếp</span>
+          <span class="copy-hint">📋 Bấm để sao chép</span>
+        </div>
+      </div>
+
+      <!-- 10 -->
+      <div class="card" data-cat="casual" onclick="copyCard(this)">
+        <span class="tag tag-casual">Ngắn gọn & Vui vẻ</span>
+        <div class="comment-text">Chuẩn luôn ad ơi, một thời tranh nhau từng giọt cuối cùng dưới đáy cái ly giấy bé tẹo haha.</div>
+        <div class="footer">
+          <span>Hài hước tuổi học trò</span>
+          <span class="copy-hint">📋 Bấm để sao chép</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <span>✓</span>
+    <span id="toast-text">Đã sao chép vào bộ nhớ tạm!</span>
+  </div>
+
+  <script>
+    function copyCard(card) {
+      const text = card.querySelector('.comment-text').innerText.trim();
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('✓ Đã sao chép! Hãy dán (Ctrl+V) vào ô bình luận trên YouTube.');
+      }).catch(() => {
+        showToast('✓ Đã chọn bình luận!');
+      });
+    }
+
+    function filterCategory(cat, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      document.querySelectorAll('.card').forEach(card => {
+        if (cat === 'all' || card.getAttribute('data-cat') === cat) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-text').innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    }
+  </script>
+</body>
+</html>

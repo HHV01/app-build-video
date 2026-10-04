@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Smart Streamer - Hỗ Trợ Cày View Tự Động</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0b10;
+      --bg-card: #121420;
+      --bg-card-hover: #171a2b;
+      --accent: #ff0033;
+      --accent-glow: rgba(255, 0, 51, 0.35);
+      --accent-cyan: #00f0ff;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border-color: #1e2438;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at 15% 20%, #171128 0%, var(--bg-primary) 70%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      max-width: 1200px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 16px 24px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge-icon {
+      background: linear-gradient(135deg, var(--accent), #ff5e62);
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .logo-group h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .player-wrapper {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%; /* 16:9 */
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid #232942;
+    }
+
+    .player-wrapper iframe, .player-wrapper #player {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .now-playing-bar {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .video-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .video-channel {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .progress-container {
+      width: 100%;
+      height: 6px;
+      background: #1e2438;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-cyan));
+      transition: width 0.3s ease;
+    }
+
+    .time-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-val {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text-main);
+      background: linear-gradient(135deg, #fff, #a5b4fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .panel-section-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .controls-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #e60026);
+      color: white;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.15);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #1e2438;
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background: #2a324d;
+    }
+
+    .mode-selector {
+      background: #0e101a;
+      border-radius: 10px;
+      padding: 6px;
+      display: flex;
+      gap: 6px;
+      border: 1px solid var(--border-color);
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mode-btn.active {
+      background: #1e2438;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .config-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .config-field label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .config-field input, .config-field select {
+      background: #0e101a;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text-main);
+      font-size: 0.85rem;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .config-field input:focus {
+      border-color: var(--accent);
+    }
+
+    .log-box {
+      background: #090a10;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      height: 160px;
+      overflow-y: auto;
+      padding: 10px 12px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.76rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .log-entry {
+      line-height: 1.4;
+      color: #a0aec0;
+    }
+
+    .log-entry .time {
+      color: #64748b;
+      margin-right: 6px;
+    }
+
+    .log-entry.success { color: var(--success); }
+    .log-entry.warning { color: var(--warning); }
+    .log-entry.info { color: var(--accent-cyan); }
+
+    .tips-card {
+      background: rgba(245, 158, 11, 0.05);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      color: #fbd38d;
+    }
+
+    .tips-card ul {
+      margin-left: 20px;
+      margin-top: 6px;
+    }
+
+    /* Comment Section Styles */
+    .comment-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 10px;
+    }
+
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .comment-title-group h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .comment-title-group p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .comment-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .comment-filter-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .filter-btn {
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+    }
+
+    .filter-btn.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+
+    .comment-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 14px;
+    }
+
+    .comment-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .comment-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--accent-cyan);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 240, 255, 0.1);
+    }
+
+    .comment-tag {
+      display: inline-block;
+      align-self: flex-start;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tag-nostalgia {
+      background: rgba(255, 0, 51, 0.15);
+      color: #ff6b81;
+      border: 1px solid rgba(255, 0, 51, 0.3);
+    }
+
+    .tag-marketing {
+      background: rgba(0, 240, 255, 0.12);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+    }
+
+    .tag-casual {
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .comment-body {
+      font-size: 0.88rem;
+      line-height: 1.5;
+      color: #e2e8f0;
+      font-style: normal;
+    }
+
+    .comment-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.06);
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    .copy-hint {
+      color: var(--accent-cyan);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1e293b;
+      border: 1px solid var(--accent-cyan);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 30px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      font-size: 0.88rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 99999;
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="logo-group">
+        <div class="badge-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
+            <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+          </svg>
+        </div>
+        <div>
+          <h1>YouTube Smart Streamer</h1>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">Cày view thông minh • Tránh lọc thuật toán YouTube</div>
+        </div>
+      </div>
+
+      <div class="status-badge" id="statusBadge">
+        <span class="status-dot"></span>
+        <span id="statusText">Sẵn sàng</span>
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <div class="main-grid">
+      <!-- Left: Player & Stats -->
+      <div class="card">
+        <div class="player-wrapper">
+          <div id="player"></div>
+        </div>
+
+        <div class="now-playing-bar">
+          <div class="video-title" id="displayTitle">MILO – Vì sao phát miễn phí mà cả thế hệ vẫn nhớ?</div>
+          <div class="video-channel" id="displayChannel">Kênh: Tích Thông Thái • Đang phát video chính</div>
+          
+          <div class="progress-container">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="time-info">
+            <span id="currentTime">0:00</span>
+            <span id="durationTime">--:--</span>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-val" id="statMainRuns">0</div>
+            <div class="stat-label">Lượt xem video chính</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="statBufferRuns">0</div>
+            <div class="stat-label">Lượt video đệm xen kẽ</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="statTotalTime">00:00:00</div>
+            <div class="stat-label">Tổng thời gian chạy</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Controls & Strategy -->
+      <div class="card controls-grid">
+        <div class="panel-section-title">
+          <span>⚙️ Bảng điều khiển luồng</span>
+        </div>
+
+        <!-- Start/Stop & Skip -->
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnToggleStream" onclick="toggleStream()">
+            ▶ Bắt đầu chạy
+          </button>
+          <button class="btn btn-secondary" onclick="skipToNext()">
+            ⏭ Qua lượt tiếp
+          </button>
+        </div>
+
+        <!-- Mode selector -->
+        <div class="config-field">
+          <label>Chế độ phát</label>
+          <div class="mode-selector">
+            <button class="mode-btn active" id="btnModeSmart" onclick="setMode('smart')">
+              🛡️ Thông minh (Xen kẽ)
+            </button>
+            <button class="mode-btn" id="btnModeDirect" onclick="setMode('direct')">
+              🔁 Lặp trực tiếp
+            </button>
+          </div>
+        </div>
+
+        <!-- Delay settings -->
+        <div class="config-field">
+          <label>
+            <span>Thời gian nghỉ giữa các lượt</span>
+            <span id="delayValueText" style="color: var(--accent-cyan); font-weight:600;">8 giây</span>
+          </label>
+          <input type="range" id="delayInput" min="3" max="30" value="8" oninput="updateDelay(this.value)">
+          <small style="color: var(--text-muted); font-size: 0.74rem;">Nghỉ ngẫu nhiên giúp YouTube nhận diện người xem tự nhiên.</small>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="config-field">
+          <label>Nhật ký hoạt động</label>
+          <div class="log-box" id="logBox">
+            <div class="log-entry info"><span class="time">[00:00]</span> Trình điều khiển đã sẵn sàng. Nhấn 'Bắt đầu chạy' để phát.</div>
+          </div>
+        </div>
+
+        <!-- Tips -->
+        <div class="tips-card">
+          <strong>💡 Mẹo để giữ view chuẩn không bị YouTube trừ:</strong>
+          <ul>
+            <li><strong>Không bấm Mute trên video YouTube:</strong> Hãy bấm <em>chuột phải vào thẻ (tab) này trên trình duyệt ➔ Chọn "Tắt tiếng trang web" (Mute site/tab)</em> để tránh ồn.</li>
+            <li>YouTube yêu cầu xem ít nhất 30 giây để tính 1 view.</li>
+            <li>Chế độ <strong>Thông minh (Xen kẽ)</strong> sẽ phát video chính rồi xen kẽ 1 video ngắn tự nhiên trước khi lặp lại.</li>
+    </div>
+
+    <!-- Kho Bình Luận Tương Tác Thật -->
+    <div class="comment-panel">
+      <div class="comment-header">
+        <div class="comment-title-group">
+          <h2>💬 Kho Bình Luận Chuẩn Người Xem Thật (1-Click Copy)</h2>
+          <p>Bình luận giúp tăng tương tác và giữ view bền vững. Bấm vào bất kỳ ô nào để sao chép ngay!</p>
+        </div>
+        <div class="comment-actions">
+          <button class="btn btn-secondary" onclick="copyRandomComment()" style="font-size:0.8rem; padding:8px 14px;">
+            🎲 Sao chép ngẫu nhiên
+          </button>
+          <a href="https://www.youtube.com/watch?v=OC4aGfMpViU" target="_blank" class="btn btn-primary" style="font-size:0.8rem; padding:8px 14px; text-decoration:none;">
+            ↗ Mở YouTube để dán
+          </a>
+        </div>
+      </div>
+
+      <!-- Filter buttons -->
+      <div class="comment-filter-bar">
+        <button class="filter-btn active" onclick="filterComments('all', this)">Tất cả (10)</button>
+        <button class="filter-btn" onclick="filterComments('nostalgia', this)">Hoài niệm tuổi thơ</button>
+        <button class="filter-btn" onclick="filterComments('marketing', this)">Phân tích & Khen kênh</button>
+        <button class="filter-btn" onclick="filterComments('casual', this)">Ngắn gọn & Hài hước</button>
+      </div>
+
+      <!-- Comment Grid -->
+      <div class="comment-grid" id="commentGrid">
+        <!-- Nostalgia 1 -->
+        <div class="comment-card" data-cat="nostalgia" onclick="copyComment(this)">
+          <span class="comment-tag tag-nostalgia">Hoài niệm tuổi thơ</span>
+          <p class="comment-body">Xem video này mà bao nhiêu ký ức ùa về luôn. Nhớ hồi cấp 1 cứ thấy xe Milo màu xanh đỗ ở sân trường là cả lớp nháo nhào lên, ly Milo nhỏ xíu mà uống ngụm nào đã ngụm đó.</p>
+          <div class="comment-footer">
+            <span>Cảm xúc • Gợi nhớ ký ức</span>
+            <span class="copy-hint">📋 Bấm để chép</span>
+          </div>
+        </div>
+
+        <!-- Nostalgia 2 -->
+        <div class="comment-card" data-cat="nostalgia" onclick="copyComment(this)">
+          <span class="comment-tag tag-nostalgia">Hoài niệm tuổi thơ</span>
+          <p class="comment-body">Công nhận vị Milo trên xe phát miễn phí ở trường ngon lạ lùng. Sau này lớn tự mua lon to về pha đủ cách với sữa đặc mà không tài nào tìm lại được đúng cái vị béo ngậy mát lạnh hồi ấy.</p>
+          <div class="comment-footer">
+            <span>Hương vị tuổi thơ • Đồng cảm cao</span>
+            <span class="copy-hint">📋 Bấm để chép</span>
+          </div>
+        </div>
+
+        <!-- Nostalgia 3 -->
+        <div class="comment-card" data-cat="nostalgia" onclick="copyComment(this)">
+          <span class="comment-tag tag-nostalgia">Hoài niệm tuổi thơ</span>
+          <p class="comment-body">Ngày xưa đi học háo hức nhất là ngày xe Milo về trường. Có hôm cả đám rủ nhau xếp hàng lần 1 xong cởi áo khoác ra xếp hàng lần 2 để xin thêm ly nữa kkk.</p>
+          <div class="comment-footer">
+            <span>Kỷ niệm học trò • Hài hước</span>
+            <span class="copy-hint">📋 Bấm để chép</span>
+          </div>
+        </div>
+
+        <!-- Nostalgia 4 -->
+        <div class="comment-card" data-cat="nostalgia" onclick="copyComment(this)">
+          <span class="comment-tag tag-nostalgia">Hoài niệm tuổi thơ</span>
+          <p class="comment-body">Đến tận bây giờ trong tủ lạnh nhà mình lúc nào cũng có lốc Milo hộp xanh, đúng là thói quen từ thuở nhỏ khó bỏ thật sự.</p>
+          <div class="comment-footer">
+            <span>Thói quen tiêu dùng • Tự nhiên</span>
+            <span class="copy-hint">📋 Bấm để chép</span>
+          </div>
+        </div>
+
+        <!-- Marketing 1 -->
+        <div class="comment-card" data-cat="marketing" onclick="copyComment(this)">
+          <span class="comment-tag tag-marketing">Phân tích chuyên sâu</span>
+          <p class="comment-body">Hồi nhỏ chỉ nghĩ đơn giản là được uống sữa free, giờ lớn xem video phân tích của kênh mới thấy đây là nước đi marketing đỉnh cao của Nestlé. Chi phí vài ly sữa nhỏ nhưng đổi lại lòng trung thành của cả một thế hệ suốt hơn 20 năm.</p>
+          <div class="comment-footer">
+            <span>Góc nhìn kinh doanh • Chất lượng</span>
+            <span class="copy-hint">📋 Bấm để chép</span>
+          </div>
+        </div>
+
+        <!-- Marketing 2 -->
+        <div class="comment-card" data-cat="marketing" onclick="copyComment(this)">
+          <span class="comment-tag tag-marketing">Khen ngợi kênh</span>
+          <p class="comment-body">Kênh Tích Thông Thái làm video cuốn và tư liệu chỉn chu thật sự. Phân tích rất sâu về tâm lý hành vi tiêu dùng mà lời bình nghe vẫn gần gũi, ấm áp.</p>
+          <div class="comment-footer">
+            <span>Ủng hộ nhà sáng tạo • Tương tác tốt</span>
+            <span class="copy-hint">📋 Bấm để chép</span>
+          </div>
+        </div>
+
+        <!-- Marketing 3 -->
+        <div class="comment-card" data-cat="marketing" onclick="copyComment(this)">
+          <span class="comment-tag tag-marketing">Phân tích thương hiệu</span>
+          <p class="comment-body">Chiến lược gieo mầm 'Top of Mind' kinh điển. Giờ cứ nhắc đến thức uống cacao lúa mạch là 90% người tiêu dùng Việt Nam nghĩ ngay đến Milo đầu tiên.</p>
+          <div class="comment-footer">
+            <span>Độ nhận diện thương hiệu</span>
+            <span class="copy-hint">📋 Bấm để chép</span>
+          </div>
+        </div>
+
+        <!-- Casual 1 -->
+        <div class="comment-card" data-cat="casual" onclick="copyComment(this)">
+          <span class="comment-tag tag-casual">Ngắn gọn & Vui vẻ</span>
+          <p class="comment-body">Bao nhiêu năm trôi qua rồi vẫn thắc mắc công thức pha của mấy anh chị trên xe Milo hồi đó là gì mà ngon vượt trội thế nhỉ =))</p>
+          <div class="comment-footer">
+            <span>Tò mò • Dễ nhận lượt reply</span>
+            <span class="copy-hint">📋 Bấm để chép</span>
+          </div>
+        </div>
+
+        <!-- Casual 2 -->
+        <div class="comment-card" data-cat="casual" onclick="copyComment(this)">
+          <span class="comment-tag tag-casual">Ngắn gọn & Vui vẻ</span>
+          <p class="comment-body">Video chất lượng quá ad ơi, hóng ad làm thêm một tập về kẹo C hình trái tim hoặc kem chuông tuổi thơ nữa nha!</p>
+          <div class="comment-footer">
+            <span>Gợi ý chủ đề tiếp theo</span>
+            <span class="copy-hint">📋 Bấm để chép</span>
+          </div>
+        </div>
+
+        <!-- Casual 3 -->
+        <div class="comment-card" data-cat="casual" onclick="copyComment(this)">
+          <span class="comment-tag tag-casual">Ngắn gọn & Vui vẻ</span>
+          <p class="comment-body">Chuẩn luôn ad ơi, một thời tranh nhau từng giọt cuối cùng dưới đáy cái ly giấy bé tẹo haha.</p>
+          <div class="comment-footer">
+            <span>Vui vẻ • Ngắn gọn</span>
+            <span class="copy-hint">📋 Bấm để chép</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast" id="toastBox">
+    <span>✓</span>
+    <span id="toastMsg">Đã sao chép bình luận vào bộ nhớ tạm!</span>
+  </div>
+
+  <!-- YouTube Iframe API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    // Playlist configurations
+    const MAIN_VIDEO_ID = 'OC4aGfMpViU';
+    const MAIN_VIDEO_TITLE = 'MILO – Vì sao phát miễn phí mà cả thế hệ vẫn nhớ?';
+    
+    // Buffer videos to interleave (short, high-engagement videos to break repetitive loops)
+    const BUFFER_VIDEOS = [
+      { id: 'jfKfPfyJRdk', title: 'Lofi hip hop radio - beats to relax/study to' },
+      { id: 'kJQP7kiw5Fk', title: 'Luis Fonsi - Despacito' },
+      { id: 'dQw4w9WgXcQ', title: 'Rick Astley - Never Gonna Give You Up' }
+    ];
+
+    let player;
+    let isRunning = false;
+    let currentMode = 'smart'; // 'smart' or 'direct'
+    let currentVideoState = 'main'; // 'main' or 'buffer'
+    let delaySeconds = 8;
+    let mainRuns = 0;
+    let bufferRuns = 0;
+    let totalSecondsElapsed = 0;
+    let tickerInterval = null;
+    let progressInterval = null;
+    let delayTimeout = null;
+
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        height: '100%',
+        width: '100%',
+        videoId: MAIN_VIDEO_ID,
+        playerVars: {
+          'autoplay': 1,
+          'controls': 1,
+          'rel': 0,
+          'modestbranding': 1,
+          'playsinline': 1
+        },
+        events: {
+          'onReady': onPlayerReady,
+          'onStateChange': onPlayerStateChange
+        }
+      });
+    }
+
+    function onPlayerReady(event) {
+      log('Trình phát YouTube đã sẵn sàng. Tự động kích hoạt phát...', 'info');
+      // Mute tạm thời để vượt qua chính sách Autoplay của Chrome/Edge
+      event.target.mute();
+      
+      setTimeout(() => {
+        if (!isRunning) {
+          toggleStream();
+        }
+      }, 300);
+
+      // Khi người dùng bấm bất kỳ đâu trên trang thì tự động mở tiếng
+      document.body.addEventListener('click', () => {
+        if (player && player.unMute) {
+          player.unMute();
+          player.setVolume(100);
+          log('🔊 Đã bật âm thanh video.', 'info');
+        }
+      }, { once: true });
+    }
+
+    function onPlayerStateChange(event) {
+      if (event.data === YT.PlayerState.PLAYING) {
+        updateStatus('Đang phát', 'var(--success)');
+        startProgressTracking();
+      } else if (event.data === YT.PlayerState.PAUSED) {
+        updateStatus('Tạm dừng', 'var(--warning)');
+        stopProgressTracking();
+      } else if (event.data === YT.PlayerState.ENDED) {
+        handleVideoEnded();
+      }
+    }
+
+    function handleVideoEnded() {
+      stopProgressTracking();
+      if (!isRunning) return;
+
+      if (currentVideoState === 'main') {
+        mainRuns++;
+        document.getElementById('statMainRuns').innerText = mainRuns;
+        log(`✓ Hoàn thành 1 lượt xem video chính! (Tổng: ${mainRuns} lượt)`, 'success');
+
+        if (currentMode === 'smart') {
+          // Switch to a buffer video
+          currentVideoState = 'buffer';
+          const randomBuffer = BUFFER_VIDEOS[Math.floor(Math.random() * BUFFER_VIDEOS.length)];
+          scheduleNextVideo(randomBuffer.id, randomBuffer.title, true);
+        } else {
+          // Direct loop
+          scheduleNextVideo(MAIN_VIDEO_ID, MAIN_VIDEO_TITLE, false);
+        }
+      } else {
+        // Buffer video ended -> back to main
+        bufferRuns++;
+        document.getElementById('statBufferRuns').innerText = bufferRuns;
+        log(`✓ Đã phát xong video đệm. Chuẩn bị quay lại video chính...`, 'info');
+        currentVideoState = 'main';
+        scheduleNextVideo(MAIN_VIDEO_ID, MAIN_VIDEO_TITLE, false);
+      }
+    }
+
+    function scheduleNextVideo(videoId, title, isBuffer) {
+      // Add slight randomness to delay (e.g. +- 2 seconds) to look natural
+      const actualDelay = Math.max(3, delaySeconds + Math.floor(Math.random() * 5) - 2);
+      updateStatus(`Nghỉ ${actualDelay}s trước lượt tiếp`, 'var(--warning)');
+      log(`Chờ ${actualDelay} giây để mô phỏng hành vi tự nhiên...`, 'info');
+
+      delayTimeout = setTimeout(() => {
+        if (!isRunning) return;
+        loadAndPlay(videoId, title, isBuffer);
+      }, actualDelay * 1000);
+    }
+
+    function loadAndPlay(videoId, title, isBuffer) {
+      document.getElementById('displayTitle').innerText = title;
+      document.getElementById('displayChannel').innerText = isBuffer 
+        ? 'Video đệm (Hỗ trợ lách thuật toán phát lặp)' 
+        : 'Kênh: Tích Thông Thái • Video chính cần cày view';
+
+      player.loadVideoById(videoId);
+      player.playVideo();
+      log(`Bắt đầu phát: ${title}`, isBuffer ? 'warning' : 'info');
+    }
+
+    function toggleStream() {
+      const btn = document.getElementById('btnToggleStream');
+      if (!isRunning) {
+        isRunning = true;
+        btn.innerHTML = '⏸ Tạm dừng chạy';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-secondary');
+
+        if (player && player.playVideo) {
+          player.playVideo();
+        }
+        startTotalTimer();
+        log('▶ Đã kích hoạt chế độ tự động cày view.', 'success');
+      } else {
+        isRunning = false;
+        btn.innerHTML = '▶ Bắt đầu chạy';
+        btn.classList.remove('btn-secondary');
+        btn.classList.add('btn-primary');
+
+        if (player && player.pauseVideo) {
+          player.pauseVideo();
+        }
+        if (delayTimeout) clearTimeout(delayTimeout);
+        stopTotalTimer();
+        updateStatus('Đang tạm dừng', 'var(--warning)');
+        log('⏸ Đã tạm dừng tự động chạy.', 'warning');
+      }
+    }
+
+    function skipToNext() {
+      if (player && player.seekTo) {
+        const dur = player.getDuration();
+        if (dur > 0) {
+          player.seekTo(dur - 2, true);
+          log('Đã chuyển nhanh đến cuối video.', 'info');
+        }
+      }
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById('btnModeSmart').classList.toggle('active', mode === 'smart');
+      document.getElementById('btnModeDirect').classList.toggle('active', mode === 'direct');
+      log(`Chuyển sang chế độ: ${mode === 'smart' ? 'Thông minh (Xen kẽ)' : 'Lặp trực tiếp'}`, 'info');
+    }
+
+    function updateDelay(val) {
+      delaySeconds = parseInt(val);
+      document.getElementById('delayValueText').innerText = `${delaySeconds} giây`;
+    }
+
+    function updateStatus(text, color) {
+      document.getElementById('statusText').innerText = text;
+      document.getElementById('statusBadge').style.color = color;
+      document.getElementById('statusBadge').style.borderColor = color;
+      document.querySelector('.status-dot').style.background = color;
+      document.querySelector('.status-dot').style.boxShadow = `0 0 8px ${color}`;
+    }
+
+    function log(message, type = '') {
+      const logBox = document.getElementById('logBox');
+      const now = new Date();
+      const timeStr = `[${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}]`;
+      
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.innerHTML = `<span class="time">${timeStr}</span> ${message}`;
+      logBox.appendChild(entry);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function startProgressTracking() {
+      stopProgressTracking();
+      progressInterval = setInterval(() => {
+        if (!player || !player.getCurrentTime) return;
+        const current = player.getCurrentTime();
+        const duration = player.getDuration();
+        if (duration > 0) {
+          const pct = (current / duration) * 100;
+          document.getElementById('progressFill').style.width = `${pct}%`;
+          document.getElementById('currentTime').innerText = formatTime(current);
+          document.getElementById('durationTime').innerText = formatTime(duration);
+        }
+      }, 500);
+    }
+
+    function stopProgressTracking() {
+      if (progressInterval) clearInterval(progressInterval);
+    }
+
+    function startTotalTimer() {
+      stopTotalTimer();
+      tickerInterval = setInterval(() => {
+        totalSecondsElapsed++;
+        const hrs = String(Math.floor(totalSecondsElapsed / 3600)).padStart(2, '0');
+        const mins = String(Math.floor((totalSecondsElapsed % 3600) / 60)).padStart(2, '0');
+        const secs = String(totalSecondsElapsed % 60).padStart(2, '0');
+        document.getElementById('statTotalTime').innerText = `${hrs}:${mins}:${secs}`;
+      }, 1000);
+    }
+
+    function stopTotalTimer() {
+      if (tickerInterval) clearInterval(tickerInterval);
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    // Comment Section Interactions
+    function copyComment(cardElement) {
+      const text = cardElement.querySelector('.comment-body').innerText.trim();
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('✓ Đã sao chép bình luận! Hãy mở YouTube và nhấn Ctrl + V để dán.');
+        log(`Đã sao chép bình luận mẫu: "${text.substring(0, 40)}..."`, 'info');
+      }).catch(err => {
+        showToast('✓ Đã chọn bình luận!');
+      });
+    }
+
+    function copyRandomComment() {
+      const cards = document.querySelectorAll('.comment-card');
+      if (cards.length === 0) return;
+      const randomCard = cards[Math.floor(Math.random() * cards.length)];
+      copyComment(randomCard);
+    }
+
+    function filterComments(category, btn) {
+      const buttons = document.querySelectorAll('.filter-btn');
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const cards = document.querySelectorAll('.comment-card');
+      cards.forEach(card => {
+        if (category === 'all' || card.getAttribute('data-cat') === category) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toastBox');
+      const toastMsg = document.getElementById('toastMsg');
+      toastMsg.innerText = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3500);
+    }
+  </script>
+</body>
+</html>
