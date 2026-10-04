@@ -835,6 +835,26 @@
     let tickerInterval = null;
     let progressInterval = null;
     let delayTimeout = null;
+    let isDelaying = false;
+    let autoResumeTimeout = null;
+    let keepAliveAudioStarted = false;
+
+    // Chống trình duyệt đóng băng tab khi chạy nền (Anti-Sleep Web Audio)
+    function ensureKeepAliveAudio() {
+      if (keepAliveAudioStarted) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        gain.gain.value = 0.0001; // Cực nhỏ để không nghe thấy nhưng giữ tab luôn Active
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        keepAliveAudioStarted = true;
+      } catch (e) {}
+    }
 
     function onYouTubeIframeAPIReady() {
       player = new YT.Player('player', {
@@ -859,6 +879,7 @@
       log('Trình phát YouTube đã sẵn sàng. Tự động kích hoạt phát...', 'info');
       // Mute tạm thời để vượt qua chính sách Autoplay của Chrome/Edge
       event.target.mute();
+      ensureKeepAliveAudio();
       
       setTimeout(() => {
         if (!isRunning) {
@@ -866,8 +887,9 @@
         }
       }, 300);
 
-      // Khi người dùng bấm bất kỳ đâu trên trang thì tự động mở tiếng
+      // Khi người dùng bấm bất kỳ đâu trên trang thì tự động mở tiếng & kích hoạt Audio keep-alive
       document.body.addEventListener('click', () => {
+        ensureKeepAliveAudio();
         if (player && player.unMute) {
           player.unMute();
           player.setVolume(100);
@@ -881,8 +903,18 @@
         updateStatus('Đang phát', 'var(--success)');
         startProgressTracking();
       } else if (event.data === YT.PlayerState.PAUSED) {
-        updateStatus('Tạm dừng', 'var(--warning)');
+        updateStatus('Tạm dừng (Đang tự phục hồi...)', 'var(--warning)');
         stopProgressTracking();
+        // Tự động phát lại ngay nếu bị tạm dừng do tab chạy nền
+        if (isRunning && !isDelaying) {
+          clearTimeout(autoResumeTimeout);
+          autoResumeTimeout = setTimeout(() => {
+            if (isRunning && !isDelaying && player && player.playVideo) {
+              player.playVideo();
+              log('🔄 Tự động phát lại sau khi bị trình duyệt tạm dừng nền.', 'info');
+            }
+          }, 1500);
+        }
       } else if (event.data === YT.PlayerState.ENDED) {
         handleVideoEnded();
       }
@@ -917,12 +949,14 @@
     }
 
     function scheduleNextVideo(videoId, title, isBuffer) {
-      // Add slight randomness to delay (e.g. +- 2 seconds) to look natural
+      isDelaying = true;
       const actualDelay = Math.max(3, delaySeconds + Math.floor(Math.random() * 5) - 2);
       updateStatus(`Nghỉ ${actualDelay}s trước lượt tiếp`, 'var(--warning)');
       log(`Chờ ${actualDelay} giây để mô phỏng hành vi tự nhiên...`, 'info');
 
+      if (delayTimeout) clearTimeout(delayTimeout);
       delayTimeout = setTimeout(() => {
+        isDelaying = false;
         if (!isRunning) return;
         loadAndPlay(videoId, title, isBuffer);
       }, actualDelay * 1000);
@@ -938,6 +972,18 @@
       player.playVideo();
       log(`Bắt đầu phát: ${title}`, isBuffer ? 'warning' : 'info');
     }
+
+    // Tự động khôi phục phát khi người dùng chuyển lại tab
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && isRunning && !isDelaying && player && player.playVideo) {
+        if (typeof player.getPlayerState === 'function') {
+          const st = player.getPlayerState();
+          if (st !== YT.PlayerState.PLAYING && st !== YT.PlayerState.BUFFERING) {
+            player.playVideo();
+          }
+        }
+      }
+    });
 
     function toggleStream() {
       const btn = document.getElementById('btnToggleStream');
@@ -1037,6 +1083,14 @@
         const mins = String(Math.floor((totalSecondsElapsed % 3600) / 60)).padStart(2, '0');
         const secs = String(totalSecondsElapsed % 60).padStart(2, '0');
         document.getElementById('statTotalTime').innerText = `${hrs}:${mins}:${secs}`;
+
+        // Watchdog định kỳ mỗi 4 giây: kiểm tra xem player có bị tạm dừng ngầm không
+        if (totalSecondsElapsed % 4 === 0 && isRunning && !isDelaying && player && typeof player.getPlayerState === 'function') {
+          const st = player.getPlayerState();
+          if (st === 2 || st === 5 || st === -1) {
+            player.playVideo();
+          }
+        }
       }, 1000);
     }
 
