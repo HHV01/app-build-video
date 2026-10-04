@@ -817,11 +817,13 @@
     const MAIN_VIDEO_ID = 'OC4aGfMpViU';
     const MAIN_VIDEO_TITLE = 'MILO – Vì sao phát miễn phí mà cả thế hệ vẫn nhớ?';
     
-    // Buffer videos to interleave (short, high-engagement videos to break repetitive loops)
+    // Buffer videos to interleave (stable, official videos that allow embedding anywhere)
     const BUFFER_VIDEOS = [
-      { id: 'jfKfPfyJRdk', title: 'Lofi hip hop radio - beats to relax/study to' },
       { id: 'kJQP7kiw5Fk', title: 'Luis Fonsi - Despacito' },
-      { id: 'dQw4w9WgXcQ', title: 'Rick Astley - Never Gonna Give You Up' }
+      { id: 'dQw4w9WgXcQ', title: 'Rick Astley - Never Gonna Give You Up' },
+      { id: '9bZkp7q19f0', title: 'PSY - GANGNAM STYLE' },
+      { id: 'JGwWNGJdvx8', title: 'Ed Sheeran - Shape of You' },
+      { id: 'fJ9rUzIMcZQ', title: 'Queen - Bohemian Rhapsody' }
     ];
 
     let player;
@@ -870,9 +872,24 @@
         },
         events: {
           'onReady': onPlayerReady,
-          'onStateChange': onPlayerStateChange
+          'onStateChange': onPlayerStateChange,
+          'onError': onPlayerError
         }
       });
+    }
+
+    function onPlayerError(event) {
+      log(`⚠️ Video đệm gặp lỗi (${event.data || 'Không khả dụng'}). Tự động bỏ qua và chuyển tiếp sau 2s...`, 'warning');
+      updateStatus('Bỏ qua video lỗi...', 'var(--warning)');
+      setTimeout(() => {
+        if (!isRunning) return;
+        if (currentVideoState === 'buffer') {
+          currentVideoState = 'main';
+          scheduleNextVideo(MAIN_VIDEO_ID, MAIN_VIDEO_TITLE, false);
+        } else {
+          scheduleNextVideo(MAIN_VIDEO_ID, MAIN_VIDEO_TITLE, false);
+        }
+      }, 2000);
     }
 
     function onPlayerReady(event) {
