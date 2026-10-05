@@ -1,0 +1,101 @@
+Lich Google
+ RX Media
+S YTB2026
+ G-Labs Studio 2.0.4 - duckmartians
+图FlowAnh
+Phien bin moi v2.0.5 ra mittich hap nan ting Google Vids, tao video voi m hinh Omni mien phi, Bim df cip nhat
+00
+Tc 
+Anh tham chieu
+Prompt
+Ket qua
+Tien do
+DFlow Video
+Hing doi
+Xong
+Jey) furg
+Ta thoks
+establishing
+oup Sueg
+Nhan Vat
+Cau hinh co ban
+background plate
+of World Map, no
+Ciu hinh nang cao / Anh tham chieu
+people present.
+图 GPT Image 2
+Style: Flat 2D ..
+Chat luong
+Seed:
+@ Meta Media
+establishing
+2K
+Khoa seed
+A clean
+4K
+547664
+oup fueg
+O Che do tham chieu:
+S6 lueng anh / prompt
+of Harbor, ro
+background plate
+Grok Media
+M&c dinh
+people present.
+Style; Fliat 2D ..
+Workflow
+Thu muc inh cic thanh phan:
+Dit tin rhindin ah
+C/VUsers\ADMIN/Downloads\New folder
+A clean
+ Dung Video
+establishing
+pip Bueg
+background plate
+@ Ning Cip Anh
+of Hall, no people
+= 1 hang / 1 prompt
+Nhip tep (TXT, Excel)
+present, Style Fiat
+20 cartoen witlk
+Webhook API
+the artwork flls the ENTIRE image, edge to edge. NO
+establishing
+A clean
+Cong Cu Khic
+border, NO frame, no outine around the picture, no white
+oup fueg
+or coloured margin, no matte, no passe-partout, no
+of Fortress, no
+background plate
+rounded corners, no torn-paper or postcard edge, no drop
+shadow around the image. The drawing must touch all four
+people present.
+edges of the canvas.
+LogChi TietO
+Style: Flat 2D ..
+Cai Dit
+A clean
+ Dung mot prompt cho tit ca
+establishing
+10
+p Sueg
+background plate
++ Them vao hiang chd
+I= Quin ly hang che (0)
+Sang
+of Open Sea, no
+people present.
+Style: Flat 2D .
+TAM DUNG
+CHAY NGAY
+Nm 2.0.5
+DUNG
+Them anh
+Kho inh
+Xba
+Xba het
+Cache
+Chay 10
+Chay chon
+Phien co

@@ -589,7 +589,7 @@
         </div>
 
         <div class="now-playing-bar">
-          <div class="video-title" id="displayTitle">MILO – Vì sao phát miễn phí mà cả thế hệ vẫn nhớ?</div>
+          <div class="video-title" id="displayTitle">Tôi Mất 6 Năm Mới Thấy Tiền Bắt Đầu “Đẻ Ra Tiền”</div>
           <div class="video-channel" id="displayChannel">Kênh: Tích Thông Thái • Đang phát video chính</div>
           
           <div class="progress-container">
@@ -816,23 +816,27 @@
   <!-- YouTube Iframe API -->
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
-    // Playlist configurations
-    const MAIN_VIDEO_ID = 'OC4aGfMpViU';
-    const MAIN_VIDEO_TITLE = 'MILO – Vì sao phát miễn phí mà cả thế hệ vẫn nhớ?';
-    
-    // Buffer videos to interleave (stable, official videos that allow embedding anywhere)
-    const BUFFER_VIDEOS = [
-      { id: 'kJQP7kiw5Fk', title: 'Luis Fonsi - Despacito' },
-      { id: 'dQw4w9WgXcQ', title: 'Rick Astley - Never Gonna Give You Up' },
-      { id: '9bZkp7q19f0', title: 'PSY - GANGNAM STYLE' },
-      { id: 'JGwWNGJdvx8', title: 'Ed Sheeran - Shape of You' },
-      { id: 'fJ9rUzIMcZQ', title: 'Queen - Bohemian Rhapsody' }
+    // 2 Video chính của kênh Tích Thông Thái
+    const CHANNEL_VIDEOS = [
+      { id: 'v--oP2aezgI', title: 'Tôi Mất 6 Năm Mới Thấy Tiền Bắt Đầu “Đẻ Ra Tiền”' },
+      { id: 'OC4aGfMpViU', title: 'MILO – Vì sao phát miễn phí mà cả thế hệ vẫn nhớ?' }
     ];
+
+    // Cấu hình video đệm theo đúng chu kỳ:
+    // 1 -> 2 -> đệm 10s -> 1 -> 2 -> đệm 30s -> lặp lại
+    const BUFFER_CONFIGS = [
+      { id: 'kJQP7kiw5Fk', title: 'Luis Fonsi - Despacito (Đệm ngắn 10s)', durationLimit: 10 },
+      { id: 'dQw4w9WgXcQ', title: 'Rick Astley - Never Gonna Give You Up (Đệm ngắn 30s)', durationLimit: 30 }
+    ];
+
+    let channelStep = 0; // 0 = Video 1, 1 = Video 2
+    let bufferCycle = 0; // 0 = đệm 10s, 1 = đệm 30s
+    let currentVideoState = 'channel'; // 'channel' hoặc 'buffer'
+    let currentDurationLimit = null;
 
     let player;
     let isRunning = false;
     let currentMode = 'smart'; // 'smart' or 'direct'
-    let currentVideoState = 'main'; // 'main' or 'buffer'
     let delaySeconds = 8;
     let mainRuns = 0;
     let bufferRuns = 0;
@@ -862,10 +866,15 @@
     }
 
     function onYouTubeIframeAPIReady() {
+      channelStep = 0;
+      const initialVid = CHANNEL_VIDEOS[0];
+      document.getElementById('displayTitle').innerText = initialVid.title;
+      document.getElementById('displayChannel').innerText = 'Kênh: Tích Thông Thái • Video #1 chính chủ';
+
       player = new YT.Player('player', {
         height: '100%',
         width: '100%',
-        videoId: MAIN_VIDEO_ID,
+        videoId: initialVid.id,
         playerVars: {
           'autoplay': 1,
           'controls': 1,
@@ -882,16 +891,11 @@
     }
 
     function onPlayerError(event) {
-      log(`⚠️ Video đệm gặp lỗi (${event.data || 'Không khả dụng'}). Tự động bỏ qua và chuyển tiếp sau 2s...`, 'warning');
+      log(`⚠️ Video gặp lỗi (${event.data || 'Không khả dụng'}). Tự động bỏ qua và chuyển tiếp sau 2s...`, 'warning');
       updateStatus('Bỏ qua video lỗi...', 'var(--warning)');
       setTimeout(() => {
         if (!isRunning) return;
-        if (currentVideoState === 'buffer') {
-          currentVideoState = 'main';
-          scheduleNextVideo(MAIN_VIDEO_ID, MAIN_VIDEO_TITLE, false);
-        } else {
-          scheduleNextVideo(MAIN_VIDEO_ID, MAIN_VIDEO_TITLE, false);
-        }
+        handleVideoEnded();
       }, 2000);
     }
 
@@ -944,23 +948,19 @@
 
     function onPlayerReady(event) {
       log('Trình phát YouTube đã sẵn sàng. Tự động kích hoạt phát...', 'info');
-      // Mute ban đầu để vượt qua chính sách Autoplay của các trình duyệt
       event.target.mute();
+      event.target.playVideo();
       updateAudioButton(false);
       ensureKeepAliveAudio();
       
       setTimeout(() => {
-        if (!isRunning) {
-          toggleStream();
-        }
+        startStream();
       }, 300);
 
-      // Tự động thử bật tiếng sau khi bắt đầu phát 1.5s
       setTimeout(() => {
         tryAutoUnmute();
       }, 1500);
 
-      // Khi người dùng bấm bất kỳ đâu trên trang thì tự động mở tiếng & kích hoạt Audio keep-alive
       document.addEventListener('click', () => {
         ensureKeepAliveAudio();
         tryAutoUnmute();
@@ -975,7 +975,6 @@
       } else if (event.data === YT.PlayerState.PAUSED) {
         updateStatus('Tạm dừng (Đang tự phục hồi...)', 'var(--warning)');
         stopProgressTracking();
-        // Tự động phát lại ngay nếu bị tạm dừng do tab chạy nền
         if (isRunning && !isDelaying) {
           clearTimeout(autoResumeTimeout);
           autoResumeTimeout = setTimeout(() => {
@@ -994,31 +993,49 @@
       stopProgressTracking();
       if (!isRunning) return;
 
-      if (currentVideoState === 'main') {
+      if (currentVideoState === 'channel') {
         mainRuns++;
         document.getElementById('statMainRuns').innerText = mainRuns;
-        log(`✓ Hoàn thành 1 lượt xem video chính! (Tổng: ${mainRuns} lượt)`, 'success');
+        const finishedTitle = document.getElementById('displayTitle').innerText;
+        log(`✓ Hoàn thành xem video kênh: "${finishedTitle.substring(0, 30)}..." (Tổng: ${mainRuns} lượt kênh)`, 'success');
 
-        if (currentMode === 'smart') {
-          // Switch to a buffer video
-          currentVideoState = 'buffer';
-          const randomBuffer = BUFFER_VIDEOS[Math.floor(Math.random() * BUFFER_VIDEOS.length)];
-          scheduleNextVideo(randomBuffer.id, randomBuffer.title, true);
+        if (channelStep === 0) {
+          // Vừa xong Video 1 -> Chuyển sang Video 2
+          channelStep = 1;
+          const nextVid = CHANNEL_VIDEOS[1];
+          log(`➡️ [Chu kỳ: 1 ➔ 2] Chuyển tiếp Video 2 của kênh: "${nextVid.title.substring(0, 30)}..."`, 'info');
+          scheduleNextVideo(nextVid.id, nextVid.title, false, null);
         } else {
-          // Direct loop
-          scheduleNextVideo(MAIN_VIDEO_ID, MAIN_VIDEO_TITLE, false);
+          // Đã xong cả Video 1 và Video 2 (1 -> 2) -> Chèn video đệm ngắn (10s hoặc 30s)
+          currentVideoState = 'buffer';
+          channelStep = 0; // Chuẩn bị cho lần quay lại Video 1
+
+          const buffer = BUFFER_CONFIGS[bufferCycle];
+          const limit = buffer.durationLimit;
+          log(`🛡️ Đã phát xong (1 ➔ 2)! Chèn video đệm ngắn ${limit}s: "${buffer.title}"`, 'warning');
+
+          // Đổi chu kỳ đệm cho lần tiếp theo: 10s <-> 30s
+          bufferCycle = (bufferCycle + 1) % BUFFER_CONFIGS.length;
+
+          scheduleNextVideo(buffer.id, buffer.title, true, limit);
         }
       } else {
-        // Buffer video ended -> back to main
+        // Video đệm ngoại (10s hoặc 30s) đã kết thúc -> Quay lại Video 1 của kênh
         bufferRuns++;
         document.getElementById('statBufferRuns').innerText = bufferRuns;
-        log(`✓ Đã phát xong video đệm. Chuẩn bị quay lại video chính...`, 'info');
-        currentVideoState = 'main';
-        scheduleNextVideo(MAIN_VIDEO_ID, MAIN_VIDEO_TITLE, false);
+        log(`✓ Đã phát xong video đệm. Quay lại chu kỳ mới: Video 1 của kênh Tích Thông Thái...`, 'info');
+
+        currentVideoState = 'channel';
+        channelStep = 0;
+        currentDurationLimit = null;
+
+        const nextVid = CHANNEL_VIDEOS[0];
+        log(`➡️ [Chu kỳ mới: Bước 1/4] Chuyển tiếp Video 1: "${nextVid.title.substring(0, 30)}..."`, 'info');
+        scheduleNextVideo(nextVid.id, nextVid.title, false, null);
       }
     }
 
-    function scheduleNextVideo(videoId, title, isBuffer) {
+    function scheduleNextVideo(videoId, title, isBuffer, durationLimit = null) {
       isDelaying = true;
       const actualDelay = Math.max(3, delaySeconds + Math.floor(Math.random() * 5) - 2);
       updateStatus(`Nghỉ ${actualDelay}s trước lượt tiếp`, 'var(--warning)');
@@ -1028,20 +1045,29 @@
       delayTimeout = setTimeout(() => {
         isDelaying = false;
         if (!isRunning) return;
-        loadAndPlay(videoId, title, isBuffer);
+        loadAndPlay(videoId, title, isBuffer, durationLimit);
       }, actualDelay * 1000);
     }
 
-    function loadAndPlay(videoId, title, isBuffer) {
+    function loadAndPlay(videoId, title, isBuffer, durationLimit = null) {
+      currentDurationLimit = durationLimit;
       document.getElementById('displayTitle').innerText = title;
       document.getElementById('displayChannel').innerText = isBuffer 
-        ? 'Video đệm (Hỗ trợ lách thuật toán phát lặp)' 
-        : 'Kênh: Tích Thông Thái • Video chính cần cày view';
+        ? `Video đệm ngoại (Phát ngắn ${durationLimit || 10}s để lách lọc view)` 
+        : (channelStep === 0 ? 'Kênh: Tích Thông Thái • Video #1 chính chủ' : 'Kênh: Tích Thông Thái • Video #2 chính chủ');
 
-      player.loadVideoById(videoId);
+      if (isBuffer && durationLimit) {
+        player.loadVideoById({
+          videoId: videoId,
+          startSeconds: 0,
+          endSeconds: durationLimit
+        });
+      } else {
+        player.loadVideoById(videoId);
+      }
       player.playVideo();
       setTimeout(tryAutoUnmute, 1200);
-      log(`Bắt đầu phát: ${title}`, isBuffer ? 'warning' : 'info');
+      log(`Bắt đầu phát: ${title}${durationLimit ? ` [Giới hạn: ${durationLimit}s]` : ''}`, isBuffer ? 'warning' : 'info');
     }
 
     // Tự động khôi phục phát khi người dùng chuyển lại tab
@@ -1085,8 +1111,23 @@
       }
     }
 
+    function startStream() {
+      if (!isRunning) {
+        toggleStream();
+      }
+    }
+
+    function stopStream() {
+      if (isRunning) {
+        toggleStream();
+      }
+    }
+
     function skipToNext() {
-      if (player && player.seekTo) {
+      if (currentVideoState === 'buffer') {
+        log('Bỏ qua video đệm, chuyển ngay sang video kênh tiếp theo.', 'info');
+        handleVideoEnded();
+      } else if (player && player.seekTo) {
         const dur = player.getDuration();
         if (dur > 0) {
           player.seekTo(dur - 2, true);
@@ -1132,12 +1173,20 @@
       progressInterval = setInterval(() => {
         if (!player || !player.getCurrentTime) return;
         const current = player.getCurrentTime();
-        const duration = player.getDuration();
+        const duration = (currentVideoState === 'buffer' && currentDurationLimit) 
+          ? currentDurationLimit 
+          : player.getDuration();
         if (duration > 0) {
-          const pct = (current / duration) * 100;
+          const pct = Math.min(100, (current / duration) * 100);
           document.getElementById('progressFill').style.width = `${pct}%`;
           document.getElementById('currentTime').innerText = formatTime(current);
           document.getElementById('durationTime').innerText = formatTime(duration);
+        }
+
+        // Watchdog giới hạn xem video đệm (10s hoặc 30s)
+        if (currentVideoState === 'buffer' && currentDurationLimit && current >= currentDurationLimit) {
+          log(`⏱️ Đã phát đủ ${currentDurationLimit}s video đệm. Tự động chuyển chu kỳ tiếp...`, 'success');
+          handleVideoEnded();
         }
       }, 500);
     }

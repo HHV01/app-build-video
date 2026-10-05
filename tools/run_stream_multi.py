@@ -14,12 +14,109 @@ import time
 import shutil
 import argparse
 import threading
+import ctypes
 from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
+# Prevent Windows from sleeping/suspending background tasks when screen is locked or idle
+def keep_windows_awake():
+    try:
+        ES_CONTINUOUS = 0x80000000
+        ES_SYSTEM_REQUIRED = 0x00000001
+        ES_AWAYMODE_REQUIRED = 0x00000040
+        ctypes.windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED)
+    except Exception:
+        pass
+
+keep_windows_awake()
+
 # Force UTF-8 stdout
 sys.stdout.reconfigure(encoding='utf-8')
+
+import socket
+import select
+import subprocess
+
+WIFI_PROXY_PORT = 19888
+wifi_proxy_active = False
+
+def get_wifi_ip():
+    try:
+        out = subprocess.check_output(['netsh', 'interface', 'ip', 'show', 'addresses', 'Wi-Fi'], text=True, errors='ignore')
+        for line in out.splitlines():
+            if 'ip' in line.lower() and ':' in line:
+                val = line.split(':', 1)[1].strip()
+                if val.count('.') == 3 and not val.startswith('127.'):
+                    return val
+    except Exception:
+        pass
+    return None
+
+def start_wifi_proxy(wifi_ip):
+    global wifi_proxy_active
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        server.bind(('127.0.0.1', WIFI_PROXY_PORT))
+        server.listen(100)
+    except Exception as e:
+        print(f"Lỗi proxy Wi-Fi: {e}", flush=True)
+        return False
+
+    def handle_client(client_sock):
+        try:
+            req = b''
+            while b'\r\n\r\n' not in req:
+                chunk = client_sock.recv(4096)
+                if not chunk:
+                    break
+                req += chunk
+            
+            first_line = req.split(b'\r\n')[0].decode('utf-8', errors='ignore')
+            parts = first_line.split(' ')
+            if len(parts) >= 2 and parts[0].upper() == 'CONNECT':
+                host, port = parts[1].split(':')
+                remote_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                remote_sock.bind((wifi_ip, 0))
+                remote_sock.connect((host, int(port)))
+                client_sock.sendall(b'HTTP/1.1 200 Connection Established\r\n\r\n')
+                
+                sockets = [client_sock, remote_sock]
+                while True:
+                    r, _, _ = select.select(sockets, [], [], 30)
+                    if not r:
+                        break
+                    if client_sock in r:
+                        data = client_sock.recv(16384)
+                        if not data:
+                            break
+                        remote_sock.sendall(data)
+                    if remote_sock in r:
+                        data = remote_sock.recv(16384)
+                        if not data:
+                            break
+                        client_sock.sendall(data)
+                remote_sock.close()
+        except Exception:
+            pass
+        finally:
+            try:
+                client_sock.close()
+            except Exception:
+                pass
+
+    def serve():
+        while True:
+            try:
+                s, _ = server.accept()
+                threading.Thread(target=handle_client, args=(s,), daemon=True).start()
+            except Exception:
+                break
+
+    threading.Thread(target=serve, daemon=True).start()
+    wifi_proxy_active = True
+    return True
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 STREAM_URL = "http://localhost:5500/youtube_stream_tool.html"
@@ -62,12 +159,49 @@ class StreamWorker(threading.Thread):
         opts.add_argument("--disable-dev-shm-usage")
         opts.add_argument("--autoplay-policy=no-user-gesture-required")
         opts.add_argument("--window-size=1024,768")
+        opts.add_argument("--disable-background-timer-throttling")
+        opts.add_argument("--disable-backgrounding-occluded-windows")
+        opts.add_argument("--disable-renderer-backgrounding")
+        opts.add_argument("--disable-features=CalculateNativeWinOcclusion")
+
+        # Stealth anti-bot measures
+        opts.add_argument("--disable-blink-features=AutomationControlled")
+        opts.add_experimental_option("excludeSwitches", ["enable-automation"])
+        opts.add_experimental_option("useAutomationExtension", False)
+
+        # Diverse window sizes to look like different physical screens
+        screen_resolutions = [
+            "1366,768",
+            "1440,900",
+            "1280,800",
+            "1536,864",
+            "1280,720"
+        ]
+        res = screen_resolutions[self.worker_id % len(screen_resolutions)]
+        opts.add_argument(f"--window-size={res}")
+
+        if wifi_proxy_active:
+            opts.add_argument(f"--proxy-server=http://127.0.0.1:{WIFI_PROXY_PORT}")
+            opts.add_argument("--proxy-bypass-list=<-loopback>;localhost;127.0.0.1")
+
         opts.add_argument(f"--user-data-dir={self.profile_dir}")
 
         ua = USER_AGENTS[self.worker_id % len(USER_AGENTS)]
         opts.add_argument(f"user-agent={ua}")
 
         self.driver = webdriver.Chrome(options=opts)
+
+        # Overwrite navigator.webdriver and languages to mask automation
+        try:
+            self.driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+                "source": """
+                    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+                    Object.defineProperty(navigator, 'languages', { get: () => ['vi-VN', 'vi', 'en-US', 'en'] });
+                    window.chrome = { runtime: {} };
+                """
+            })
+        except Exception:
+            pass
 
     def run(self):
         try:
@@ -144,12 +278,23 @@ def main():
     print("=" * 75, flush=True)
     print(f"🚀 KHỞI ĐỘNG HỆ THỐNG CÀY VIEW ĐA LUỒNG ({num_instances} INSTANCES)", flush=True)
     print(f"🔗 Máy chủ: {STREAM_URL}", flush=True)
+
+    wifi_ip = get_wifi_ip()
+    if wifi_ip:
+        if start_wifi_proxy(wifi_ip):
+            print(f"🌐 ĐÃ TỰ ĐỘNG ÉP LUỒNG SANG WI-FI: {wifi_ip}", flush=True)
+            print("✓ Toàn bộ traffic xem video YouTube sẽ đi qua IP Wi-Fi mới (180.148.4.43) mà không cần rút cáp LAN!", flush=True)
+        else:
+            print("⚠️ Không thể bật proxy Wi-Fi, dùng mạng mặc định.", flush=True)
+    else:
+        print("⚠️ Không tìm thấy Wi-Fi, dùng mạng mặc định.", flush=True)
+
     print("✓ Mỗi luồng chạy hồ sơ Chrome riêng biệt, User-Agent độc lập, lệch pha thời gian.", flush=True)
     print("=" * 75, flush=True)
 
     workers = []
     for i in range(num_instances):
-        delay = i * 15 # 15s delay between launches
+        delay = i * 20 # 20s delay between launches
         worker = StreamWorker(worker_id=i+1, stagger_delay=delay)
         worker.start()
         workers.append(worker)

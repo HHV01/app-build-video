@@ -1,0 +1,651 @@
+{
+  "_note": "KHO MẪU GIẢ LẬP. Tên kênh và trung vị view lấy từ ảnh app tham khảo; view từng video là số bố trí cho dễ đọc bảng, KHÔNG phải số liệu thị trường. Không dùng để kết luận kênh nào ăn hay không.",
+  "_source": "Ảnh chụp màn hình RX Studio (bước 2 và bước 3) — ngày 2026-10-01",
+  "_now": "2026-10-01T00:00:00.000Z",
+  "template": "entire history of",
+  "gate": "vua",
+  "videos": [
+    {
+      "id": "UC-beginning-to-now-v1",
+      "title": "The ENTIRE History of Human Civilizations | Ancient to Modern (4K Documentary)",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 1796546,
+      "publishedAt": "2026-07-07T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.87
+    },
+    {
+      "id": "UC-beginning-to-now-v2",
+      "title": "The ENTIRE History of ROME",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 1520155,
+      "publishedAt": "2026-06-20T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.73
+    },
+    {
+      "id": "UC-beginning-to-now-v3",
+      "title": "The ENTIRE History of Ancient Egypt",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 1243763,
+      "publishedAt": "2026-06-03T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.6
+    },
+    {
+      "id": "UC-beginning-to-now-v4",
+      "title": "The ENTIRE History of the Persian Empire",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 967371,
+      "publishedAt": "2026-05-17T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.47
+    },
+    {
+      "id": "UC-beginning-to-now-v5",
+      "title": "The ENTIRE History of China",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 690979,
+      "publishedAt": "2026-04-30T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.33
+    },
+    {
+      "id": "UC-beginning-to-now-v6",
+      "title": "The ENTIRE History of Greece",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 2072938,
+      "publishedAt": "2026-04-13T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1
+    },
+    {
+      "id": "UC-beginning-to-now-v7",
+      "title": "The ENTIRE History of the Mongol Empire",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 2072938,
+      "publishedAt": "2026-03-27T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1
+    },
+    {
+      "id": "UC-beginning-to-now-v8",
+      "title": "The ENTIRE History of the Ottoman Empire",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 15857976,
+      "publishedAt": "2026-03-10T00:00:00.000Z",
+      "format": "long",
+      "multiple": 7.65
+    },
+    {
+      "id": "UC-beginning-to-now-v9",
+      "title": "The ENTIRE History of India",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 2625721,
+      "publishedAt": "2026-02-21T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1.27
+    },
+    {
+      "id": "UC-beginning-to-now-v10",
+      "title": "The ENTIRE History of Mesopotamia",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 2902113,
+      "publishedAt": "2026-02-04T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1.4
+    },
+    {
+      "id": "UC-beginning-to-now-v11",
+      "title": "The ENTIRE History of the Aztec Empire",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 3178505,
+      "publishedAt": "2026-01-18T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1.53
+    },
+    {
+      "id": "UC-beginning-to-now-v12",
+      "title": "The ENTIRE History of the Inca Empire",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 11649912,
+      "publishedAt": "2026-01-01T00:00:00.000Z",
+      "format": "long",
+      "multiple": 5.62
+    },
+    {
+      "id": "UC-this-is-history-v1",
+      "title": "The ENTIRE History of the British Empire",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 718881,
+      "publishedAt": "2026-07-08T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.91
+    },
+    {
+      "id": "UC-this-is-history-v2",
+      "title": "The Entire History of Israel",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 647783,
+      "publishedAt": "2026-06-21T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.82
+    },
+    {
+      "id": "UC-this-is-history-v3",
+      "title": "The ENTIRE History of the Vietnam War | 1862 - 1975",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 576685,
+      "publishedAt": "2026-06-04T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.73
+    },
+    {
+      "id": "UC-this-is-history-v4",
+      "title": "The ENTIRE History of the French Empire",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 505587,
+      "publishedAt": "2026-05-18T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.64
+    },
+    {
+      "id": "UC-this-is-history-v5",
+      "title": "The ENTIRE History of Ancient Greece",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 434488,
+      "publishedAt": "2026-05-01T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.55
+    },
+    {
+      "id": "UC-this-is-history-v6",
+      "title": "The ENTIRE History of the Soviet Union",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 363390,
+      "publishedAt": "2026-04-14T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.46
+    },
+    {
+      "id": "UC-this-is-history-v7",
+      "title": "The ENTIRE History of the Roman Empire",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 292292,
+      "publishedAt": "2026-03-28T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.37
+    },
+    {
+      "id": "UC-this-is-history-v8",
+      "title": "The ENTIRE History of Japan",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 221194,
+      "publishedAt": "2026-03-11T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.28
+    },
+    {
+      "id": "UC-this-is-history-v9",
+      "title": "The ENTIRE History of the Ottoman Empire",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 150096,
+      "publishedAt": "2026-02-22T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.19
+    },
+    {
+      "id": "UC-this-is-history-v10",
+      "title": "The ENTIRE History of the Holy Roman Empire",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 789979,
+      "publishedAt": "2026-02-05T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1
+    },
+    {
+      "id": "UC-this-is-history-v11",
+      "title": "The ENTIRE History of the Spanish Empire",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 789979,
+      "publishedAt": "2026-01-19T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1
+    },
+    {
+      "id": "UC-this-is-history-v12",
+      "title": "The ENTIRE History of the Maurya Empire",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 4305386,
+      "publishedAt": "2026-01-02T00:00:00.000Z",
+      "format": "long",
+      "multiple": 5.45
+    },
+    {
+      "id": "UC-this-is-history-v13",
+      "title": "The ENTIRE History of the Byzantine Empire",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 932175,
+      "publishedAt": "2025-12-16T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1.18
+    },
+    {
+      "id": "UC-this-is-history-v14",
+      "title": "The ENTIRE History of Carthage",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 1003273,
+      "publishedAt": "2025-11-29T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1.27
+    },
+    {
+      "id": "UC-this-is-history-v15",
+      "title": "The ENTIRE History of the Mongol Empire",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 1074371,
+      "publishedAt": "2025-11-12T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1.36
+    },
+    {
+      "id": "UC-this-is-history-v16",
+      "title": "The ENTIRE History of the Portuguese Empire",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 3633903,
+      "publishedAt": "2025-10-26T00:00:00.000Z",
+      "format": "long",
+      "multiple": 4.6
+    },
+    {
+      "id": "UC-this-is-history-v17",
+      "title": "The ENTIRE History of the Dutch Empire",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 1216568,
+      "publishedAt": "2025-10-09T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1.54
+    },
+    {
+      "id": "UC-this-is-history-v18",
+      "title": "The ENTIRE History of the Han Dynasty",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 1287666,
+      "publishedAt": "2025-09-22T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1.63
+    },
+    {
+      "id": "UC-this-is-history-v19",
+      "title": "The ENTIRE History of the Abbasid Caliphate",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 1358764,
+      "publishedAt": "2025-09-05T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1.72
+    },
+    {
+      "id": "UC-this-is-history-v20",
+      "title": "The ENTIRE History of the Kingdom of Prussia",
+      "channelId": "UC-this-is-history",
+      "channelTitle": "This Is History",
+      "subscribers": 2310000,
+      "views": 3286313,
+      "publishedAt": "2025-08-19T00:00:00.000Z",
+      "format": "long",
+      "multiple": 4.16
+    },
+    {
+      "id": "UC-the-entire-history-v1",
+      "title": "The Entire History of the Portuguese Empire",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 403000,
+      "views": 170259,
+      "publishedAt": "2026-07-05T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.86
+    },
+    {
+      "id": "UC-the-entire-history-v2",
+      "title": "The Entire History of the Roman Empire",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 403000,
+      "views": 143116,
+      "publishedAt": "2026-06-18T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.72
+    },
+    {
+      "id": "UC-the-entire-history-v3",
+      "title": "The Entire History of Ancient Greece",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 403000,
+      "views": 115974,
+      "publishedAt": "2026-06-01T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.59
+    },
+    {
+      "id": "UC-the-entire-history-v4",
+      "title": "The Entire History of the Mongol Empire",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 403000,
+      "views": 88831,
+      "publishedAt": "2026-05-15T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.45
+    },
+    {
+      "id": "UC-the-entire-history-v5",
+      "title": "The Entire History of the Holy Roman Empire",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 403000,
+      "views": 61688,
+      "publishedAt": "2026-04-28T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.31
+    },
+    {
+      "id": "UC-the-entire-history-v6",
+      "title": "The Entire History of the Spanish Empire",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 403000,
+      "views": 34545,
+      "publishedAt": "2026-04-11T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.17
+    },
+    {
+      "id": "UC-the-entire-history-v7",
+      "title": "The Entire History of the Ottoman Empire",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 403000,
+      "views": 7403,
+      "publishedAt": "2026-03-25T00:00:00.000Z",
+      "format": "long",
+      "multiple": 0.04
+    },
+    {
+      "id": "UC-the-entire-history-v8",
+      "title": "The Entire History of the Byzantine Empire",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 403000,
+      "views": 197402,
+      "publishedAt": "2026-03-08T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1
+    },
+    {
+      "id": "UC-the-entire-history-v9",
+      "title": "The Entire History of the Aztec Empire",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 403000,
+      "views": 224545,
+      "publishedAt": "2026-02-19T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1.14
+    },
+    {
+      "id": "UC-the-entire-history-v10",
+      "title": "The Entire History of the Persian Empire",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 403000,
+      "views": 779738,
+      "publishedAt": "2026-02-02T00:00:00.000Z",
+      "format": "long",
+      "multiple": 3.95
+    },
+    {
+      "id": "UC-the-entire-history-v11",
+      "title": "The Entire History of the Maurya Empire",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 403000,
+      "views": 278830,
+      "publishedAt": "2026-01-16T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1.41
+    },
+    {
+      "id": "UC-the-entire-history-v12",
+      "title": "The Entire History of the Han Dynasty",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 403000,
+      "views": 305973,
+      "publishedAt": "2025-12-30T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1.55
+    },
+    {
+      "id": "UC-the-entire-history-v13",
+      "title": "The Entire History of the Abbasid Caliphate",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 403000,
+      "views": 333116,
+      "publishedAt": "2025-12-13T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1.69
+    },
+    {
+      "id": "UC-the-entire-history-v14",
+      "title": "The Entire History of the Kingdom of Prussia",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 403000,
+      "views": 592206,
+      "publishedAt": "2025-11-26T00:00:00.000Z",
+      "format": "long",
+      "multiple": 3
+    },
+    {
+      "id": "UC-the-entire-history-v15",
+      "title": "The Entire History of the French Empire",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 403000,
+      "views": 387401,
+      "publishedAt": "2025-11-09T00:00:00.000Z",
+      "format": "long",
+      "multiple": 1.96
+    }
+  ],
+  "groups": [
+    {
+      "id": "group-1",
+      "name": "ĐẾ CHẾ · NHÀ NƯỚC LỚN · TỔ CHỨC",
+      "angle": "Quyền lực tập trung thành một khối rồi tự vỡ ra",
+      "reason": "Cùng một câu hỏi: quyền lực tập trung bằng cách nào và mất vì lý do gì",
+      "videoIds": [
+        "UC-beginning-to-now-v1",
+        "UC-beginning-to-now-v3",
+        "UC-beginning-to-now-v5",
+        "UC-beginning-to-now-v7",
+        "UC-beginning-to-now-v9",
+        "UC-this-is-history-v1",
+        "UC-this-is-history-v4",
+        "UC-this-is-history-v7",
+        "UC-this-is-history-v10",
+        "UC-this-is-history-v13",
+        "UC-this-is-history-v16",
+        "UC-the-entire-history-v1",
+        "UC-the-entire-history-v4",
+        "UC-the-entire-history-v7",
+        "UC-the-entire-history-v10"
+      ]
+    },
+    {
+      "id": "group-2",
+      "name": "THÀNH PHỐ",
+      "angle": "Đô thị là thứ quyết định cách người ta sống",
+      "reason": "Cùng hỏi cách một thành phố định hình đời sống dân",
+      "videoIds": [
+        "UC-beginning-to-now-v1",
+        "UC-beginning-to-now-v5",
+        "UC-beginning-to-now-v9",
+        "UC-this-is-history-v1",
+        "UC-this-is-history-v5",
+        "UC-this-is-history-v9",
+        "UC-this-is-history-v13",
+        "UC-this-is-history-v17"
+      ]
+    },
+    {
+      "id": "group-3",
+      "name": "CHIẾN TRANH · XUNG ĐỘT",
+      "angle": "Chiến tranh quyết định đường đi của một quốc gia",
+      "reason": "Cùng hỏi hậu quả dài hạn của một cuộc chiến",
+      "videoIds": [
+        "UC-this-is-history-v1",
+        "UC-this-is-history-v3",
+        "UC-this-is-history-v5",
+        "UC-this-is-history-v7",
+        "UC-this-is-history-v9",
+        "UC-this-is-history-v11",
+        "UC-this-is-history-v13",
+        "UC-this-is-history-v15",
+        "UC-the-entire-history-v1",
+        "UC-the-entire-history-v6",
+        "UC-the-entire-history-v11"
+      ]
+    },
+    {
+      "id": "group-4",
+      "name": "QUỐC GIA · VÙNG ĐẤT",
+      "angle": "Ranh giới địa lý định đoạt số phận",
+      "reason": "Cùng hỏi đất đai quyết định chính trị thế nào",
+      "videoIds": [
+        "UC-beginning-to-now-v1",
+        "UC-beginning-to-now-v4",
+        "UC-beginning-to-now-v7",
+        "UC-beginning-to-now-v10",
+        "UC-this-is-history-v1",
+        "UC-this-is-history-v3",
+        "UC-this-is-history-v5",
+        "UC-this-is-history-v7",
+        "UC-this-is-history-v9",
+        "UC-this-is-history-v11",
+        "UC-this-is-history-v13",
+        "UC-this-is-history-v15",
+        "UC-the-entire-history-v1",
+        "UC-the-entire-history-v4",
+        "UC-the-entire-history-v7",
+        "UC-the-entire-history-v10",
+        "UC-the-entire-history-v13"
+      ]
+    },
+    {
+      "id": "group-5",
+      "name": "SỰ KIỆN · HIỆN TƯỢNG",
+      "angle": "Một biến cố nhỏ đổi cả một thời đại",
+      "reason": "Cùng hỏi điều gì đã thực sự thay đổi lịch sử",
+      "videoIds": [
+        "UC-this-is-history-v1",
+        "UC-this-is-history-v5",
+        "UC-this-is-history-v9",
+        "UC-this-is-history-v13",
+        "UC-this-is-history-v17",
+        "UC-the-entire-history-v1",
+        "UC-the-entire-history-v6",
+        "UC-the-entire-history-v11"
+      ]
+    },
+    {
+      "id": "group-6",
+      "name": "KINH TẾ · TÀ NGUYÊN",
+      "angle": "Vàng, muối, đường và thương mại dựng nên một thế giới",
+      "reason": "Cùng hỏi hàng hóa định đoạt quyền lực ra sao",
+      "videoIds": [
+        "UC-beginning-to-now-v1",
+        "UC-beginning-to-now-v7",
+        "UC-this-is-history-v1",
+        "UC-this-is-history-v6",
+        "UC-this-is-history-v11",
+        "UC-this-is-history-v16"
+      ]
+    },
+    {
+      "id": "group-7",
+      "name": "KHOA HỌC · KỸ THUẬT",
+      "angle": "Một phát minh đổi cân bằng cũ",
+      "reason": "Cạn hết số video mẫu trước — nhóm này cố ý chỉ có một kênh để thử cảnh báo bẫy",
+      "videoIds": [
+        "UC-the-entire-history-v1",
+        "UC-the-entire-history-v8"
+      ]
+    }
+  ]
+}

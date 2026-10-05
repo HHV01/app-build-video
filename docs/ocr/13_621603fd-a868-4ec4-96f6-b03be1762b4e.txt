@@ -1,0 +1,116 @@
+ G-Labs Studio 2.0.4 - duckmartians
+图FlowAnh
+Tc v
+Anh tham chieu
+Prompt
+Ket qua
+Flow Video
+Xeng
+Tien do
+King fol
+Takhoin
+the drawing
+Hoan thanh (1K)
+Task 1
+mpt
+8 Nhin Vat
+Ciu hinh co ban
+87
+Nano Banana Pro |
+four edges.
+runs off all
+16:9
+No border,
+Ciu hinh nang cao / Anh tham chieu
+no frame, f...
+GPT Image 2
+mpt
+Chat luong
+Seed:
+Meta Media
+the drawing
+1K
+547664
+Full-bleed:
+4K
+Khda seed
+Task 1
+88
+Hoan thanh (1K)
+runs off all
+Nano Banana Pro |
+ Che do tham chieu:
+S6 lueng anh / prompt
+four edges.
+mpt
+Grok Media
+16:9
+No border,
+Mac dinh
+Workflow
+no frame, Nh..
+ Thu muc ieh cic thanh phir:
+lit ten rhin dien Jah
+mpt
+X Dung Video
+ADMIN/Downloadsidemo-history-bo-anh-gox
+the drawing
+Task 1
+89
+Hoan thanh (1K)
+Nano Banana Pro |
+runs offall
+16:9
+Ning Cip Anh
+four edges.
+No border,
+= 1 hang / 1 prompt
+Nhip tep (TXT, Excel)
+mpt
+no
+Webhook API
+Nhsp danh sach prompt vao day
+Full-bleed:
+the drawing
+Cong Cu Khic
+Hoan thanh (1K)
+Task 1
+90
+runs off all
+mpt
+Nano Banana Pro
+16:9
+four edges.
+No border,
+三LogChi TietO
+no frame, n..
+mpt
+Cai Dit
+the drawing
+Dung mot prompt cho tit ca
+Full-bleed:
+Task 1
+Hoin thinh (1K)
+Nano Banana Pro |
+runs offall
+four edges.
++ Them vao hang cho
+I Quin ly hang che (0)
+16:9
+No border,
+mpt
+no frame, n..
+TAM DUNG
+CHAY NGAY
+tin 2.0.5
+DUNG
+Them ans
+Kho inh
+Xba het
+Chay 10
+Cache
+Phien co
+91 canh chua co anh se bi BO khoi video
+mat 91 cau thoai (may dong goi bo canh thieu file,
+khonade.
+den
