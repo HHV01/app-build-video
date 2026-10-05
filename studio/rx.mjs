@@ -187,6 +187,16 @@ export function thumbLineCheck(text, title) {
 
 // Chữ trong khung: không viết chữ có thể đọc được vào ảnh; chữ ghép ở trình soạn.
 export const NO_TEXT_IN_IMAGE = 'no readable text, no captions, no title card, no watermark, no signature in the artwork';
+export const STICKMAN_PROFILE = {
+  source: 'STICKMAN FINANCE MODULE PDF · ANIMATION STYLE · trang 72–75; chỉ trích quy tắc hình ảnh',
+  background: 'white or slightly warm white, generous negative space, very sparse environment',
+  linework: 'bold organic rounded black contours, consistent 5–10px equivalent at 1920x1080',
+  rendering: 'minimal hand-drawn 2D explainer, flat fills, expressive icon-like face, sparse pencil accents',
+  lighting: 'flat 2D; no cinematic illumination, realistic shadows, gradients or elaborate scenery',
+  identity: 'follow supplied character sheet; do not borrow the sample detective costume or redesign Tich',
+  captions: {placement:'editor overlay, lower center',font:'heavy rounded sans serif',colors:'white with yellow emphasis and thick black outline',bakeIntoImage:false},
+  avoid: 'photorealism, 3D, anime, thin lines, realistic anatomy, logos, borders, decorative backgrounds',
+};
 
 // Dòng phụ đặt dưới chữ chính trên thumbnail. Chọn một loại và dùng lại nhất quán cho cả kênh.
 export const SUB_LINES = ['Nam', 'Địa danh', 'Câu phụ'];
@@ -306,11 +316,11 @@ export function timingCheck(scenes, voiceSeconds) {
 
 // ---------------------------------------------------------------- HẠN MỨC & CHI PHÍ
 // Đơn vị hạn mức theo tài liệu YouTube Data API v3.
-export const QUOTA = { search: 100, channels: 2, playlistItems: 1, videos: 1, freeDaily: 10000 };
+export const QUOTA = { search: 1, channels: 1, playlistItems: 1, videos: 1, freeDaily: 10000, searchDaily:100, uploadDaily:100 };
 export function quotaSummary(usage = {}) {
-  const unit = (usage.searches || 0) * QUOTA.search + (usage.channels || 0) * QUOTA.channels + (usage.playlistItems || 0) * QUOTA.playlistItems + (usage.videos || 0) * QUOTA.videos;
-  const perDay = Math.floor(QUOTA.freeDaily / QUOTA.search);
-  return { units: unit, freeDaily: QUOTA.freeDaily, freeSearchesPerDay: perDay, note: `Chia miễn phí có ${QUOTA.freeDaily.toLocaleString('vi-VN')}/ngày — tức khoảng ${perDay} lượt gõ tìm Niche mới mỗi ngày.` };
+  const unit = (usage.channels || 0) * QUOTA.channels + (usage.playlistItems || 0) * QUOTA.playlistItems + (usage.videos || 0) * QUOTA.videos;
+  const perDay = QUOTA.searchDaily;
+  return { units: unit, freeDaily: QUOTA.freeDaily, freeSearchesPerDay: perDay, note: `Mặc định ${perDay} search/ngày; các endpoint đọc khác dùng quỹ ${QUOTA.freeDaily.toLocaleString('vi-VN')} đơn vị/ngày. Kiểm tra quota thực tế trong Google Cloud.` };
 }
 
 // Chi phí tham khảo lấy từ app tham khảo. Sửa ở Kết nối API theo giá nhà cung cấp của bạn.
@@ -336,4 +346,124 @@ export const MUSIC_PLAN = {
 export function packagingBlockers(scenes) {
   const missing = (scenes || []).map((s, i) => ({ index: i, id: s?.id })).filter(x => x.index >= 0 && !(scenes[x.index]?.image || scenes[x.index]?.clip));
   return { missing, ok: missing.length === 0, message: missing.length ? `${missing.length} cảnh chưa có ảnh sẽ bị BỎ khỏi video — máy đóng gói bỏ cảnh thiếu file, mất ${missing.length} câu thoại.` : 'Đủ ảnh cho toàn bộ cảnh.' };
+}
+
+// ---------------------------------------------------------------- CỔNG NICHE (Giai đoạn 1)
+// Toàn bộ phép đếm, lọc, ngưỡng và cổng do CODE làm, không giao cho AI.
+// Ngưỡng cố định theo flow thủ công: video chín 90 ngày, kênh ≥5 video + trung vị ≥20.000,
+// kho cần ≥3 kênh đạt, gõ thử 11/20, nhóm 4–7. Không thay GATES (rong/vừa/chặt) ở trên.
+function deepFreeze(obj){if(obj&&typeof obj==='object'&&!Object.isFrozen(obj)){Object.freeze(obj);for(const k of Object.keys(obj))deepFreeze(obj[k]);}return obj;}
+
+export const RULES = {
+  titlesForTemplate: 20, templateRatio: 0.5, minTemplateWords: 2,
+  matureDays: 90, minVideos: 5, minMedian: 20000, minChannels: 3,
+  groupMin: 4, groupMax: 7,
+  probeSize: 20, probePass: 11, probeViews: 20000,
+  topicCount: 20,
+};
+
+const DAY = 86400000;
+const tokens = t => String(t).normalize('NFC').toLowerCase().split(/\s+/)
+  .map(w => w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '')).filter(Boolean);
+
+// KHUÔN = cụm mở đầu DÀI NHẤT lặp ở hơn nửa số tiêu đề mới nhất. Được phép trả null.
+export function findTemplate(titles, rules = RULES) {
+  const list = Array.isArray(titles) ? titles.slice(0, rules.titlesForTemplate).filter(t => typeof t === 'string' && t.trim()) : [];
+  const total = list.length;
+  if (total !== rules.titlesForTemplate) {
+    return { template: null, total, passed: false, complete: false, reason: `Cần đúng ${rules.titlesForTemplate} tiêu đề mới nhất.` };
+  }
+  const tok = list.map(tokens);
+  for (let k = Math.max(...tok.map(t => t.length)); k >= rules.minTemplateWords; k--) {
+    const counts = new Map();
+    for (const t of tok) if (t.length >= k) { const key = t.slice(0, k).join(' '); counts.set(key, (counts.get(key) || 0) + 1); }
+    let best = null;
+    for (const [template, matches] of counts) if (matches / total > rules.templateRatio && (!best || matches > best.matches)) best = { template, matches };
+    if (best) {
+      return {
+        template: best.template,
+        words: k,
+        matches: best.matches,
+        total,
+        ratio: best.matches / total,
+        titles: list.filter((_, i) => tok[i].slice(0, k).join(' ') === best.template),
+        passed: true,
+        complete: true
+      };
+    }
+  }
+  return { template: null, total, passed: false, complete: true, reason: 'Không có cụm mở đầu nào lặp quá nửa số tiêu đề: kênh này không có khuôn.' };
+}
+
+// Chỉ video đã đủ tuổi (>= 90 ngày) mới có view "chín".
+export const matureVideos = (videos, now = Date.now(), rules = RULES) =>
+  videos.filter(v => Number.isFinite(v.views) && (now - Date.parse(v.publishedAt)) / DAY >= rules.matureDays);
+
+// Trung vị và bội số tính trên video đã chín của CẢ kênh. Kênh <5 video hoặc trung vị <20.000 bị loại.
+export function channelShelf(videos, now = Date.now(), rules = RULES) {
+  const by = new Map();
+  for (const v of videos) { if (!by.has(v.channelId)) by.set(v.channelId, []); by.get(v.channelId).push(v); }
+  return [...by].map(([channelId, all]) => {
+    const mature = matureVideos(all, now, rules), med = median(mature.map(v => v.views));
+    const pass = mature.length >= rules.minVideos && med >= rules.minMedian;
+    const reason = pass ? '' : mature.length < rules.minVideos ? `Chỉ ${mature.length} video đã qua ${rules.matureDays} ngày (cần ≥ ${rules.minVideos}).` : `Trung vị ${Math.round(med)} view < ${rules.minMedian}.`;
+    return {
+      channelId, channelTitle: all[0].channelTitle, matureCount: mature.length, median: med, pass, reason,
+      videos: pass ? mature.map(v => ({ ...v, multiple: v.views / med })) : []
+    };
+  });
+}
+
+// Cổng 3: cần ít nhất 3 kênh cùng khuôn đạt thước.
+export function shelfGate(channels, rules = RULES) {
+  const passed = channels.filter(c => c.pass).length;
+  return { passed: passed >= rules.minChannels, count: passed, need: rules.minChannels };
+}
+
+// Cổng 5: gõ thử đủ 20 video, từ 11 video trở lên vượt 20.000 view là qua.
+export function probeGate(views, rules = RULES) {
+  const v = Array.isArray(views) ? views : [];
+  if(v.some(x => !Number.isFinite(x) || x < 0)) return {passed:false,hits:null,error:'Lượt xem phải là số hữu hạn không âm.'};
+  if (v.length !== rules.probeSize) return { passed: false, hits: null, error: `Cần đúng ${rules.probeSize} video, đang có ${v.length}.` };
+  const hits = v.filter(x => x > rules.probeViews).length;
+  return { passed: hits >= rules.probePass, hits, need: rules.probePass, size: v.length };
+}
+
+// Chia nhóm "mù": AI chỉ thấy id + tiêu đề, không thấy view nên không thiên vị.
+export const blindTitles = videos => videos.map(v => ({ id: v.id, title: v.title }));
+
+export function groupCountGate(groups, rules = RULES) {
+  const count = (groups || []).filter(g => g.id !== 'unclassified').length;
+  return { passed: count >= rules.groupMin && count <= rules.groupMax, count, min: rules.groupMin, max: rules.groupMax };
+}
+
+// Máy trạng thái: stage nào chưa passed thì chặn các stage sau.
+export const STAGES = ['field', 'template', 'shelf', 'groups', 'probe', 'topics'];
+export const nextStage = project => STAGES.find(s => !project?.niche?.[s]?.passed) || 'done';
+export function validateTopics(titles, existing, template, rules = RULES) {
+  if (!Array.isArray(titles) || !Array.isArray(existing) || typeof template !== 'string') {
+    return { passed: false, errors: ['Invalid input types'] };
+  }
+  const norm = s => String(s).normalize('NFC').toLowerCase().trim().replace(/\s+/g,' ');
+  const normTemplate = norm(template);
+  const normTitles = titles.map(norm);
+  const normExisting = new Set(existing.map(norm));
+  const errors = [];
+  if (!normTemplate) errors.push('Chưa có khuôn tiêu đề.');
+  if (titles.some(t => typeof t !== 'string' || !t.trim())) errors.push('Tiêu đề phải là văn bản không rỗng.');
+  if (normTitles.length !== rules.topicCount) errors.push(`Cần đúng ${rules.topicCount} tiêu đề.`);
+  const distinct = new Set(normTitles);
+  if (distinct.size !== normTitles.length) errors.push('Duplicate titles in input');
+  for (const t of normTitles) {
+    if (!t.startsWith(normTemplate + ' ')) errors.push(`Title does not start with template: ${t}`);
+    if (normExisting.has(t)) errors.push(`Title already exists: ${t}`);
+  }
+  return { passed: errors.length === 0, errors, titles: normTitles };
+}
+export function lockedNiche(project) {
+  if (nextStage(project) !== 'done') return null;
+  const n = project.niche;
+  const data = { template: n.template.value, angle: n.template.angle || '', group: n.groups.chosen, topics: n.topics.chosen };
+  const clone = structuredClone(data);
+  return deepFreeze(clone);
 }

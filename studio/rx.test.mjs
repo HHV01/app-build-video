@@ -169,11 +169,11 @@ test('Cảnh thiếu ảnh bị chặn khi đóng gói', () => {
   assert.equal(packagingBlockers([{ image: 'a' }, { image: 'b' }]).ok, true);
 });
 
-test('Hạn mức YouTube: 100 đơn vị mỗi lượt gõ tìm, chia miễn phí 10.000/ngày', () => {
+test('YouTube quota separates 100 daily searches from the general 10,000-unit bucket', () => {
   const s = quotaSummary({ searches: 3, channels: 2, playlistItems: 1, videos: 1 });
-  assert.equal(s.units, 3 * QUOTA.search + 2 * QUOTA.channels + 1 + 1);
+  assert.equal(s.units, 2 * QUOTA.channels + 1 + 1);
   assert.equal(s.freeSearchesPerDay, 100);
-  assert.match(s.note, /100 lượt/);
+  assert.match(s.note, /100 search/);
 });
 
 test('Gói ZIP hợp lệ: đúng chữ ký, CRC và số tệp', () => {

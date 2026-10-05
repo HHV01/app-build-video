@@ -14,7 +14,8 @@
       "views": 1796546,
       "publishedAt": "2026-07-07T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.87
+      "multiple": 0.87,
+      "duration": 400
     },
     {
       "id": "UC-beginning-to-now-v2",
@@ -25,7 +26,8 @@
       "views": 1520155,
       "publishedAt": "2026-06-20T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.73
+      "multiple": 0.73,
+      "duration": 437
     },
     {
       "id": "UC-beginning-to-now-v3",
@@ -36,7 +38,8 @@
       "views": 1243763,
       "publishedAt": "2026-06-03T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.6
+      "multiple": 0.6,
+      "duration": 474
     },
     {
       "id": "UC-beginning-to-now-v4",
@@ -47,7 +50,8 @@
       "views": 967371,
       "publishedAt": "2026-05-17T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.47
+      "multiple": 0.47,
+      "duration": 511
     },
     {
       "id": "UC-beginning-to-now-v5",
@@ -58,7 +62,8 @@
       "views": 690979,
       "publishedAt": "2026-04-30T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.33
+      "multiple": 0.33,
+      "duration": 548
     },
     {
       "id": "UC-beginning-to-now-v6",
@@ -69,7 +74,8 @@
       "views": 2072938,
       "publishedAt": "2026-04-13T00:00:00.000Z",
       "format": "long",
-      "multiple": 1
+      "multiple": 1,
+      "duration": 585
     },
     {
       "id": "UC-beginning-to-now-v7",
@@ -80,7 +86,8 @@
       "views": 2072938,
       "publishedAt": "2026-03-27T00:00:00.000Z",
       "format": "long",
-      "multiple": 1
+      "multiple": 1,
+      "duration": 622
     },
     {
       "id": "UC-beginning-to-now-v8",
@@ -91,7 +98,8 @@
       "views": 15857976,
       "publishedAt": "2026-03-10T00:00:00.000Z",
       "format": "long",
-      "multiple": 7.65
+      "multiple": 7.65,
+      "duration": 659
     },
     {
       "id": "UC-beginning-to-now-v9",
@@ -102,7 +110,8 @@
       "views": 2625721,
       "publishedAt": "2026-02-21T00:00:00.000Z",
       "format": "long",
-      "multiple": 1.27
+      "multiple": 1.27,
+      "duration": 696
     },
     {
       "id": "UC-beginning-to-now-v10",
@@ -113,7 +122,8 @@
       "views": 2902113,
       "publishedAt": "2026-02-04T00:00:00.000Z",
       "format": "long",
-      "multiple": 1.4
+      "multiple": 1.4,
+      "duration": 733
     },
     {
       "id": "UC-beginning-to-now-v11",
@@ -124,7 +134,8 @@
       "views": 3178505,
       "publishedAt": "2026-01-18T00:00:00.000Z",
       "format": "long",
-      "multiple": 1.53
+      "multiple": 1.53,
+      "duration": 770
     },
     {
       "id": "UC-beginning-to-now-v12",
@@ -135,7 +146,8 @@
       "views": 11649912,
       "publishedAt": "2026-01-01T00:00:00.000Z",
       "format": "long",
-      "multiple": 5.62
+      "multiple": 5.62,
+      "duration": 807
     },
     {
       "id": "UC-this-is-history-v1",
@@ -146,7 +158,8 @@
       "views": 718881,
       "publishedAt": "2026-07-08T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.91
+      "multiple": 0.91,
+      "duration": 844
     },
     {
       "id": "UC-this-is-history-v2",
@@ -157,7 +170,8 @@
       "views": 647783,
       "publishedAt": "2026-06-21T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.82
+      "multiple": 0.82,
+      "duration": 881
     },
     {
       "id": "UC-this-is-history-v3",
@@ -168,7 +182,8 @@
       "views": 576685,
       "publishedAt": "2026-06-04T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.73
+      "multiple": 0.73,
+      "duration": 918
     },
     {
       "id": "UC-this-is-history-v4",
@@ -179,7 +194,8 @@
       "views": 505587,
       "publishedAt": "2026-05-18T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.64
+      "multiple": 0.64,
+      "duration": 955
     },
     {
       "id": "UC-this-is-history-v5",
@@ -190,7 +206,8 @@
       "views": 434488,
       "publishedAt": "2026-05-01T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.55
+      "multiple": 0.55,
+      "duration": 992
     },
     {
       "id": "UC-this-is-history-v6",
@@ -201,7 +218,8 @@
       "views": 363390,
       "publishedAt": "2026-04-14T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.46
+      "multiple": 0.46,
+      "duration": 1029
     },
     {
       "id": "UC-this-is-history-v7",
@@ -212,7 +230,8 @@
       "views": 292292,
       "publishedAt": "2026-03-28T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.37
+      "multiple": 0.37,
+      "duration": 1066
     },
     {
       "id": "UC-this-is-history-v8",
@@ -223,7 +242,8 @@
       "views": 221194,
       "publishedAt": "2026-03-11T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.28
+      "multiple": 0.28,
+      "duration": 1103
     },
     {
       "id": "UC-this-is-history-v9",
@@ -234,7 +254,8 @@
       "views": 150096,
       "publishedAt": "2026-02-22T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.19
+      "multiple": 0.19,
+      "duration": 1140
     },
     {
       "id": "UC-this-is-history-v10",
@@ -245,7 +266,8 @@
       "views": 789979,
       "publishedAt": "2026-02-05T00:00:00.000Z",
       "format": "long",
-      "multiple": 1
+      "multiple": 1,
+      "duration": 1177
     },
     {
       "id": "UC-this-is-history-v11",
@@ -256,7 +278,8 @@
       "views": 789979,
       "publishedAt": "2026-01-19T00:00:00.000Z",
       "format": "long",
-      "multiple": 1
+      "multiple": 1,
+      "duration": 414
     },
     {
       "id": "UC-this-is-history-v12",
@@ -267,7 +290,8 @@
       "views": 4305386,
       "publishedAt": "2026-01-02T00:00:00.000Z",
       "format": "long",
-      "multiple": 5.45
+      "multiple": 5.45,
+      "duration": 451
     },
     {
       "id": "UC-this-is-history-v13",
@@ -278,7 +302,8 @@
       "views": 932175,
       "publishedAt": "2025-12-16T00:00:00.000Z",
       "format": "long",
-      "multiple": 1.18
+      "multiple": 1.18,
+      "duration": 488
     },
     {
       "id": "UC-this-is-history-v14",
@@ -289,7 +314,8 @@
       "views": 1003273,
       "publishedAt": "2025-11-29T00:00:00.000Z",
       "format": "long",
-      "multiple": 1.27
+      "multiple": 1.27,
+      "duration": 525
     },
     {
       "id": "UC-this-is-history-v15",
@@ -300,7 +326,8 @@
       "views": 1074371,
       "publishedAt": "2025-11-12T00:00:00.000Z",
       "format": "long",
-      "multiple": 1.36
+      "multiple": 1.36,
+      "duration": 562
     },
     {
       "id": "UC-this-is-history-v16",
@@ -311,7 +338,8 @@
       "views": 3633903,
       "publishedAt": "2025-10-26T00:00:00.000Z",
       "format": "long",
-      "multiple": 4.6
+      "multiple": 4.6,
+      "duration": 599
     },
     {
       "id": "UC-this-is-history-v17",
@@ -322,7 +350,8 @@
       "views": 1216568,
       "publishedAt": "2025-10-09T00:00:00.000Z",
       "format": "long",
-      "multiple": 1.54
+      "multiple": 1.54,
+      "duration": 636
     },
     {
       "id": "UC-this-is-history-v18",
@@ -333,7 +362,8 @@
       "views": 1287666,
       "publishedAt": "2025-09-22T00:00:00.000Z",
       "format": "long",
-      "multiple": 1.63
+      "multiple": 1.63,
+      "duration": 673
     },
     {
       "id": "UC-this-is-history-v19",
@@ -344,7 +374,8 @@
       "views": 1358764,
       "publishedAt": "2025-09-05T00:00:00.000Z",
       "format": "long",
-      "multiple": 1.72
+      "multiple": 1.72,
+      "duration": 710
     },
     {
       "id": "UC-this-is-history-v20",
@@ -355,7 +386,8 @@
       "views": 3286313,
       "publishedAt": "2025-08-19T00:00:00.000Z",
       "format": "long",
-      "multiple": 4.16
+      "multiple": 4.16,
+      "duration": 747
     },
     {
       "id": "UC-the-entire-history-v1",
@@ -366,7 +398,8 @@
       "views": 170259,
       "publishedAt": "2026-07-05T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.86
+      "multiple": 0.86,
+      "duration": 784
     },
     {
       "id": "UC-the-entire-history-v2",
@@ -377,7 +410,8 @@
       "views": 143116,
       "publishedAt": "2026-06-18T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.72
+      "multiple": 0.72,
+      "duration": 821
     },
     {
       "id": "UC-the-entire-history-v3",
@@ -388,7 +422,8 @@
       "views": 115974,
       "publishedAt": "2026-06-01T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.59
+      "multiple": 0.59,
+      "duration": 858
     },
     {
       "id": "UC-the-entire-history-v4",
@@ -399,7 +434,8 @@
       "views": 88831,
       "publishedAt": "2026-05-15T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.45
+      "multiple": 0.45,
+      "duration": 895
     },
     {
       "id": "UC-the-entire-history-v5",
@@ -410,7 +446,8 @@
       "views": 61688,
       "publishedAt": "2026-04-28T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.31
+      "multiple": 0.31,
+      "duration": 932
     },
     {
       "id": "UC-the-entire-history-v6",
@@ -421,7 +458,8 @@
       "views": 34545,
       "publishedAt": "2026-04-11T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.17
+      "multiple": 0.17,
+      "duration": 969
     },
     {
       "id": "UC-the-entire-history-v7",
@@ -432,7 +470,8 @@
       "views": 7403,
       "publishedAt": "2026-03-25T00:00:00.000Z",
       "format": "long",
-      "multiple": 0.04
+      "multiple": 0.04,
+      "duration": 1006
     },
     {
       "id": "UC-the-entire-history-v8",
@@ -443,7 +482,8 @@
       "views": 197402,
       "publishedAt": "2026-03-08T00:00:00.000Z",
       "format": "long",
-      "multiple": 1
+      "multiple": 1,
+      "duration": 1043
     },
     {
       "id": "UC-the-entire-history-v9",
@@ -454,7 +494,8 @@
       "views": 224545,
       "publishedAt": "2026-02-19T00:00:00.000Z",
       "format": "long",
-      "multiple": 1.14
+      "multiple": 1.14,
+      "duration": 1080
     },
     {
       "id": "UC-the-entire-history-v10",
@@ -465,7 +506,8 @@
       "views": 779738,
       "publishedAt": "2026-02-02T00:00:00.000Z",
       "format": "long",
-      "multiple": 3.95
+      "multiple": 3.95,
+      "duration": 1117
     },
     {
       "id": "UC-the-entire-history-v11",
@@ -476,7 +518,8 @@
       "views": 278830,
       "publishedAt": "2026-01-16T00:00:00.000Z",
       "format": "long",
-      "multiple": 1.41
+      "multiple": 1.41,
+      "duration": 1154
     },
     {
       "id": "UC-the-entire-history-v12",
@@ -487,7 +530,8 @@
       "views": 305973,
       "publishedAt": "2025-12-30T00:00:00.000Z",
       "format": "long",
-      "multiple": 1.55
+      "multiple": 1.55,
+      "duration": 1191
     },
     {
       "id": "UC-the-entire-history-v13",
@@ -498,7 +542,8 @@
       "views": 333116,
       "publishedAt": "2025-12-13T00:00:00.000Z",
       "format": "long",
-      "multiple": 1.69
+      "multiple": 1.69,
+      "duration": 428
     },
     {
       "id": "UC-the-entire-history-v14",
@@ -509,7 +554,8 @@
       "views": 592206,
       "publishedAt": "2025-11-26T00:00:00.000Z",
       "format": "long",
-      "multiple": 3
+      "multiple": 3,
+      "duration": 465
     },
     {
       "id": "UC-the-entire-history-v15",
@@ -520,7 +566,151 @@
       "views": 387401,
       "publishedAt": "2025-11-09T00:00:00.000Z",
       "format": "long",
-      "multiple": 1.96
+      "multiple": 1.96,
+      "duration": 502
+    },
+    {
+      "id": "UC-beginning-to-now-x0",
+      "title": "The Entire History of the Aztec Empire",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 1900000,
+      "publishedAt": "2026-04-01T00:00:00.000Z",
+      "format": "long",
+      "duration": 900
+    },
+    {
+      "id": "UC-beginning-to-now-x1",
+      "title": "The Entire History of the Inca Empire",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 2050000,
+      "publishedAt": "2026-03-20T00:00:00.000Z",
+      "format": "long",
+      "duration": 900
+    },
+    {
+      "id": "UC-beginning-to-now-x2",
+      "title": "The Entire History of the Persian Empire",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 2200000,
+      "publishedAt": "2026-03-08T00:00:00.000Z",
+      "format": "long",
+      "duration": 900
+    },
+    {
+      "id": "UC-beginning-to-now-x3",
+      "title": "The Entire History of the Ottoman Navy",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 1900000,
+      "publishedAt": "2026-02-24T00:00:00.000Z",
+      "format": "long",
+      "duration": 900
+    },
+    {
+      "id": "UC-beginning-to-now-x4",
+      "title": "The Entire History of the Silk Road",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 2050000,
+      "publishedAt": "2026-02-12T00:00:00.000Z",
+      "format": "long",
+      "duration": 900
+    },
+    {
+      "id": "UC-beginning-to-now-x5",
+      "title": "The Entire History of the Vikings in America",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 2200000,
+      "publishedAt": "2026-01-31T00:00:00.000Z",
+      "format": "long",
+      "duration": 900
+    },
+    {
+      "id": "UC-beginning-to-now-x6",
+      "title": "The Entire History of the Fall of Rome",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 1900000,
+      "publishedAt": "2026-01-19T00:00:00.000Z",
+      "format": "long",
+      "duration": 900
+    },
+    {
+      "id": "UC-beginning-to-now-x7",
+      "title": "The Entire History of the Mongol Invasions",
+      "channelId": "UC-beginning-to-now",
+      "channelTitle": "Beginning To Now",
+      "subscribers": 899000,
+      "views": 2050000,
+      "publishedAt": "2026-01-07T00:00:00.000Z",
+      "format": "long",
+      "duration": 900
+    },
+    {
+      "id": "UC-the-entire-history-x0",
+      "title": "The Entire History of the Portuguese Empire",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 210000,
+      "views": 180000,
+      "publishedAt": "2026-03-15T00:00:00.000Z",
+      "format": "long",
+      "duration": 800
+    },
+    {
+      "id": "UC-the-entire-history-x1",
+      "title": "The Entire History of the Dutch Republic",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 210000,
+      "views": 205000,
+      "publishedAt": "2026-02-28T00:00:00.000Z",
+      "format": "long",
+      "duration": 800
+    },
+    {
+      "id": "UC-the-entire-history-x2",
+      "title": "The Entire History of the Holy Roman Empire",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 210000,
+      "views": 230000,
+      "publishedAt": "2026-02-13T00:00:00.000Z",
+      "format": "long",
+      "duration": 800
+    },
+    {
+      "id": "UC-the-entire-history-x3",
+      "title": "The Entire History of the Byzantine Army",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 210000,
+      "views": 180000,
+      "publishedAt": "2026-01-29T00:00:00.000Z",
+      "format": "long",
+      "duration": 800
+    },
+    {
+      "id": "UC-the-entire-history-x4",
+      "title": "The Entire History of the Crusader States",
+      "channelId": "UC-the-entire-history",
+      "channelTitle": "The Entire History",
+      "subscribers": 210000,
+      "views": 205000,
+      "publishedAt": "2026-01-14T00:00:00.000Z",
+      "format": "long",
+      "duration": 800
     }
   ],
   "groups": [
