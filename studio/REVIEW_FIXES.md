@@ -139,3 +139,7 @@ Kiểm chứng trình duyệt tái hiện ô JSON có thể chưa vào state khi
 ## Dọn profile tạm theo duyệt của người dùng (06/10/2026)
 
 Đã dừng script/worker liên quan, đổi tên tmp/gui_chrome_profiles và tmp/chrome_profiles thành .cu, chạy npm run studio:test (109 đạt, 0 lỗi, 0 skip) và kiểm tra HTTP app, sau đó xoá đúng hai thư mục. Tổng file 6.511.146.243 byte (~6,51 GB). Kiểm tra sau xoá: app phản hồi, hash state giữ nguyên; tmp còn 156.653.122 byte (~157 MB). Giữ PDF, Shorts, các script *.mjs, tools/*.png và scratch. tmp/ đã được ignore từ trước. FILE_REVIEW_INVENTORY.md được cập nhật thành bảng nhóm gọn hơn.
+
+## Sửa tab giữ giao diện cũ (06/10/2026)
+
+Tab đang mở giữ giao diện sáu bước và mã khảo sát không có trong state server. Đã sao lưu state cùng các ô đang nhập, khôi phục riêng khảo sát này (link @CuThongThai, VN/vi/video dài), rồi tải lại tab. Không ghi đè dữ liệu các kênh khác. Static HTML/JS trả Cache-Control: no-store; khảo sát không tồn tại có nút bắt đầu khảo sát mới. Test header thất bại trước sửa, toàn bộ 109 test đạt sau sửa. Kiểm tra trình duyệt: giao diện năm bước, link giữ nguyên, nút Phân tích phản hồi bằng yêu cầu nhập góc kể. Chưa gọi YouTube thật hoặc AI cho khảo sát này vì chưa có góc kể của người dùng.

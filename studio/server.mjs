@@ -702,7 +702,7 @@ async function makeImage(b) {
     const file = requested;
     if (!file.startsWith(base + path.sep) && file !== base) return json(res, 403, { error: 'Đường dẫn không được phép.' });
     const content = await readFile(file);
-    res.writeHead(200, { 'Content-Type': mime[path.extname(file)] || 'application/octet-stream', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'self'; img-src 'self' data: https://i.ytimg.com; style-src 'self'; script-src 'self'; connect-src 'self'; media-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'" }); res.end(content);
+    res.writeHead(200, { 'Cache-Control': 'no-store', 'Content-Type': mime[path.extname(file)] || 'application/octet-stream', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'self'; img-src 'self' data: https://i.ytimg.com; style-src 'self'; script-src 'self'; connect-src 'self'; media-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'" }); res.end(content);
   } catch (e) { json(res, e.status || (e.code === 'ENOENT' ? 404 : 500), { error: redact(e.status ? e.message : 'Không xử lý được yêu cầu. Kiểm tra dữ liệu hoặc thử lại.') }); }
 });
 server.listen(port, '127.0.0.1', () => console.log(`Tích Studio: http://localhost:${port}`));

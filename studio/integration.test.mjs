@@ -25,7 +25,10 @@ test('Real HTTP routes enforce revisions and niche gates, persist media and rend
  async function req(route,method='GET',body){const r=await fetch(base+route,{method,headers:{'Content-Type':'application/json','X-Studio-Request':'1'},...(body===undefined?{}:{body:JSON.stringify(body)})});return{status:r.status,body:await r.json()};}
  try{
    for(let i=0;i<100;i++){if(server.exitCode!==null)throw Error(errors);try{await fetch(base+'/api/state');break;}catch{await new Promise(r=>setTimeout(r,50));}}
-   assert.equal((await fetch(base+'/production.mjs')).status,200);
+   for(const route of ['/','/app.js','/niche-ui.mjs','/production.mjs']){
+     const response=await fetch(base+route);assert.equal(response.status,200);
+     assert.match(response.headers.get('cache-control')||'',/no-store/,'Studio code must not retain stale browser versions');
+   }
    const initial=(await req('/api/state')).body;
    initial.surveys=[{id:'s',market:'US',language:'en',format:'long',videos:[],nicheFlow:{field:{passed:true}},lockedNiche:{template:'forged'}}];
    assert.equal((await req('/api/state','PUT',initial)).status,200);

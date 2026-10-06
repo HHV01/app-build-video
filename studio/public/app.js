@@ -130,7 +130,7 @@ function home() {
 }
 const SURVEY_STEPS = ['Bước 0 · Chọn sân','Bước 1 · Kênh chỉ đường','Bước 2 · Kênh làm được','Bước 3 · Nhóm & chủ đề'];
 function gateOf(s) { return s?.gate || 'vua'; }
-function niche(){const s=currentSurvey();return s?renderNiche(s,{heading,panel,notice,field,select,btn,esc,n}):empty('Không tìm thấy khảo sát','Trở lại trang chủ.');}
+function niche(){const s=currentSurvey();return s?renderNiche(s,{heading,panel,notice,field,select,btn,esc,n}):empty('Khảo sát này không còn trên server','Tải lại trang hoặc bắt đầu khảo sát mới để tiếp tục.',btn('Bắt đầu khảo sát mới','new-survey','primary'));}
 const nicheLabels={field:'Lưu thị trường',template:'Phân tích tiêu đề của kênh',shelf:'Tìm và kiểm tra kho kênh',groups:'Phân nhóm chủ đề',probe:'Kiểm tra nhu cầu',topics:'Kiểm tra 20 chủ đề'};
 function templateRequest(s, choose=false){return {mode:s.nicheMode||'import',channel:s.leadChannel,angle:s.angle,confirmComplete:s.completeImport===true,...(choose?{template:s.templateChoice||s.nicheFlow?.template?.value}:{})};}
 function shelfRequest(s){return {mode:s.nicheMode||'import',confirmComplete:s.completeImport===true,extraChannels:(s.extraChannelsText||'').split('\n').map(x=>x.trim()).filter(Boolean)};}
