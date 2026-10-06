@@ -38,6 +38,36 @@ test('full offline workflow validates groups, three 20-result probes, topics, lo
  const lock=lockedNiche({niche:done.survey.nicheFlow});assert.throws(()=>lock.topics.push('overwrite'),TypeError);
  await h.act('field',{market:'VN',language:'vi',format:'long'});assert.equal(h.state().surveys[0].lockedNiche,undefined);assert.equal(h.state().surveys[0].nicheFlow.template,undefined);
 });
+// ---- B2: so sánh khuôn giữa các kênh theo "chứa", không theo bằng nhau ----
+
+// Mỗi kênh 20 video đủ tuổi, trung vị 30.000 view. Tiêu đề do `make` sinh ra.
+function shelfFixture(make){
+ const n=Date.now();
+ return ['a','b','c','d'].flatMap(ch=>Array.from({length:20},(_,i)=>({
+  id:ch+i,channelId:ch,channelTitle:ch,title:make(ch,i)+' '+i,views:30000+i,
+  publishedAt:new Date(n-(200+i)*86400000).toISOString(),duration:300,format:'long',
+ })));
+}
+test('B2 · kênh lặp cụm DÀI HƠN khuôn vẫn tính cùng khuôn; kênh lặp khuôn khác bị loại kèm lý do',async()=>{
+ // a rút ra khuôn ngắn; b và d lặp cụm dài hơn nhưng vẫn BẮT ĐẦU bằng khuôn đó.
+ const videos=shelfFixture(ch=>({a:`The Entire History of ${ch}`,b:`The Entire History of Ancient ${ch}`,c:`The Rise and Fall of Empire ${ch}`,d:`The Entire History of Medieval ${ch}`}[ch]));
+ const h=harness(videos);
+ await h.act('field',{market:'US',language:'en',format:'long'});
+ const t=await h.act('template',{channel:'a',angle:'Original angle'});
+ assert.equal(t.survey.nicheFlow.template.value,'the entire history of');
+ const shelf=(await h.act('shelf')).survey.nicheFlow.shelf;
+ const by=Object.fromEntries(shelf.channels.map(c=>[c.channelId,c]));
+ assert.equal(by.a.sameTemplate,true);
+ assert.equal(by.b.sameTemplate,true,'khuôn dài hơn nhưng chứa khuôn thì vẫn cùng khuôn');
+ assert.equal(by.d.sameTemplate,true,'khuôn dài hơn nhưng chứa khuôn thì vẫn cùng khuôn');
+ assert.equal(by.c.sameTemplate,false);
+ assert.match(by.c.reason,/the rise and fall of/,'phải nói rõ kênh đó lặp khuôn nào');
+ assert.equal(shelf.count,3);
+ assert.equal(shelf.passed,true);
+ // Khuôn phát hiện ở từng kênh phải được trả về để người dùng đối chiếu.
+ assert.match(by.b.template.template,/^the entire history of ancient/,'khuôn dài hơn vẫn chứa khuôn đã chốt');
+ assert.match(by.c.template.template,/^the rise and fall of/);
+});
 test('probe missing results and invalid views cannot pass',async()=>{
  const h=harness();await prepare(h);const videos=h.state().surveys[0].nicheFlow.shelf.videos;
  await h.act('groups',{groups:Array.from({length:4},(_,i)=>({name:'G'+i,videoIds:videos.filter((_,j)=>j%4===i).map(v=>v.id)}))});await h.act('groups',{groupId:'group-0'});

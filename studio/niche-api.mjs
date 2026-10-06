@@ -47,9 +47,12 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
     // Duration alone cannot definitively distinguish Shorts. Surface this in the UI.
     const videos = cat.videos.filter(v => format === 'short' ? v.format === 'short' : v.format !== 'short' && v.duration > 180);
     const shelf = channelShelf(videos)[0] || { matureCount: 0, median: null, pass: false, videos: [] };
-    const sameTemplate = result.template === template;
+    // Hai kênh cùng khuôn khi khuôn của kênh này CHỨA khuôn đã chốt. So sánh
+    // bằng nhau là quá chặt: kênh lặp cụm dài hơn vẫn là cùng một dòng khuôn.
+    const sameTemplate = Boolean(result.template) && `${result.template} `.startsWith(`${template} `);
     const pass = cat.complete && result.complete === true && sameTemplate && shelf.pass;
-    return { ...shelf, channelId: cat.id, channelTitle: cat.name, complete: cat.complete, template: result, sameTemplate, pass, videos: pass ? shelf.videos : [], provenance: cat.provenance, reason: pass ? '' : [!cat.complete && 'Kho chưa đầy đủ', !sameTemplate && (result.reason || 'Không lặp cùng khuôn'), !shelf.pass && (shelf.reason || 'Chưa qua cổng view')].filter(Boolean).join(' · ') };
+    const otherReason = result.template ? `Lặp khuôn khác: "${result.template}"` : result.reason || 'Không lặp cùng khuôn';
+    return { ...shelf, channelId: cat.id, channelTitle: cat.name, complete: cat.complete, template: result, sameTemplate, pass, videos: pass ? shelf.videos : [], provenance: cat.provenance, reason: pass ? '' : [!cat.complete && 'Kho chưa đầy đủ', !sameTemplate && otherReason, !shelf.pass && (shelf.reason || 'Chưa qua cổng view')].filter(Boolean).join(' · ') };
   }
   async function act(stage, body) {
     const snapshot = getState(), revision = snapshot.revision;
