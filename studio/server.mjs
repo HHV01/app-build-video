@@ -85,6 +85,8 @@ let usage = { searches: 0, otherCalls: 0, cacheHits: 0, units: 0, byEndpoint: {}
 const jobs = new Set();
 function json(res, code, value) { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(value)); }
 function failure(message, status = 400) { return Object.assign(new Error(message), { status }); }
+// Lưới an toàn: một promise bị bỏ quên không được làm tắt cả Studio.
+process.on('unhandledRejection', e => console.error('[unhandled]', redact(String(e?.stack || e))));
 function redact(text) {
   let t = String(text).replace(/(?:gsk_|sk-|AIza)[A-Za-z0-9_-]+/g, '[ẩn khóa]');
   for (const secret of [settings.youtubeKey, env.OPENAI_API_KEY]) if (secret) t = t.split(secret).join('[ẩn khóa]');
@@ -643,7 +645,7 @@ const server = http.createServer(async (req, res) => {
       // Nút đăng YouTube. Chỉ hoạt động sau khi đã nối tài khoản ở trên.
 if (url.pathname === '/api/youtube/publish' && req.method === 'POST') return json(res, 200, await uploadYoutube(await body(req)));
       // Tải lại bản dựng đã lưu, không cần dựng lại.
-      if (url.pathname.startsWith('/api/build/') && req.method === 'GET') return serveBuild(res, url.pathname.slice('/api/build/'.length));
+      if (url.pathname.startsWith('/api/build/') && req.method === 'GET') return await serveBuild(res, url.pathname.slice('/api/build/'.length));
       if (url.pathname === '/api/test' && req.method === 'POST') { await body(req); const result = await ai('Trả {"ok":true}', '{"ok":true}', 512); return json(res, 200, { ok: result.output.ok === true, model: result.model }); }
       if (url.pathname === '/api/discover' && req.method === 'POST') return json(res, 200, await discover(await body(req)));
       if (url.pathname === '/api/import' && req.method === 'POST') return json(res, 200, { videos: enrichVideos(normalizeImport((await body(req)).rows)) });
