@@ -47,6 +47,20 @@ async function boot(env = {}) {
   };
 }
 
+test('B9 · PUT state từ chối khảo sát videos hỏng và bổ sung videos mảng rỗng', async () => {
+  const s = await boot();
+  try {
+    const current = await s.req('/api/state');
+    const revision = current.body.revision;
+    const bad = await s.req('/api/state', 'PUT', { revision, channels: [], projects: [], surveys: [{ id: 'sv1', name: 'X', videos: { khong: 'phai mang' } }] });
+    assert.equal(bad.status, 400, 'videos không phải mảng phải bị chặn');
+    const fixed = await s.req('/api/state', 'PUT', { revision, channels: [], projects: [], surveys: [{ id: 'sv1', name: 'X' }] });
+    assert.equal(fixed.status, 200);
+    const after = await s.req('/api/state');
+    assert.deepEqual(after.body.surveys[0].videos, [], 'thiếu videos phải được bổ sung mảng rỗng');
+  } finally { await s.stop(); }
+});
+
 test('A1 · bản dựng không tồn tại trả JSON lỗi và không làm sập server', async () => {
   const s = await boot();
   const alive = async () => {

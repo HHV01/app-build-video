@@ -548,6 +548,11 @@ const server = http.createServer(async (req, res) => {
           if (b.revision !== state.revision) throw failure('Dữ liệu đã đổi ở cửa sổ khác. Tải lại trang trước khi lưu.', 409);
           if (!Array.isArray(b.channels) || !Array.isArray(b.surveys) || !Array.isArray(b.projects)) throw failure('Dữ liệu dự án không hợp lệ.');
           for (const incoming of b.surveys) {
+            if (!incoming || typeof incoming !== 'object' || typeof incoming.id !== 'string') throw failure('Khảo sát không hợp lệ: thiếu id.');
+            if (incoming.videos === undefined) incoming.videos = [];
+            if (!Array.isArray(incoming.videos)) throw failure('Khảo sát không hợp lệ: videos phải là mảng.');
+          }
+          for (const incoming of b.surveys) {
             const old = state.surveys.find(s => s.id === incoming.id);
             const unchanged = old && JSON.stringify(incoming.videos) === JSON.stringify(old.videos)
               && incoming.market === old.market && incoming.language === old.language && incoming.format === old.format;
