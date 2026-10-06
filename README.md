@@ -24,4 +24,4 @@ npm run studio:test
 
 Test dùng dữ liệu và cổng riêng, không gọi API YouTube/Groq thật. Khi thiếu ffmpeg/ffprobe, chỉ phần kiểm thử dựng video được bỏ qua với lý do; các kiểm thử HTTP vẫn chạy. GitHub Actions chạy bộ test trên Ubuntu và Windows.
 
-Đọc [hướng dẫn ứng dụng](studio/README.md), [các bản sửa và giới hạn kiểm chứng](studio/REVIEW_FIXES.md) và [danh sách file chờ duyệt, chưa xoá](studio/FILE_REVIEW_INVENTORY.md).
+Đọc [hướng dẫn ứng dụng](studio/README.md), [các bản sửa và giới hạn kiểm chứng](studio/REVIEW_FIXES.md) và [kiểm kê file và lần dọn đã duyệt](studio/FILE_REVIEW_INVENTORY.md).

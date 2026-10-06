@@ -135,3 +135,7 @@ Nghiệm thu cục bộ: npm run studio:test → 108 đạt, 0 lỗi, 0 skip. Ch
 ## UX · Nhập liệu chưa blur trước khi bấm nút
 
 Kiểm chứng trình duyệt tái hiện ô JSON có thể chưa vào state khi bấm nút. Nút niche đọc các field hiện tại trước khi chạy, lấy đúng checkbox/radio đã chọn. Test hồi quy đỏ trước, xanh sau. UI kho giả lập đã hoàn tất tới dựng kênh, kiểm tra 20 ý tưởng và khóa khuôn/angle được giữ. Ảnh ở screenshots/niche-ux-review.jpg. Nghiệm thu cuối: npm run studio:test → 109 đạt, 0 lỗi, 0 skip. YouTube thật và kết quả CI GitHub vẫn chưa được xác nhận.
+
+## Dọn profile tạm theo duyệt của người dùng (06/10/2026)
+
+Đã dừng script/worker liên quan, đổi tên tmp/gui_chrome_profiles và tmp/chrome_profiles thành .cu, chạy npm run studio:test (109 đạt, 0 lỗi, 0 skip) và kiểm tra HTTP app, sau đó xoá đúng hai thư mục. Tổng file 6.511.146.243 byte (~6,51 GB). Kiểm tra sau xoá: app phản hồi, hash state giữ nguyên; tmp còn 156.653.122 byte (~157 MB). Giữ PDF, Shorts, các script *.mjs, tools/*.png và scratch. tmp/ đã được ignore từ trước. FILE_REVIEW_INVENTORY.md được cập nhật thành bảng nhóm gọn hơn.
