@@ -37,6 +37,27 @@ export function runBinary(binary, args, { timeout = 180000, tool = 'ffmpeg' } = 
 
 const failure = (message, status = 400) => Object.assign(new Error(message), { status });
 
+// Ngân sách max_tokens theo từng tác vụ AI.
+// Mức chung 700 token cắt cụt các tác vụ nhiều mục: `ideas` trả 30 ý tưởng,
+// `packaging` trả 16 phương án. Mọi tác vụ đều ≥ 1600.
+export const AI_TOKEN_BUDGET = {
+  templates: 1800,
+  groups: 2500,
+  packaging: 3500,
+  identity: 1800,
+  ideas: 4000,
+  topics: 3000,
+  animation: 2500,
+  research: 4500,
+  outline: 1800,
+  script: 2000,
+  scenes: 2500,
+};
+
+export function tokenBudget(action, fallback = 2000) {
+  return AI_TOKEN_BUDGET[action] || fallback;
+}
+
 /**
  * Dựng payload metadata cho videos.insert.
  * `selfDeclaredMadeForKids` chỉ hợp lệ trong `status`. Đặt trong `snippet`

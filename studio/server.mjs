@@ -8,7 +8,7 @@ import { enrichVideos, normalizeImport, validateGroups, parseAIJSON, durationSec
 import { blindTitles, groupCountGate, RULES, STAGES } from './rx.mjs';
 import { createNicheAPI } from './niche-api.mjs';
 import { createAssetStore } from './assets.mjs';
-import { safeExt, runBinary, uploadResumable, buildUploadPayload } from './server-lib.mjs';
+import { safeExt, runBinary, uploadResumable, buildUploadPayload, tokenBudget } from './server-lib.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const publicRoot = path.join(root, 'studio', 'public');
@@ -44,7 +44,9 @@ function run(tool, args, timeout = 180000) {
 
 const port = Number(process.env.STUDIO_PORT || 3210);
 const env = {};
-if (existsSync(path.join(root, '.env'))) for (const line of readFileSync(path.join(root, '.env'), 'utf8').split(/\r?\n/)) {
+// STUDIO_ENV_FILE chỉ dùng cho kiểm thử (trỏ gateway AI sang mock). Không đặt thì đọc .env như cũ.
+const envFile = process.env.STUDIO_ENV_FILE || path.join(root, '.env');
+if (existsSync(envFile)) for (const line of readFileSync(envFile, 'utf8').split(/\r?\n/)) {
   const m = line.match(/^\s*([A-Z_]+)\s*=\s*(.*)$/); if (m) env[m[1]] = m[2].replace(/^["']|["']$/g, '');
 }
 let settings = { youtubeKey: '', model: 'groq/qwen/qwen3.8-27b' };
@@ -210,7 +212,7 @@ async function generate(b) {
     };
     if (b.action === 'scenes' && b.context?.visualProfile) directives.scenes = `Chia script theo số cảnh yêu cầu và thứ tự lời gốc, cover toàn bộ lời mà không thêm narration. \`narration\` giữ nguyên ngôn ngữ script gốc. \`visual\` là mô tả tiếng Việt ngắn: nhân vật/vật thể chính và hành động. \`prompt\` bằng tiếng Anh, BẮT BUỘC theo đúng hồ sơ hình ảnh của kênh trong context.visualProfile (nền, nét, mật độ chi tiết, caption). Không thêm ánh sáng, bối cảnh chi tiết hay phong cách điện ảnh ngoài hồ sơ đó. Mỗi cảnh một ý, dễ đọc ngay. No readable text, no captions, no title card, no watermark, no signature; full-bleed image. Caption luôn là editor overlay, không vẽ trong ảnh. Kết quả compact.`;
     if (b.action === 'script' && b.context?.scriptPart) directives.script += ' Đây là MỘT PHẦN của script: chỉ viết phần outlineFocus được chỉ định, theo scriptPart.targetWords, không mở lại toàn video ở các phần giữa. Giữ mạch với previousEnding. CTA chỉ thêm ở phần cuối nếu context.includeCTA=true; mọi số liệu vẫn phải có nguồn.';
-    const budget = b.action === 'script' ? 2000 : ['groups','topics','research','packaging'].includes(b.action) ? 4500 : ['scenes','animation'].includes(b.action) ? 2500 : 1800;
+    const budget = tokenBudget(b.action);
     const response = await ai(`${directives[b.action]}\nDữ liệu dự án:\n${context}`, schemas[b.action], budget);
     if (b.action === 'groups') { response.output.groups = validateGroups(response.output.groups, b.context.videos || []); response.output.groupGate = groupCountGate(response.output.groups); }
     return response;

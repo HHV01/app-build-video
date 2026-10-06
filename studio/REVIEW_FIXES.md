@@ -33,12 +33,15 @@ Ngày kiểm tra: 05/10/2026. Giữ ứng dụng hiện có, dùng lại `rx.mjs
 | A2 | `b.ext`, `b.voiceExt`, `b.musicExt` nối thẳng vào đường dẫn, `ext: "x/../../../settings.json"` ghi đè được file ngoài thư mục tạm | `safeExt()` chỉ nhận `[a-z0-9]{1,5}`; fallback lần lượt `bin`/`mp3`/`mp3` | POST `/api/probe` với đuôi độc hại: `settings.json` giữ nguyên, không tạo file nào ngoài `dataRoot/tmp/<uuid>` |
 | A3 | Timeout ffmpeg không bao giờ báo lỗi vì `if (killed)` chạy đồng bộ ngay sau `spawn` | Kiểm `killed` trong handler `close`, reject 504 | Lệnh ngủ 60 giây với timeout 200 ms phải reject 504; lệnh chạy xong vẫn trả kết quả |
 | A4 | HTTP 308 (Resume Incomplete) của khối chưa cuối bị ném lỗi → mọi video > 8 MB hỏng | Đọc header `Range`, gửi tiếp từ `N+1`; thiếu `Range` thì gửi lại khối đó tối đa 3 lần rồi báo lỗi | Mock: 308+`Range` rồi 200 → trả `id`, đúng thứ tự `Content-Range` |
+| A5 | `max_tokens` gộp chung 700 cho mọi action; `ideas` (30 mục) và `packaging` (16 mục) không thể vừa | Bảng `AI_TOKEN_BUDGET` theo từng action, tất cả ≥ 1600 | Gateway mock ghi lại `max_tokens` của cả 11 action; `ideas` ≥ 4000, `packaging` ≥ 3500 |
 
 A4 kèm hai việc phụ: `selfDeclaredMadeForKids` chuyển khỏi `snippet` (Google chỉ nhận trong `status`),
 và `STUDIO_UPLOAD_URL` / `STUDIO_UPLOAD_CHUNK` cho phép trỏ upload vào mock khi kiểm thử.
 
 Hàm thuần của server nằm ở `studio/server-lib.mjs` (`safeExt`, `runBinary`, `uploadResumable`,
-`buildUploadPayload`) vì `server.mjs` mở cổng ngay khi được import nên không import được trong test.
+`buildUploadPayload`, `AI_TOKEN_BUDGET`) vì `server.mjs` mở cổng ngay khi được import nên không import được trong test.
+
+`STUDIO_ENV_FILE` cho phép kiểm thử trỏ `OPENAI_BASE_URL` vào gateway giả; không đặt thì server đọc `.env` như cũ.
 
 ## Kiểm chứng
 

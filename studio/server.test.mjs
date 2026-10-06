@@ -229,3 +229,54 @@ test('A4 · payload giới hạn 30 thẻ và luôn có mặc định hợp lệ
   assert.equal(payload.status.privacyStatus, undefined, 'privacy phải do server chọn từ danh sách cho phép');
   assert.equal(payload.status.selfDeclaredMadeForKids, false);
 });
+
+// ---- A5: max_tokens phải đủ lớn cho từng tác vụ ----
+
+// Gateway giả theo chuẩn OpenAI, ghi lại max_tokens của mỗi lượt gọi.
+async function mockGateway() {
+  const seen = [];
+  const reply = {
+    ok: true, groups: [{ name: 'Nhóm 1', angle: 'a', reason: 'r', videoIds: ['v1'] }],
+    ideas: [], variants: [], names: [], topics: [], animations: [],
+    segments: [], scenes: [], channels: [], summary: '', sensory: '', cast: [], angles: [],
+    claims: [], questions: [], facts: [], timeline: [], narration: '', editorNotes: [],
+  };
+  const srv = http.createServer((req, res) => {
+    const chunks = [];
+    req.on('data', d => chunks.push(d));
+    req.on('end', () => {
+      let sent = null;
+      try { sent = JSON.parse(Buffer.concat(chunks).toString()); } catch { /* bỏ qua */ }
+      seen.push({ max_tokens: sent?.max_tokens, model: sent?.model });
+      const payload = JSON.stringify({ model: sent?.model || 'mock', choices: [{ message: { content: JSON.stringify(reply) }, finish_reason: 'stop' }] });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(payload);
+    });
+  });
+  await new Promise(r => srv.listen(0, '127.0.0.1', r));
+  return { seen, url: `http://127.0.0.1:${srv.address().port}/v1`, stop: () => new Promise(r => srv.close(r)) };
+}
+
+const AI_ACTIONS = ['templates', 'groups', 'packaging', 'identity', 'ideas', 'topics', 'animation', 'research', 'outline', 'script', 'scenes'];
+
+test('A5 · mỗi tác vụ AI gửi max_tokens đủ lớn, không action nào dùng chung mức 700', async () => {
+  const gw = await mockGateway();
+  const envFile = path.join(tempRoot, `env-a5-${Date.now()}.env`);
+  await writeFile(envFile, `OPENAI_BASE_URL=${gw.url}\nOPENAI_API_KEY=test-key\n`, 'utf8');
+  const s = await boot({ STUDIO_ENV_FILE: envFile });
+  try {
+    for (const action of AI_ACTIONS) {
+      const r = await s.req('/api/generate', 'POST', { action, context: { note: 'x' } });
+      assert.equal(r.status, 200, `${action}: ${r.body.error}\n${s.stderr()}`);
+    }
+    const byCall = Object.fromEntries(AI_ACTIONS.map((a, i) => [a, gw.seen[i]]));
+    for (const action of AI_ACTIONS) {
+      const sent = byCall[action]?.max_tokens;
+      assert.equal(typeof sent, 'number', `${action}: không gửi max_tokens`);
+      assert.ok(sent >= 1600, `${action} chỉ có ${sent} token, cần ít nhất 1600`);
+    }
+    // 30 ý tưởng / 16 phương án bao bì không thể vừa 700 token.
+    assert.ok(byCall.ideas.max_tokens >= 4000, `ideas có ${byCall.ideas.max_tokens}, cần ≥ 4000 cho 30 mục`);
+    assert.ok(byCall.packaging.max_tokens >= 3500, `packaging có ${byCall.packaging.max_tokens}, cần ≥ 3500 cho 16 mục`);
+  } finally { await s.stop(); await gw.stop(); await rm(envFile, { force: true }); }
+});
