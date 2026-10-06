@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import { mkdtemp, rm, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { once } from 'node:events';
+import { safeExt, runBinary } from './server-lib.mjs';
 
 const root = path.resolve('.');
 const tempRoot = path.join(root, 'tmp');
@@ -98,7 +99,6 @@ test('A2 · đuôi file độc hại không ghi ra ngoài thư mục tạm của
 });
 
 test('A2 · safeExt chỉ nhận đuôi file an toàn', async () => {
-  const { safeExt } = await import('./server-lib.mjs');
   assert.equal(safeExt('mp4', 'bin'), 'mp4');
   assert.equal(safeExt('MP3', 'bin'), 'mp3');
   assert.equal(safeExt('x/../../../settings.json', 'bin'), 'bin');
@@ -111,4 +111,23 @@ test('A2 · safeExt chỉ nhận đuôi file an toàn', async () => {
   assert.equal(safeExt('exe', 'mp3'), 'exe', 'đuôi ngắn, chữ và số là hợp lệ');
   // Phải dùng đúng fallback của từng chỗ trong server.mjs.
   assert.equal(safeExt('../../evil', 'mp3'), 'mp3');
+});
+
+test('A3 · lệnh quá thời gian phải báo lỗi 504 chứ không âm thầm trả kết quả rỗng', async () => {
+  // Lệnh ngủ 60 giây, timeout 200 ms: chắc chắn bị giết.
+  const slow = ['-e', 'setTimeout(() => {}, 60000)'];
+  await assert.rejects(
+    () => runBinary(process.execPath, slow, { timeout: 200, tool: 'ffmpeg' }),
+    e => {
+      assert.equal(e.status, 504, `phải là lỗi 504, nhận được: ${e.status} — ${e.message}`);
+      assert.match(e.message, /chạy quá/);
+      return true;
+    },
+  );
+});
+
+test('A3 · lệnh chạy xong bình thường thì trả kết quả, không phải lỗi timeout', async () => {
+  const result = await runBinary(process.execPath, ['-e', 'process.stdout.write("OK-123")'], { timeout: 20000, tool: 'ffprobe' });
+  assert.equal(result.stdout, 'OK-123');
+  assert.equal(result.code, 0);
 });

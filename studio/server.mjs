@@ -4,12 +4,11 @@ import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
-import { spawn } from 'node:child_process';
 import { enrichVideos, normalizeImport, validateGroups, parseAIJSON, durationSeconds, median } from './core.mjs';
 import { blindTitles, groupCountGate, RULES, STAGES } from './rx.mjs';
 import { createNicheAPI } from './niche-api.mjs';
 import { createAssetStore } from './assets.mjs';
-import { safeExt } from './server-lib.mjs';
+import { safeExt, runBinary } from './server-lib.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const publicRoot = path.join(root, 'studio', 'public');
@@ -40,16 +39,7 @@ const bin = { ffmpeg: findBinary('ffmpeg'), ffprobe: findBinary('ffprobe') };
 // Chạy một lệnh ffmpeg/ffprobe và trả về stdout. Không dùng shell.
 function run(tool, args, timeout = 180000) {
   if (!bin[tool]) throw failure(`Máy chưa có ${tool}. Đặt file vào tools/ffmpeg/bin hoặc cài ${tool} rồi mở lại Studio.`, 503);
-  return new Promise((resolve, reject) => {
-    const child = spawn(bin[tool], args, { windowsHide: true });
-    let out = [], err = '', killed = false;
-    const timer = setTimeout(() => { killed = true; child.kill(); }, timeout);
-    child.stdout.on('data', d => out.push(d));
-    child.stderr.on('data', d => { err += d; });
-    child.on('error', e => { clearTimeout(timer); reject(failure(`Không chạy được ${tool}: ${e.message}`, 500)); });
-    child.on('close', code => { clearTimeout(timer); resolve({ code, stdout: Buffer.concat(out).toString('utf8'), stderr: err }); });
-    if (killed) reject(failure(`${tool} chạy quá ${Math.round(timeout / 1000)} giây.`, 504));
-  });
+  return runBinary(bin[tool], args, { timeout, tool }).catch(e => { throw failure(e.message, e.status || 500); });
 }
 
 const port = Number(process.env.STUDIO_PORT || 3210);
