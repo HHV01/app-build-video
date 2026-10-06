@@ -17,6 +17,7 @@ Features:
 import sys
 import os
 import time
+import json
 import socket
 import select
 import shutil
@@ -177,7 +178,13 @@ wifi_proxy_active = False
 WIFI_ROTATION_LIST = ["MinhLaConMeoDay", "VNTT-RD"]
 WIFI_ROTATE_INTERVAL_SECONDS = 30 * 60 # Tự động đổi IP sau mỗi 30 phút
 
-# --- Multi-Browser Configurations (4 Distinct Browsers) ---
+SHARED_STATE = {
+    "ssid": "Đang kết nối...",
+    "ip": "...",
+    "rem_str": "30:00"
+}
+
+# --- Multi-Browser Configurations (6 Distinct Browsers) ---
 BROWSER_SPECS = [
     {
         "name": "Google Chrome",
@@ -201,6 +208,18 @@ BROWSER_SPECS = [
         "name": "Cốc Cốc",
         "type": "coccoc",
         "binary": r"C:\Program Files\CocCoc\Browser\Application\browser.exe",
+        "driver": r"C:\Users\VNTT\.cache\selenium\chromedriver\win64\152.0.7977.82\chromedriver.exe"
+    },
+    {
+        "name": "Opera",
+        "type": "opera",
+        "binary": r"C:\Users\VNTT\AppData\Local\Programs\Opera\opera.exe",
+        "driver": r"C:\Users\VNTT\.cache\selenium\chromedriver\win64\152.0.7977.82\chromedriver.exe"
+    },
+    {
+        "name": "Opera GX",
+        "type": "opera_gx",
+        "binary": r"C:\Users\VNTT\AppData\Local\Programs\Opera GX\opera.exe",
         "driver": r"C:\Users\VNTT\.cache\selenium\chromedriver\win64\152.0.7977.82\chromedriver.exe"
     }
 ]
@@ -247,19 +266,23 @@ def clean_profile_locks(profile_dir):
     except Exception:
         pass
 
-# 4 Tiled Quadrants for 1920x1080 display (Width 960x515 each)
+# 6 Tiled Windows for 1920x1080 display (3 cols x 2 rows, 640x515 each)
 TILES = [
-    {"x": 0,    "y": 0,   "w": 960, "h": 515},
-    {"x": 960,  "y": 0,   "w": 960, "h": 515},
-    {"x": 0,    "y": 515, "w": 960, "h": 515},
-    {"x": 960,  "y": 515, "w": 960, "h": 515},
+    {"x": 0,    "y": 0,   "w": 640, "h": 515},
+    {"x": 640,  "y": 0,   "w": 640, "h": 515},
+    {"x": 1280, "y": 0,   "w": 640, "h": 515},
+    {"x": 0,    "y": 515, "w": 640, "h": 515},
+    {"x": 640,  "y": 515, "w": 640, "h": 515},
+    {"x": 1280, "y": 515, "w": 640, "h": 515},
 ]
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 CocCoc/128.0.0.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 OPR/114.0.0.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 OPRGX/114.0.0.0"
 ]
 
 class GUIWorker(threading.Thread):
@@ -379,6 +402,14 @@ class GUIWorker(threading.Thread):
         self.driver.get(url)
         time.sleep(3)
         try:
+            if len(self.driver.window_handles) > 1:
+                for h in self.driver.window_handles:
+                    self.driver.switch_to.window(h)
+                    if "youtube" in self.driver.current_url.lower():
+                        break
+        except Exception:
+            pass
+        try:
             self.driver.execute_script("""
                 var v = document.querySelector('video');
                 if (v && v.paused) {
@@ -389,14 +420,29 @@ class GUIWorker(threading.Thread):
             pass
 
     def run(self):
-        CHANNEL_VIDEOS = [
+        playlist_file = ROOT_DIR / "playlist.json"
+        channel_vids = [
             {"id": "v--oP2aezgI", "title": "Tôi Mất 6 Năm Mới Thấy Tiền Bắt Đầu “Đẻ Ra Tiền”"},
             {"id": "OC4aGfMpViU", "title": "MILO – Vì sao phát miễn phí mà cả thế hệ vẫn nhớ?"}
         ]
-        BUFFER_VIDEOS = [
+        buffer_vids = [
             {"id": "kJQP7kiw5Fk", "title": "Luis Fonsi - Despacito", "limit": 10},
             {"id": "dQw4w9WgXcQ", "title": "Rick Astley - Never Gonna Give You Up", "limit": 30}
         ]
+        if playlist_file.exists():
+            try:
+                import json
+                with open(playlist_file, "r", encoding="utf-8") as pf:
+                    pdata = json.load(pf)
+                    if pdata.get("channel_videos"):
+                        channel_vids = [{"id": v["id"], "title": v.get("title", v["id"])} for v in pdata["channel_videos"]]
+                    if pdata.get("buffer_videos"):
+                        buffer_vids = [{"id": v["id"], "title": v.get("title", v["id"]), "limit": v.get("limit_seconds", 15)} for v in pdata["buffer_videos"]]
+            except Exception:
+                pass
+
+        CHANNEL_VIDEOS = channel_vids
+        BUFFER_VIDEOS = buffer_vids
 
         try:
             if self.delay > 0:
@@ -409,6 +455,7 @@ class GUIWorker(threading.Thread):
             self.step = 0 # 0: Video 1, 1: Video 2, 2: Buffer
             self.buffer_cycle = 0 # 0: 10s, 1: 30s
             self.current_limit = None
+            self.current_buffer_id = None
 
             # Navigate directly to YouTube Video 1
             self.status = "Mở YouTube trực tiếp..."
@@ -424,17 +471,37 @@ class GUIWorker(threading.Thread):
                 self.totalTime = f"{elapsed//3600:02d}:{(elapsed%3600)//60:02d}:{elapsed%60:02d}"
 
                 try:
+                    # 1. Determine expected video ID
+                    if self.step == 0:
+                        expected_id = CHANNEL_VIDEOS[0]["id"]
+                    elif self.step == 1:
+                        expected_id = CHANNEL_VIDEOS[1]["id"]
+                    else:
+                        expected_id = self.current_buffer_id or BUFFER_VIDEOS[0]["id"]
+
+                    # 2. Strict URL drift guard: if YouTube navigated away to recommended videos, force return!
+                    curr_url = self.driver.current_url
+                    if expected_id not in curr_url and "watch" in curr_url:
+                        self.status = f"Lệch link ➔ Kéo về {expected_id}..."
+                        self.navigate_to_video(expected_id)
+                        time.sleep(2)
+                        continue
+
                     state = self.driver.execute_script("""
                         var v = document.querySelector('video');
                         if (!v) return { found: false };
 
-                        // Auto-skip ads if button is present
+                        // Auto-skip ads
                         var skip = document.querySelector('.ytp-skip-ad-button, .ytp-ad-skip-button-modern, .ytp-ad-skip-button');
                         if (skip) skip.click();
 
-                        // Auto-dismiss dialog popups
-                        var dismiss = document.querySelector('ytd-button-renderer#dismiss-button, button[aria-label*="Dismiss"], yt-button-shape#dismiss-button');
+                        // Auto-dismiss dialog popups and YouTube "Are you still watching?"
+                        var dismiss = document.querySelector('ytd-button-renderer#dismiss-button, button[aria-label*="Dismiss"], yt-button-shape#dismiss-button, #confirm-button, yt-confirm-dialog-renderer #confirm-button');
                         if (dismiss) dismiss.click();
+
+                        // Force DISABLE YouTube Autoplay toggle so YouTube never auto-plays random videos
+                        var autonav = document.querySelector('.ytp-autonav-toggle-button[aria-checked="true"]');
+                        if (autonav) autonav.click();
 
                         if (v.paused && !v.ended) {
                             v.play().catch(function(e){});
@@ -470,36 +537,62 @@ class GUIWorker(threading.Thread):
                     self.durationTime = f"{dur//60}:{dur%60:02d}"
                     self.status = "Đang phát"
 
+                    # Inject and update visible floating HUD directly on YouTube video page
+                    try:
+                        hud_info = {
+                            "browser": self.browser_name,
+                            "ssid": SHARED_STATE.get("ssid", "Wi-Fi"),
+                            "ip": SHARED_STATE.get("ip", ""),
+                            "rem": SHARED_STATE.get("rem_str", "--:--"),
+                            "step_name": f"Video 1 ({self.currentTime}/{self.durationTime})" if self.step == 0 else (f"Video 2 ({self.currentTime}/{self.durationTime})" if self.step == 1 else f"Video Đệm ({cur}s/{self.current_limit}s)"),
+                            "runs": f"Chính: {self.mainRuns} | Đệm: {self.bufferRuns}"
+                        }
+                        self.driver.execute_script("""
+                            var d = arguments[0];
+                            var h = document.getElementById('yt-streamer-hud');
+                            if (!h) {
+                                h = document.createElement('div');
+                                h.id = 'yt-streamer-hud';
+                                h.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:2147483647;background:linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.96));border:1.5px solid #38bdf8;color:#fff;padding:8px 18px;border-radius:25px;font-size:13px;font-weight:bold;font-family:system-ui,-apple-system,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,0.8);pointer-events:none;white-space:nowrap;';
+                                document.body.appendChild(h);
+                            }
+                            h.innerHTML = '<span style="color:#22c55e;">● ' + d.browser + '</span> &nbsp;|&nbsp; 🌐 <b>' + d.ssid + '</b> (' + d.ip + ') &nbsp;|&nbsp; ⏳ Đổi Wi-Fi: <b style="color:#fbbf24;">' + d.rem + '</b> &nbsp;|&nbsp; 🎬 <b style="color:#38bdf8;">' + d.step_name + '</b> &nbsp;|&nbsp; 📊 ' + d.runs;
+                        """, hud_info)
+                    except Exception:
+                        pass
+
                     # Check transitions
                     if self.step == 0:
-                        # Video 1: finish when ended or within 2s of end
-                        if ended or (dur > 30 and cur >= dur - 2):
+                        # Video 1: finish when ended or near end or past 520s
+                        if ended or (dur > 30 and cur >= dur - 3) or (cur >= 520):
                             self.mainRuns += 1
                             self.step = 1
                             self.status = "Chuyển sang Video 2..."
-                            time.sleep(3)
+                            time.sleep(2)
                             self.navigate_to_video(CHANNEL_VIDEOS[1]["id"])
 
                     elif self.step == 1:
-                        # Video 2: finish when ended or within 2s of end
-                        if ended or (dur > 30 and cur >= dur - 2):
+                        # Video 2: finish when ended or near end or past 560s
+                        if ended or (dur > 30 and cur >= dur - 3) or (cur >= 560):
                             self.mainRuns += 1
                             self.step = 2
                             buf = BUFFER_VIDEOS[self.buffer_cycle]
                             self.current_limit = buf["limit"]
+                            self.current_buffer_id = buf["id"]
                             self.buffer_cycle = (self.buffer_cycle + 1) % len(BUFFER_VIDEOS)
                             self.status = f"Chuyển sang Đệm ({self.current_limit}s)..."
-                            time.sleep(3)
-                            self.navigate_to_video(buf["id"])
+                            time.sleep(2)
+                            self.navigate_to_video(self.current_buffer_id)
 
                     elif self.step == 2:
-                        # Buffer video: finish when current >= current_limit or ended
+                        # Buffer video: finish when current >= current_limit (10s or 30s) or ended
                         if (self.current_limit and cur >= self.current_limit) or ended:
                             self.bufferRuns += 1
                             self.step = 0
                             self.current_limit = None
+                            self.current_buffer_id = None
                             self.status = "Xong đệm ➔ Quay lại Video 1..."
-                            time.sleep(3)
+                            time.sleep(2)
                             self.navigate_to_video(CHANNEL_VIDEOS[0]["id"])
 
                 except Exception as loop_e:
@@ -532,13 +625,24 @@ class GUIWorker(threading.Thread):
             self.driver = None
 
 def main():
+    try:
+        # Prevent Windows from sleeping or suspending threads when PC is locked (Win + L)
+        ctypes.windll.kernel32.SetThreadExecutionState(0x80000001)
+    except Exception:
+        pass
+
     print("=" * 80, flush=True)
-    print("🎬 HỆ THỐNG CÀY VIEW ĐA TRÌNH DUYỆT (MULTI-BROWSER) TRÊN DESKTOP 2", flush=True)
+    print("🎬 HỆ THỐNG CÀY VIEW ĐA TRÌNH DUYỆT (6 BROWSERS) TRÊN DESKTOP 2", flush=True)
     print("✓ Cửa sổ #1: Google Chrome | Cửa sổ #2: Microsoft Edge", flush=True)
     print("✓ Cửa sổ #3: Brave Browser | Cửa sổ #4: Cốc Cốc", flush=True)
-    print("✓ Mỗi trình duyệt chạy nhân độc lập 100% (Khác vân tay TLS/Fingerprint/Vendor)", flush=True)
-    print("✓ Tự động xếp gọn 2x2 trên Desktop 2", flush=True)
-    print("✓ Chu kỳ chuẩn: 1 -> 2 -> đệm 10s -> 1 -> 2 -> đệm 30s", flush=True)
+    print("✓ Cửa sổ #5: Opera         | Cửa sổ #6: Opera GX", flush=True)
+    print("✓ Tự động xếp gọn 3x2 trên Desktop 2 | Mỗi trình duyệt profile riêng 100%", flush=True)
+    print("✓ DANH SÁCH PHÁT (PLAYLIST):", flush=True)
+    print("   1. Video Chính 1: https://www.youtube.com/watch?v=v--oP2aezgI (Tôi Mất 6 Năm...)", flush=True)
+    print("   2. Video Chính 2: https://www.youtube.com/watch?v=OC4aGfMpViU (MILO...)", flush=True)
+    print("   3. Đệm 1 (10s)  : https://www.youtube.com/watch?v=kJQP7kiw5Fk (Despacito)", flush=True)
+    print("   4. Đệm 2 (30s)  : https://www.youtube.com/watch?v=dQw4w9WgXcQ (Never Gonna Give You Up)", flush=True)
+    print("✓ Chu kỳ chuẩn: 1 -> 2 -> đệm 10s -> 1 -> 2 -> đệm 30s -> Lặp lại", flush=True)
     print("✓ TỰ ĐỘNG XOAY WI-FI (MinhLaConMeoDay <-> VNTT-RD) sau mỗi 30 phút", flush=True)
     print("=" * 80, flush=True)
 
@@ -554,7 +658,7 @@ def main():
     print("=" * 80, flush=True)
 
     workers = []
-    for i in range(4):
+    for i in range(len(BROWSER_SPECS)):
         tile = TILES[i % len(TILES)]
         delay = i * 4
         w = GUIWorker(worker_id=i+1, tile=tile, delay=delay)
@@ -583,9 +687,10 @@ def main():
                     try:
                         if w.driver:
                             w.driver.execute_script("""
-                                if (typeof player !== 'undefined' && player) {
-                                    if (typeof player.mute === 'function') player.mute();
-                                    if (typeof player.playVideo === 'function') player.playVideo();
+                                var v = document.querySelector('video');
+                                if (v) {
+                                    v.muted = true;
+                                    if (v.paused) v.play().catch(function(e){});
                                 }
                             """)
                     except Exception:
@@ -595,6 +700,33 @@ def main():
             remaining_sec = max(0, int(WIFI_ROTATE_INTERVAL_SECONDS - elapsed_since_rotate))
             rem_min = remaining_sec // 60
             rem_s = remaining_sec % 60
+
+            SHARED_STATE["ssid"] = current_ssid
+            SHARED_STATE["ip"] = current_public_ip
+            SHARED_STATE["rem_str"] = f"{rem_min:02d}:{rem_s:02d}"
+
+            # Export status.json for live monitor GUI
+            try:
+                status_payload = {
+                    "wifi": current_ssid,
+                    "ip": current_public_ip,
+                    "countdown": f"{rem_min:02d}:{rem_s:02d}",
+                    "workers": [
+                        {
+                            "id": w.worker_id,
+                            "name": w.browser_name,
+                            "title": w.title,
+                            "time": f"{w.currentTime}/{w.durationTime}",
+                            "status": w.status,
+                            "main": w.mainRuns,
+                            "buffer": w.bufferRuns
+                        } for w in workers
+                    ]
+                }
+                with open(ROOT_DIR / "status.json", "w", encoding="utf-8") as sf:
+                    json.dump(status_payload, sf, ensure_ascii=False, indent=2)
+            except Exception:
+                pass
 
             total_main = sum(w.mainRuns for w in workers)
             total_buffer = sum(w.bufferRuns for w in workers)

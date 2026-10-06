@@ -8,3 +8,6 @@ __pycache__/
 .studio-data/
 tmp/omniroute-*.log
 tools/ffmpeg/
+# Trạng thái runtime của bộ stream: ghi đè mỗi lần chạy, chứa wifi SSID + IP máy.
+status.json
+playlist.json
