@@ -101,3 +101,7 @@ Năm bước hiển thị, sáu cổng backend vẫn giữ nguyên. Phân tích 
 ## D1 · Kênh khám phá không truy cập được
 
 Lỗi catalog có status thành dòng không đạt, kèm lý do; lỗi không có status vẫn ném tiếp. Kênh lỗi không làm hỏng toàn bộ bước kho và không được tính vào cổng. Test mock items rỗng và lỗi mạng đã đỏ trước, xanh sau. Chưa kiểm chứng với YouTube thật.
+
+## D2 · Chủ đề mới trùng thực thể với nhau
+
+Mỗi tiêu đề mới được so với cả kho và danh sách good. Egypt / Ancient Egypt chỉ giữ một; nếu thiếu 20 sẽ gọi lượt đề xuất bổ sung. Test hai lượt mock đã đỏ trước, xanh sau; chưa chạy Groq/YouTube thật trong mục này.

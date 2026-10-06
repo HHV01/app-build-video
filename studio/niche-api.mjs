@@ -162,6 +162,7 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
           if (!n.startsWith(norm(flow.template.value) + ' ') || existing.has(n) || seen.has(n)) continue;
           // Trùng thực thể với kho: kho có "…of Egypt" thì "…of Ancient Egypt" cũng là đã có.
           if (overlapsShelf(t, flow.template.value, shelfTitles)) continue;
+          if (overlapsShelf(t, flow.template.value, good)) continue;
           seen.add(n); good.push(t.trim());
         }
       };

@@ -22,3 +22,13 @@ test('D1 unavailable discovered channels become failed rows; network errors stil
  const failed=shelf.channels.find(c=>c.channelId==='unresolved:'+uc(3));assert(failed);assert.equal(failed.pass,false);assert.match(failed.reason,/Không tìm thấy kênh/);assert.equal(shelf.count,2);assert.equal(shelf.passed,false);
  const error=Error('network');const broken=harness({youtube:async()=>{throw error;}}),before=structuredClone(broken.state());await assert.rejects(broken.act('shelf',{mode:'live'}),e=>e===error);assert.deepEqual(broken.state(),before);
 });
+
+test('D2 new overlapping topics are rejected and trigger the second generation',async()=>{
+ let calls=0;
+ const h=harness({generate:async()=>({output:{topics:++calls===1?[
+  'The Entire History of Egypt','The Entire History of Ancient Egypt',...Array.from({length:18},(_,i)=>'The Entire History of NewEntity'+i)
+ ]:['The Entire History of Atlantis']}})});
+ const topics=(await h.act('topics')).survey.nicheFlow.topics;
+ assert.equal(calls,2);assert.equal(topics.passed,true);assert.equal(topics.chosen.length,20);
+ assert(!topics.chosen.includes('The Entire History of Ancient Egypt'));assert(topics.chosen.includes('The Entire History of Atlantis'));
+});
