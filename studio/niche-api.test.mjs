@@ -68,6 +68,39 @@ test('B2 · kênh lặp cụm DÀI HƠN khuôn vẫn tính cùng khuôn; kênh l
  assert.match(by.b.template.template,/^the entire history of ancient/,'khuôn dài hơn vẫn chứa khuôn đã chốt');
  assert.match(by.c.template.template,/^the rise and fall of/);
 });
+test('B3 · kho chỉ chứa video MANG KHUÔN; video nóng không mang khuôn không được tính vào',async()=>{
+ const n=Date.now();
+ const plain=(ch,count,views,age,title)=>Array.from({length:count},(_,i)=>({
+  id:`${ch}${age}${i}`,channelId:ch,channelTitle:ch,title:title(_,i),views:views+i,
+  publishedAt:new Date(n-(age+i)*86400000).toISOString(),duration:300,format:'long',
+ }));
+ const videos=[
+  // 2 kênh sạch: mọi video đều mang khuôn.
+  ...plain('a',20,30000,200,(_,i)=>`The Entire History of Empire ${i}`),
+  ...plain('b',20,30000,200,(_,i)=>`The Entire History of Empire Ancient ${i}`),
+  // Kênh d: 20 video mới nhất mang khuôn (đủ tìm khuôn), 25 video CŨ hơn
+  // không mang khuôn nhưng view gấp 10 lần. Nếu không lọc, chúng kéo trung vị
+  // lên 300.002 và làm bội số sai.
+  ...plain('d',20,30000,200,(_,i)=>`The Entire History of Empire Medieval ${i}`),
+  ...plain('d',25,300000,1000,(_,i)=>`Completely Different Subject ${i}`),
+ ];
+ const h=harness(videos);
+ await h.act('field',{market:'US',language:'en',format:'long'});
+ await h.act('template',{channel:'a',angle:'x'});
+ const shelf=(await h.act('shelf')).survey.nicheFlow.shelf;
+ assert.equal(shelf.passed,true);
+ const d=shelf.channels.find(c=>c.channelId==='d');
+ assert.equal(d.matureCount,20,'chỉ tính video mang khuôn');
+ assert.equal(d.median,30009.5,`trung vị phải tính trên video mang khuôn, thấy ${d.median}`);
+ assert.equal(d.videos.length,20);
+ assert.ok(d.videos.every(v=>/^the entire history of empire medieval/i.test(v.title)),'kho không được chứa video không mang khuôn');
+ assert.ok(d.videos.every(v=>v.multiple>0.9&&v.multiple<1.1),`bội số phải quanh 1, thấy ${d.videos[0].multiple}`);
+ assert.equal(d.videos.filter(v=>v.views>=300000).length,0,'video nóng không mang khuôn không được vào kho');
+ // Kho gộp cũng phải sạch.
+ const pooled=shelf.videos;
+ assert.equal(pooled.length,60);
+ assert.ok(pooled.every(v=>!/^completely different subject/i.test(v.title)));
+});
 test('probe missing results and invalid views cannot pass',async()=>{
  const h=harness();await prepare(h);const videos=h.state().surveys[0].nicheFlow.shelf.videos;
  await h.act('groups',{groups:Array.from({length:4},(_,i)=>({name:'G'+i,videoIds:videos.filter((_,j)=>j%4===i).map(v=>v.id)}))});await h.act('groups',{groupId:'group-0'});

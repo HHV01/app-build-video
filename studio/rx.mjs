@@ -400,6 +400,15 @@ export function findTemplate(titles, rules = RULES) {
   return { template: null, total, passed: false, complete: true, reason: 'Không có cụm mở đầu nào lặp quá nửa số tiêu đề: kênh này không có khuôn.' };
 }
 
+// Tiêu đề có mang khuôn không. Chuẩn hoá y hệt findTemplate rồi so tiền tố
+// theo ranh giới từ, nên "…of empire" khớp "…of empire Rome" nhưng không
+// khớp "…of empire 2".
+export function carriesTemplate(title, template) {
+  const want = tokens(template).join(' ');
+  if (!want) return false;
+  return tokens(title).join(' ').startsWith(want + ' ');
+}
+
 // Chỉ video đã đủ tuổi (>= 90 ngày) mới có view "chín".
 export const matureVideos = (videos, now = Date.now(), rules = RULES) =>
   videos.filter(v => Number.isFinite(v.views) && (now - Date.parse(v.publishedAt)) / DAY >= rules.matureDays);

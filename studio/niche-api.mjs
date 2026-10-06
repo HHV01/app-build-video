@@ -1,5 +1,5 @@
 // Integrates existing rx/core rules; it contains no second set of thresholds.
-import { RULES, STAGES, findTemplate, channelShelf, shelfGate, probeGate, blindTitles, groupCountGate, nextStage, lockedNiche, validateTopics } from './rx.mjs';
+import { RULES, STAGES, findTemplate, carriesTemplate, channelShelf, shelfGate, probeGate, blindTitles, groupCountGate, nextStage, lockedNiche, validateTopics } from './rx.mjs';
 import { median, validateGroups } from './core.mjs';
 
 const fault = (message, status = 400) => Object.assign(new Error(message), { status });
@@ -46,7 +46,10 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
     const result = findTemplate(cat.videos.map(v => v.title));
     // Duration alone cannot definitively distinguish Shorts. Surface this in the UI.
     const videos = cat.videos.filter(v => format === 'short' ? v.format === 'short' : v.format !== 'short' && v.duration > 180);
-    const shelf = channelShelf(videos)[0] || { matureCount: 0, median: null, pass: false, videos: [] };
+    // Kho chỉ tính video MANG KHUÔN. Video nổi bật nhất của kênh nhưng nói về
+    // chủ đề khác không thuộc dòng khuôn thì không được vào trung vị/bội số.
+    const carrying = videos.filter(v => carriesTemplate(v.title, template));
+    const shelf = channelShelf(carrying)[0] || { matureCount: 0, median: null, pass: false, videos: [] };
     // Hai kênh cùng khuôn khi khuôn của kênh này CHỨA khuôn đã chốt. So sánh
     // bằng nhau là quá chặt: kênh lặp cụm dài hơn vẫn là cùng một dòng khuôn.
     const sameTemplate = Boolean(result.template) && `${result.template} `.startsWith(`${template} `);

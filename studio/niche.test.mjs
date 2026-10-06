@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { findTemplate, channelShelf, shelfGate, probeGate, nextStage, lockedNiche, groupCountGate } from './rx.mjs';
+import { findTemplate, channelShelf, shelfGate, probeGate, nextStage, lockedNiche, groupCountGate, carriesTemplate } from './rx.mjs';
 const now = Date.parse('2026-10-05');
 const mk = (ch, n, days, views) => Array.from({ length: n }, (_, i) => ({ id: ch + i, channelId: ch, channelTitle: ch, title: 't', views, publishedAt: new Date(now - (days + i) * 86400000).toISOString() }));
 
@@ -47,6 +47,23 @@ test('kênh: loại video chưa 90 ngày, ngưỡng 5 video và trung vị 20.00
   assert.equal(ok.pass, true); assert.equal(ok.matureCount, 6); assert.equal(ok.videos[0].multiple, 1);
   assert.equal(channelShelf(mk('b', 4, 100, 50000), now)[0].pass, false);
   assert.equal(channelShelf(mk('c', 8, 100, 19999), now)[0].pass, false);
+});
+test('B3 · carriesTemplate nhận tiêu đề mang khuôn, từ chối phần còn lại', () => {
+  assert.equal(carriesTemplate('The Entire History of Rome', 'the entire history of'), true);
+  assert.equal(carriesTemplate('  The   Entire  History of   Rome  ', 'the entire history of'), true, 'chuẩn hoá khoảng trắng');
+  assert.equal(carriesTemplate('The Entire History Of Rome', 'the entire history of'), true, 'không phân biệt hoa thường');
+  assert.equal(carriesTemplate('The Entire History of', 'the entire history of'), false, 'bằng đúng khuôn thì chưa có thực thể');
+  assert.equal(carriesTemplate('Completely Different Subject', 'the entire history of'), false);
+  assert.equal(carriesTemplate('Why the Entire History of Rome matters', 'the entire history of'), false, 'phải ở đầu, không phải ở giữa');
+  // Ranh giới từ: "ofempire" không phải là "of empire".
+  assert.equal(carriesTemplate('The Entire History ofempire Today', 'the entire history of'), false);
+  // "ofempire" là MỘT từ, không tách thành "of" + "empire".
+  assert.equal(carriesTemplate('The Entire History ofempire Today', 'the entire history of empire'), false);
+  // Khuôn đã chốt có thể ngắn hơn khuôn của riêng kênh — vẫn phải khớp.
+  assert.equal(carriesTemplate('The Entire History of Empire Rome', 'the entire history of empire'), true);
+  assert.equal(carriesTemplate('The Entire History of Empire Rome', 'the entire history of'), true);
+  assert.equal(carriesTemplate('bất kỳ', ''), false, 'khuôn rỗng thì không video nào mang khuôn');
+  assert.equal(carriesTemplate('bất kỳ', null), false);
 });
 test('cổng kho: cần 3 kênh', () => {
   const ch = channelShelf([...mk('a', 6, 100, 30000), ...mk('b', 6, 100, 30000)], now);
