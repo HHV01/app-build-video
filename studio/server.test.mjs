@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { once } from 'node:events';
 
@@ -72,4 +72,43 @@ test('A1 · bản dựng không tồn tại trả JSON lỗi và không làm s�
     const home = await fetch(`${s.base}/`);
     assert.equal(home.status, 200, `server đã chết. stderr:\n${s.stderr()}`);
   } finally { await s.stop(); }
+});
+
+test('A2 · đuôi file độc hại không ghi ra ngoài thư mục tạm của request', async () => {
+  const s = await boot();
+  try {
+    const marker = { youtubeKey: 'SENTINEL-KHONG-DUOC-GHI-DE', keep: true };
+    await writeFile(path.join(s.dir, 'settings.json'), JSON.stringify(marker), 'utf8');
+    const before = await readFile(path.join(s.dir, 'settings.json'), 'utf8');
+
+    // Đuôi chứa đường dẫn: nối thẳng vào path.join sẽ thoát ra khỏi thư mục tạm.
+    const evil = 'x/../../../settings.json';
+    await s.req('/api/probe', 'POST', { data: 'data:application/octet-stream;base64,' + Buffer.from('x').toString('base64'), ext: evil });
+
+    assert.equal(await readFile(path.join(s.dir, 'settings.json'), 'utf8'), before, 'settings.json bị ghi đè');
+
+    // Không được tạo file nào ngoài thư mục tạm (dataRoot/tmp/<uuid>).
+    const created = (await readdir(s.dir, { recursive: true }))
+      .map(String)
+      .filter(p => !p.startsWith('tmp') && p !== 'settings.json' && p !== 'state.json' && p !== 'build');
+    assert.deepEqual(created, [], `tạo file ngoài thư mục tạm: ${created.join(', ')}`);
+
+    assert.equal((await fetch(`${s.base}/`)).status, 200, `server chết. stderr:\n${s.stderr()}`);
+  } finally { await s.stop(); }
+});
+
+test('A2 · safeExt chỉ nhận đuôi file an toàn', async () => {
+  const { safeExt } = await import('./server-lib.mjs');
+  assert.equal(safeExt('mp4', 'bin'), 'mp4');
+  assert.equal(safeExt('MP3', 'bin'), 'mp3');
+  assert.equal(safeExt('x/../../../settings.json', 'bin'), 'bin');
+  assert.equal(safeExt('', 'bin'), 'bin');
+  assert.equal(safeExt(null, 'bin'), 'bin');
+  assert.equal(safeExt(undefined, 'bin'), 'bin');
+  assert.equal(safeExt('toolong', 'bin'), 'bin');
+  assert.equal(safeExt('a.b', 'bin'), 'bin');
+  assert.equal(safeExt('..', 'bin'), 'bin');
+  assert.equal(safeExt('exe', 'mp3'), 'exe', 'đuôi ngắn, chữ và số là hợp lệ');
+  // Phải dùng đúng fallback của từng chỗ trong server.mjs.
+  assert.equal(safeExt('../../evil', 'mp3'), 'mp3');
 });

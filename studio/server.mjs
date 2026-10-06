@@ -9,6 +9,7 @@ import { enrichVideos, normalizeImport, validateGroups, parseAIJSON, durationSec
 import { blindTitles, groupCountGate, RULES, STAGES } from './rx.mjs';
 import { createNicheAPI } from './niche-api.mjs';
 import { createAssetStore } from './assets.mjs';
+import { safeExt } from './server-lib.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const publicRoot = path.join(root, 'studio', 'public');
@@ -392,7 +393,7 @@ async function renderVideo(b) {
     const built = await run('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', listFile, '-vf', `fps=30,${scale}`, '-c:v', 'libx264', '-preset', b.preset || 'veryfast', '-crf', String(b.crf || 20), '-pix_fmt', 'yuv420p', videoOnly], 900000);
     if (built.code !== 0) throw failure(`ffmpeg dựng ảnh thất bại: ${redact(built.stderr)}`, 500);
 
-    const voiceFile = path.join(dir, `voice.${b.voiceExt || 'mp3'}`);
+    const voiceFile = path.join(dir, `voice.${safeExt(b.voiceExt, 'mp3')}`);
     await writeFile(voiceFile, decodeDataUrl(b.voice, 'data:audio/'));
     // Giọng là chuẩn độ dài. Cắt tường minh theo giây thay vì tin -shortest:
     // -shortest không đáng tin khi sao chép nguyên vẹn luồng video (-c:v copy).
@@ -404,7 +405,7 @@ async function renderVideo(b) {
     const out = path.join(dir, 'final.mp4');
     let args;
     if (b.music) {
-      const musicFile = path.join(dir, `music.${b.musicExt || 'mp3'}`);
+      const musicFile = path.join(dir, `music.${safeExt(b.musicExt, 'mp3')}`);
       await writeFile(musicFile, decodeDataUrl(b.music, 'data:audio/'));
       // Nhạc hạ 18 dB so với giọng rồi lặp vô hạn; luôn lấy giọng làm chuẩn độ dài.
       args = ['-y', '-hide_banner', '-loglevel', 'error', '-i', videoOnly, '-i', voiceFile, '-i', musicFile,
@@ -733,7 +734,7 @@ async function makeImage(b) {
         const b = await body(req);
         return json(res, 200, await withTempDir(async dir => {
           const bytes = decodeDataUrl(b.data, 'data:');
-          const file = path.join(dir, `probe.${b.ext || 'bin'}`);
+          const file = path.join(dir, `probe.${safeExt(b.ext, 'bin')}`);
           await writeFile(file, bytes);
           return probe(file);
         }));
