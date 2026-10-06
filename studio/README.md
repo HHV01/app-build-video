@@ -35,7 +35,7 @@ năm hiện tại; lấy `snippet.channelId`, gộp trùng và dừng ở 10 kê
 chỉ khớp tên kênh.
 
 Gõ thử cần đủ 20 video mỗi mẫu, trung vị số video vượt 20.000 view đạt ít nhất 11/20. Khi chế độ trực tiếp,
-ba câu tìm được điền sẵn từ **nhóm có bội số trung vị cao nhất**; nếu gõ thử trượt thì có nút quay lại bước
+ba câu tìm được điền sẵn từ **nhóm dựng được đủ ba câu** (ưu tiên nhóm nhiều câu, rồi tới bội số trung vị cao nhất); nếu gõ thử trượt thì có nút quay lại bước
 Chia nhóm để thử nhóm khác. Các lựa chọn ngưỡng rộng/vừa/chặt trong helper cũ không áp dụng cho luồng mới.
 
 Chủ đề cuối phải theo đúng khuôn và **không trùng thực thể** với kho: thực thể là phần tiêu đề còn lại sau
