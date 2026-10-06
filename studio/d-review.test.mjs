@@ -64,3 +64,14 @@ test('D5 live probes request 25 and use the first 20 valid views despite missing
 test('D5 non-array titles return 400 before generation or state mutation',async()=>{
  const h=harness();for(const titles of ['wrong',{},null,123]){const before=structuredClone(h.state());await assert.rejects(h.act('topics',{titles}),e=>e.status===400&&/mảng/.test(e.message));assert.deepEqual(h.state(),before);}
 });
+
+test('D6 knownBy ranks the combined two generations before the final cut to 20',async()=>{
+ let calls=0;
+ const h=harness({generate:async()=>({output:{topics:++calls===1?
+  Array.from({length:19},(_,i)=>({title:'The Entire History of LowEntity'+i,knownBy:'thấp'})):
+  [{title:'The Entire History of FamousA',knownBy:'Cao'},{title:'The Entire History of FamousB',knownBy:'cao'},{title:'The Entire History of MediumC',knownBy:'vừa'}]
+ }})});
+ const result=(await h.act('topics')).survey.nicheFlow.topics;assert.equal(calls,2);assert.equal(result.passed,true);
+ assert.deepEqual(result.chosen.slice(0,3),['The Entire History of FamousA','The Entire History of FamousB','The Entire History of MediumC']);
+ assert.equal(result.chosen.length,20);assert.equal(result.chosen.at(-1),'The Entire History of LowEntity16');
+});

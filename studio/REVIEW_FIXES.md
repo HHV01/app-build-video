@@ -117,3 +117,7 @@ Kênh có ít nhất 80% video duration=0 và không phải format=short: templa
 ## D5 · Gõ thử lấy dư và kiểm tra kiểu titles
 
 Search live lấy 25, loại chi tiết thiếu/view không hợp lệ rồi lấy đúng 20 theo thứ tự trả về. Dưới 20 báo số thực có, không nới cổng. titles có mặt nhưng không phải mảng trả 400 trước khi gọi AI hoặc ghi state. Test mock mất chi tiết, view sai, mẫu 19 và titles sai đã đỏ trước, xanh sau. Chưa kiểm chứng search YouTube thật.
+
+## D6 · Xếp lại knownBy sau cả hai lượt
+
+Giữ title và knownBy trong good; sau khi gom cả hai lượt, sắp toàn bộ theo cao → vừa → thấp rồi cắt 20. API chosen vẫn là mảng tiêu đề như trước. Test lượt đầu 19 thấp, lượt sau 2 cao + 1 vừa đã đỏ trước, xanh sau; ca B6 một lượt vẫn đạt.

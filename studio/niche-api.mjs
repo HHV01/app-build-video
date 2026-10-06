@@ -168,8 +168,8 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
           if (!n.startsWith(norm(flow.template.value) + ' ') || existing.has(n) || seen.has(n)) continue;
           // Trùng thực thể với kho: kho có "…of Egypt" thì "…of Ancient Egypt" cũng là đã có.
           if (overlapsShelf(t, flow.template.value, shelfTitles)) continue;
-          if (overlapsShelf(t, flow.template.value, good)) continue;
-          seen.add(n); good.push(t.trim());
+          if (overlapsShelf(t, flow.template.value, good.map(item=>item.title))) continue;
+          seen.add(n); good.push({title:t.trim(),knownBy:item?.knownBy});
         }
       };
       take(await propose());
@@ -177,10 +177,11 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
         // Gọi lần 2 với danh sách đã có để AI đề xuất thực thể khác hẳn.
         take(await propose({ avoid: [...seen, ...shelfTitles.slice(0, 20)] }));
       }
+      const ordered = good.sort((a,b)=>knownRank(a.knownBy)-knownRank(b.knownBy)).map(item=>item.title);
       if (good.length >= RULES.topicCount) {
-        value = { passed: true, chosen: good.slice(0, RULES.topicCount), errors: [] };
+        value = { passed: true, chosen: ordered.slice(0, RULES.topicCount), errors: [] };
       } else {
-        const check = validateTopics(good, shelfTitles, flow.template.value);
+        const check = validateTopics(ordered, shelfTitles, flow.template.value);
         value = { passed: false, chosen: [], errors: [`Mới gom được ${good.length}/${RULES.topicCount} chủ đề chưa trùng.`, ...check.errors.slice(0, 5)] };
       }
     }
