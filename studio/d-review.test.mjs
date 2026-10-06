@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createNicheAPI } from './niche-api.mjs';
 import { overlapsShelf } from './rx.mjs';
+import { readFile } from 'node:fs/promises';
 const uc=n=>'UC'+String(n).padStart(22,'0');
 const template='the entire history of';
 const videos=(id=uc(1))=>Array.from({length:20},(_,i)=>({id:id+'-'+i,channelId:id,channelTitle:id,title:'The Entire History of Place'+i,views:30000,duration:600,format:'long',publishedAt:'2025-01-01T00:00:00Z'}));
@@ -74,4 +75,13 @@ test('D6 knownBy ranks the combined two generations before the final cut to 20',
  const result=(await h.act('topics')).survey.nicheFlow.topics;assert.equal(calls,2);assert.equal(result.passed,true);
  assert.deepEqual(result.chosen.slice(0,3),['The Entire History of FamousA','The Entire History of FamousB','The Entire History of MediumC']);
  assert.equal(result.chosen.length,20);assert.equal(result.chosen.at(-1),'The Entire History of LowEntity16');
+});
+
+test('C4 clean checkout documents setup, runs studio tests in CI, and lists review-only files',async()=>{
+ const readme=await readFile(new URL('../README.md',import.meta.url),'utf8');
+ assert.match(readme,/Node\.js 22/);assert.match(readme,/ffmpeg/i);assert.match(readme,/npm run studio/);assert.match(readme,/studio\/README\.md/);
+ const workflow=await readFile(new URL('../.github/workflows/studio-test.yml',import.meta.url),'utf8');
+ assert.match(workflow,/pull_request/);assert.match(workflow,/node-version: ['"]?22/);assert.match(workflow,/npm run studio:test/);assert.match(workflow,/ubuntu-latest/);assert.match(workflow,/windows-latest/);
+ const inventory=await readFile(new URL('./FILE_REVIEW_INVENTORY.md',import.meta.url),'utf8');
+ for(const target of ['tools/*.png','scratch/','tmp/','docs/ocr/'])assert(inventory.includes(target));
 });

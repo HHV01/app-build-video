@@ -87,9 +87,9 @@ Theo [tài liệu Google hiện hành](https://developers.google.com/youtube/v3/
 
 ## Kiểm tra
 
-`node --test studio/core.test.mjs studio/rx.test.mjs studio/niche.test.mjs studio/niche-api.test.mjs studio/production.test.mjs studio/integration.test.mjs`
+`npm run studio:test`
 
-39 kiểm thử. [Chi tiết bản sửa và phần chưa kiểm chứng](REVIEW_FIXES.md).
+Nghiệm thu ngày 06/10/2026: 108 kiểm thử đạt, không lỗi, không bỏ qua trên máy có FFmpeg. [Chi tiết bản sửa và phần chưa kiểm chứng](REVIEW_FIXES.md).
 
 ## Flow tìm ngách rút gọn
 
@@ -98,3 +98,11 @@ Kênh tham khảo → Chọn khuôn → Kiểm tra ngách (kho kênh, nhóm, nhu
 Khuôn dài nhất được đề xuất; mở **Xem thêm lựa chọn** để chọn khuôn khác đã đạt hơn 50%. **Dùng khuôn này** tự kiểm tra kho. Thiếu kênh thì xem số còn thiếu, thêm kênh hoặc thử khuôn khác. Các cổng ở backend giữ nguyên; không có khuôn gõ tự do.
 
 Chọn nhóm xong, câu tìm gợi ý được lưu và có thể sửa; ô cố ý xoá trống không bị tự điền lại. Các bước liên tiếp dừng khi chưa đạt hoặc API lỗi, giữ kết quả đã hoàn thành. Tạo kênh dùng lại khuôn, góc kể, nhóm, 20 chủ đề và link tham khảo.
+
+## Bổ sung D1–D6 và C1/C4
+
+Kênh khám phá không truy cập được hiện thành dòng không đạt, kèm lý do. Kho nhập có ít nhất 80% video duration=0 chưa đánh dấu Shorts cần bổ sung cột duration; bước Khuôn báo lỗi rõ, bước Kho giữ dòng không đạt.
+
+Gõ thử YouTube lấy 25 kết quả, lọc chi tiết/view hợp lệ rồi dùng 20; thiếu sẽ báo số thực có. Chủ đề mới so trùng với kho và với nhau, có ngoại lệ cho thực thể một từ chung; đồng nghĩa vẫn cần đối chiếu tay. knownBy được xếp lại sau cả hai lượt trước khi lấy 20. titles gửi vào phải là mảng.
+
+Test chạy trên dữ liệu riêng. Thiếu ffmpeg/ffprobe chỉ bỏ qua subtest dựng, vẫn kiểm chứng HTTP. Workflow GitHub Actions kiểm thử Ubuntu/Windows với Node 22; chưa có kết quả chạy CI từ GitHub cho bản sửa này. [Kiểm kê file chờ duyệt, chưa xoá](FILE_REVIEW_INVENTORY.md). Các thay đổi D1/D5 và chuỗi khảo sát mới chưa được kiểm chứng với YouTube thật; test dùng mock, không tiêu quota thật.
