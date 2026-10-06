@@ -93,3 +93,7 @@ Yêu cầu `/api/test` trên app hiện tại đã trả `{ok:true, model:"opena
 ## Quota YouTube hiện hành
 
 [Google Quota Calculator](https://developers.google.com/youtube/v3/determine_quota_cost), cập nhật 15/09/2026: mặc định search.list có quỹ 100 lượt/ngày, videos.insert có quỹ 100 lượt/ngày; mỗi lượt dùng 1 đơn vị trong quỹ riêng. Các endpoint khác dùng chung quỹ 10.000 đơn vị/ngày; channels.list, playlistItems.list, videos.list mỗi lượt 1 đơn vị. Bộ đếm app chỉ là ước tính trong phiên chạy; Google Cloud là nguồn hạn mức thực tế.
+
+## UX tìm ngách rút gọn (06/10/2026)
+
+Năm bước hiển thị, sáu cổng backend vẫn giữ nguyên. Phân tích kênh nối field → template; duyệt khuôn nối template → shelf và dừng nếu không đạt. Ẩn lựa chọn nâng cao trong details, thêm nút xử lý kho thiếu kênh, lưu gợi ý câu tìm đúng với dữ liệu gửi. Sáu kiểm thử mới cho UI và chuỗi thao tác đã đạt; chưa kiểm chứng chuỗi tự động với YouTube thật.

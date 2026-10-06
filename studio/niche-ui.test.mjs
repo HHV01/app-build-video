@@ -15,7 +15,7 @@ const source = await readFile(path.join(here, 'public', 'niche-ui.mjs'), 'utf8')
 const alias = pathToFileURL(path.join(here, 'rx.mjs')).href;
 const dir = await mkdtemp(path.join(tmpdir(), 'studio-niche-ui-'));
 const copy = path.join(dir, 'niche-ui.mjs');
-await writeFile(copy, source.replace("from '/rx.mjs'", `from '${alias}'`), 'utf8');
+await writeFile(copy, source.replace("from '/rx.mjs'", `from '${alias}'`).replace("from './niche-workflow.mjs'",`from '${pathToFileURL(path.join(here,'public','niche-workflow.mjs')).href}'`), 'utf8');
 try {
   var { renderNiche } = await import(pathToFileURL(copy).href);
 } finally {
@@ -52,6 +52,25 @@ const flow = {
 const survey = (extra = {}) => ({ id: 's1', name: 'Test', market: 'US', language: 'en', format: 'long', nicheMode: 'live', probeMode: 'live', nicheStep: 4, nicheFlow: flow, ...extra });
 test('B8 older passed results request candidate refresh instead of claiming no template',()=>{
  const html=renderNiche(survey({nicheStep:1}),ui);assert.match(html,/Chạy lại/);assert(!html.includes('Kênh này không có khuôn.'));
+});
+
+test('Quick start puts the reference channel first and optional settings in details',()=>{
+ const html=renderNiche(survey({nicheStep:0}),ui);
+ assert(html.indexOf('survey.leadChannel')<html.indexOf('survey.name'));
+ assert.match(html,/Phân tích kênh/);assert.match(html,/data-action="niche-analyze"/);
+ assert.match(html,/<details[^>]*>[\s\S]*Tên khảo sát/);
+ assert.match(html,/survey.angle/);
+});
+test('Recommended template keeps alternatives collapsed and explains the next action',()=>{
+ const template={passed:true,value:'the entire history of',candidates:[{template:'the entire history of',words:4,matches:20,total:20},{template:'the entire history',words:3,matches:20,total:20}],examples:['The Entire History of Rome']};
+ const html=renderNiche(survey({nicheStep:1,nicheFlow:{...flow,template}}),ui);
+ assert.match(html,/<details[^>]*><summary>Xem thêm lựa chọn/);
+ assert.match(html,/Đề xuất/);assert.match(html,/tự kiểm tra kho/);
+});
+test('Failed shelf states the missing channel count and offers recovery actions',()=>{
+ const html=renderNiche(survey({nicheStep:2,nicheFlow:{...flow,shelf:{...flow.shelf,passed:false,count:2}}}),ui);
+ assert.match(html,/Còn thiếu 1 kênh đạt/);assert.match(html,/data-action="niche-add-channel"/);
+ assert.match(html,/Thử khuôn khác/);
 });
 
 test('B8 · candidate radios show counts, examples, broad/tight labels and escaped text',()=>{
@@ -113,11 +132,12 @@ test('B8 · gợi ý dựng được ít hơn ba câu thì phải nói đúng s�
   assert.match(renderNiche(survey(), ui), /Điền sẵn 3 câu từ nhóm có bội số trung vị cao nhất/);
 });
 
-test('B7 · cả sáu màn hình đều render được', () => {
-  const names = ['Chọn sân', 'Khuôn tiêu đề', 'Kho', 'Chia nhóm', 'Gõ thử', '20 chủ đề'];
+test('five-step navigation retains all six gated screens', () => {
+  const names = ['Kênh tham khảo', 'Chọn khuôn tiêu đề', 'Kiểm tra kho kênh', 'Chọn nhóm chủ đề', 'Kiểm tra nhu cầu', 'Chốt 20 chủ đề'];
   for (let step = 0; step < 6; step++) {
     const html = renderNiche(survey({ nicheStep: step }), ui);
-    assert.match(html, new RegExp(`Bước ${step + 1}/6 · ${names[step].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), `bước ${step} phải render đúng tiêu đề`);
+    const section=step<2?step:step<5?2:3;
+    assert.match(html, new RegExp(`Bước ${section + 1}/5 · ${names[step]}`), `bước ${step} phải render đúng tiêu đề`);
     assert.ok(html.length > 200, `bước ${step} phải có nội dung`);
   }
   assert.doesNotThrow(() => renderNiche({}, ui), 'không có nicheFlow vẫn phải render được');

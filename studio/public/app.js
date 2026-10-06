@@ -3,6 +3,7 @@ import { STICKMAN_PROFILE, STAGES, GATES, HIT_FLOOR_VIEWS, describeGate, analyze
 import { makeZip } from '/zip.mjs';
 import { scriptPlan, sceneWindows, validateAnimations } from '/production.mjs';
 import { renderNiche } from './niche-ui.mjs';
+import { runNicheSequence, probeQueriesFor } from './niche-workflow.mjs';
 
 let persistedState, state, settings, caps = {}, busy = false, saveQueue = Promise.resolve(), toastTimer, voiceURL;
 const app = document.querySelector('#app');
@@ -130,9 +131,12 @@ function home() {
 const SURVEY_STEPS = ['Bước 0 · Chọn sân','Bước 1 · Kênh chỉ đường','Bước 2 · Kênh làm được','Bước 3 · Nhóm & chủ đề'];
 function gateOf(s) { return s?.gate || 'vua'; }
 function niche(){const s=currentSurvey();return s?renderNiche(s,{heading,panel,notice,field,select,btn,esc,n}):empty('Không tìm thấy khảo sát','Trở lại trang chủ.');}
-async function nicheAction(stage, extras={}) {
-  const s=currentSurvey();
-  await run('Đang kiểm tra cổng '+stage+'…',async()=>{
+const nicheLabels={field:'Lưu thị trường',template:'Phân tích tiêu đề của kênh',shelf:'Tìm và kiểm tra kho kênh',groups:'Phân nhóm chủ đề',probe:'Kiểm tra nhu cầu',topics:'Kiểm tra 20 chủ đề'};
+function templateRequest(s, choose=false){return {mode:s.nicheMode||'import',channel:s.leadChannel,angle:s.angle,confirmComplete:s.completeImport===true,...(choose?{template:s.templateChoice||s.nicheFlow?.template?.value}:{})};}
+function shelfRequest(s){return {mode:s.nicheMode||'import',confirmComplete:s.completeImport===true,extraChannels:(s.extraChannelsText||'').split('\n').map(x=>x.trim()).filter(Boolean)};}
+async function applyNicheStage(stage, extras={}) {
+    const s=currentSurvey(), previousGroup=s.nicheFlow?.groups?.chosen;
+    document.querySelector('#busy-label').textContent=nicheLabels[stage]+'…';
     await save();
     let result;
     saveQueue=saveQueue.catch(()=>{}).then(async()=>{result=await api('/api/niche/'+stage,'POST',{surveyId:s.id,revision:state.revision,...extras});state.revision=result.revision;persistedState.revision=result.revision;const old=persistedState.surveys.findIndex(x=>x.id===s.id);persistedState.surveys[old]=structuredClone(result.survey);});
@@ -142,10 +146,24 @@ async function nicheAction(stage, extras={}) {
     updated.nicheStep=STAGES.indexOf(stage);
     if(current.passed && (stage!=='template'||Object.hasOwn(extras,'template')) && (stage!=='groups'||current.chosen))updated.nicheStep=Math.min(5,updated.nicheStep+1);
     if(stage==='template'&&current.passed){updated.template=current.value;updated.templateChoice=current.value;}
-    if(stage==='groups'&&current.chosen)updated.niche=current.groups.find(g=>g.id===current.chosen)?.name||updated.niche;
+    if(stage==='groups'&&current.chosen){
+      updated.niche=current.groups.find(g=>g.id===current.chosen)?.name||updated.niche;
+      updated.probeMode ||= updated.nicheMode||'import';
+      if(previousGroup!==current.chosen||updated.probeQueries==null)updated.probeQueries=(current.suggestedQueries||[]).join('\n');
+    }
     if(stage==='topics'&&current.passed)updated.topicDraft=current.chosen.join('\n');
     state.surveys[state.surveys.findIndex(x=>x.id===s.id)]=updated;
-    toast(current.passed?'Cổng đã đạt và lưu trên máy.':'Chưa đủ điều kiện. Xem chi tiết trong kết quả.',!current.passed);
+    delete updated.nicheError;
+    await save();
+    return current;
+}
+async function nicheAction(stage, extras={}, next=[]) {
+  await run(nicheLabels[stage]+'…',async()=>{
+    let active=stage;
+    try{
+      const result=await runNicheSequence([{stage,extras},...next],async(st,body)=>{active=st;return applyNicheStage(st,body);});
+      toast(result.passed?'Đã kiểm tra và lưu kết quả.':'Chưa đủ điều kiện. Xem lý do và cách bổ sung bên dưới.',!result.passed);
+    }catch(e){currentSurvey().nicheError={stage:active,message:e.message};await save();throw e;}
   });
 }
 // Kho gộp: chỉ video của các kênh đang tick, xếp theo bải số so với trung vị chính kênh đó.
@@ -256,8 +274,8 @@ function drawThumbnail(){const canvas=document.querySelector('#thumbnail'),p=cur
 function settingsView(){const grid=[panel('AI · Groq / gateway',`${notice(`Gateway: ${esc(settings.gateway)} · ${settings.gatewayConfigured?'đã có cấu hình':'chưa cấu hình'}`)}<div class="field"><label for="model-input">Model dùng trong app</label><input id="model-input" value="${esc(settings.model)}"><small>Yêu cầu app gửi qua gateway, không thay model của phiên Codex.</small></div><div class="field"><label for="sttModel">Model chuyển giọng → SRT</label><input id="sttModel" value="${esc(settings.sttModel||'groq/whisper-large-v3-turbo')}"><small>Chi phí và hạn mức tùy provider. Groq trực tiếp dùng whisper-large-v3-turbo.</small></div><div class="grid2">${field('Model đọc giọng (TTS)','ttsModel',settings.ttsModel||'gemini/gemini-3.1-flash-tts-preview','text','Để trống nếu không dùng đọc giọng máy.')}${field('Model tạo ảnh · tuỳ chọn','imageModel',settings.imageModel||'comfyui/flux-dev','text','ComfyUI cần cài và cấu hình gateway riêng. Để trống nếu bạn dán prompt ra công cụ ngoài.')}</div><div class="actions">${btn('Lưu model','save-settings','primary')}${btn('Kiểm tra AI','test-ai')}<a href="http://localhost:20128/dashboard/providers" target="_blank" rel="noopener">Mở OmniRoute</a></div><p id="connection-result" class="muted"></p>`),panel('YouTube Data API',`${notice(settings.youtubeConfigured?'Đã lưu khóa YouTube trên máy.':'Chưa có khóa YouTube. Khảo sát trực tiếp cần cấu hình này.','warning')}<div class="field"><label for="youtube-key">YouTube API key</label><input id="youtube-key" type="password" autocomplete="off" placeholder="Nhập khóa mới · không hiển thị khóa đã lưu"><small>Khóa lưu ở server, không gửi lại trình duyệt hoặc đưa vào mã frontend.</small></div><div class="actions">${btn('Lưu khóa YouTube','save-settings','primary')}<a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Console</a></div><p class="muted tiny">Bật YouTube Data API v3 cho dự án Google. Không cần khóa này để viết script hoặc nhập kho video thủ công.</p>`),panel('Đăng video lên YouTube · OAuth',`${notice(settings.youtubeLinked?'Đã nối tài khoản. Studio chỉ tải video lên; bạn xem lại trước khi công bố.':settings.oauthClientConfigured?'Đã có Client ID và Secret. Bấm nút bên dưới để chọn tài khoản.':'Cần Client ID và Client Secret. Cách tạo ghi trong README.',settings.youtubeLinked?'':'warning')}<div class="grid2"><div class="field"><label for="youtube-client-id">OAuth Client ID</label><input id="youtube-client-id" type="password" autocomplete="off" placeholder="${settings.oauthClientConfigured?'đã lưu · nhập mới để thay':'Dán Client ID'}"><small>Tạo OAuth Client ID loại Desktop app trong Google Cloud Console.</small></div><div class="field"><label for="youtube-client-secret">OAuth Client Secret</label><input id="youtube-client-secret" type="password" autocomplete="off" placeholder="${settings.oauthClientConfigured?'đã lưu · nhập mới để thay':'Dán Client Secret'}"></div></div><div class="actions">${btn('Lưu thông tin OAuth','save-settings','primary')}${btn(settings.youtubeLinked?'Ngắt kết nối YouTube':'Kết nối YouTube','youtube-connect','',settings.oauthClientConfigured?'':'disabled')}</div><p id="oauth-result" class="muted"></p><p class="muted tiny">Token chỉ lưu trên máy bạn, trong <code>.studio-data/settings.json</code>, và chỉ dùng để tải video lên kênh của bạn.</p>`)].join('');return heading('Kết nối API','AI tạo nội dung, YouTube khảo sát và YouTube đăng video là ba việc riêng.')+`<div class="grid2">${grid}</div>`+panel('Bộ đếm phiên khảo sát',`<div class="grid3"><div class="stat"><strong>${settings.usage?.searches||0}</strong><span>LƯỢT SEARCH API</span></div><div class="stat"><strong>${settings.usage?.otherCalls||0}</strong><span>LƯỢT API KHÁC</span></div><div class="stat"><strong>${settings.usage?.cacheHits||0}</strong><span>LƯỢT DÙNG CACHE</span></div></div><p class="muted tiny">Bộ đếm của phiên server, không thay dashboard quota Google hay Groq. Lần tải video lên tốn 1.600 đơn vị và không được đếm ở đây.</p>`);}
 let renderCount = 0;
 function render(){if(!state)return;renderCount += 1;const r=route();app.innerHTML=shell(r.page==='niche'?niche():r.page==='create'?channelCreate():r.page==='channel'?channelView():r.page==='settings'?settingsView():home());drawThumbnail();}
-function newSurvey(){const id=uid();state.surveys.push({id,name:'',language:'en',market:'US',format:'long',days:90,queryText:'',linksText:'',template:'',templateId:'',gate:'vua',templates:[],videos:[],groups:[],selectedChannels:[],selectedGroup:'',step:0});activity('Tạo khảo sát ngách');save();go('niche/'+id);}
-function newChannel(s){const id=uid();const c={id,name:'',language:s?.language||'vi',niche:s?.niche||'',audience:s?.audience||'',angle:s?.angle||'',difference:s?.difference||'',surveyId:s?.id||'',type:'mascot',style:'Doodle 2D',thumbnailLayout:'split',identity:{},ideas:[],createStep:0,technical:{clipSeconds:'10',structure:'consequence',subLines:SUB_LINES.join(' / ')},characterDescription:'Tích: hand-drawn 2D doodle mascot, large circular white head, tiny slim body, dark side-swept spiky hair, minimal black eyes, pink cheeks, white short-sleeve shirt, bright red scarf tied at the front, black shorts, thin black limbs, rounded black mitten hands and oval black shoes. Preserve identity from the supplied character sheet; no redesign, realistic anatomy, 3D, anime, hair or scarf changes.'};if(s?.lockedNiche){c.nicheLock=structuredClone(s.lockedNiche);c.angle=c.nicheLock.angle;c.identity.titlePattern=c.nicheLock.template;c.ideas=c.nicheLock.topics.map(title=>({title}));}state.channels.push(c);activity('Tạo hồ sơ kênh');save();go('create/'+id);}
+function newSurvey(){const id=uid();state.surveys.push({id,name:'',nicheMode:'live',probeMode:'live',nicheStep:0,language:'en',market:'US',format:'long',days:90,queryText:'',linksText:'',template:'',templateId:'',gate:'vua',templates:[],videos:[],groups:[],selectedChannels:[],selectedGroup:'',step:0});activity('Tạo khảo sát ngách');save();go('niche/'+id);}
+function newChannel(s){const id=uid();const c={id,name:'',language:s?.language||'vi',niche:s?.niche||'',audience:s?.audience||'',angle:s?.angle||'',difference:s?.difference||'',surveyId:s?.id||'',type:'mascot',style:'Doodle 2D',thumbnailLayout:'split',identity:{},ideas:[],createStep:0,technical:{clipSeconds:'10',structure:'consequence',subLines:SUB_LINES.join(' / ')},characterDescription:'Tích: hand-drawn 2D doodle mascot, large circular white head, tiny slim body, dark side-swept spiky hair, minimal black eyes, pink cheeks, white short-sleeve shirt, bright red scarf tied at the front, black shorts, thin black limbs, rounded black mitten hands and oval black shoes. Preserve identity from the supplied character sheet; no redesign, realistic anatomy, 3D, anime, hair or scarf changes.'};if(s?.nicheMode==='live'&&s.leadChannel)c.formatReference=s.leadChannel;if(s?.lockedNiche){c.nicheLock=structuredClone(s.lockedNiche);c.angle=c.nicheLock.angle;c.identity.titlePattern=c.nicheLock.template;c.ideas=c.nicheLock.topics.map(title=>({title}));}state.channels.push(c);activity('Tạo hồ sơ kênh');save();go('create/'+id);}
 function newProject(c,idea){const id=uid();state.projects.push({id,channelId:c.id,topic:idea?.title||'',minutes:5,clipSeconds:'10',structure:'consequence',step:0,approved:[],sources:[],outline:[],packaging:[],selectedPackaging:0,narration:'',scenes:[],thumbnailLayout:c.thumbnailLayout});activity('Tạo dự án video');save();go(`channel/${c.id}/workshop/${id}/0`);}
 function selectedVideos(s){return s.selectedChannels?.length?s.videos.filter(v=>s.selectedChannels.includes(v.channelId)):s.videos;}
 async function discoverAction(){const s=currentSurvey();if(!settings.youtubeConfigured)return toast('Thêm YouTube API tại Kết nối API, hoặc bấm Nhập kho video.',true);await run('Đang khảo sát YouTube…',async()=>{const r=await api('/api/discover','POST',{queries:s.queryText.split('\n').map(x=>x.trim()).filter(Boolean),links:s.linksText.split('\n').map(x=>x.trim()).filter(Boolean),language:s.language,market:s.market,format:s.format,days:s.days});s.videos=r.videos;s.groups=[];s.templates=[];s.selectedChannels=topChannels(s,3);s.step=1;settings.usage=r.usage;activity(`Khảo sát ${s.videos.length} video YouTube`);toast(r.formatWarning);});}
@@ -347,13 +365,20 @@ case 'theme':document.body.classList.toggle('light');localStorage.setItem('tich-
 case 'guide':toast('Bắt đầu Tìm ngách hoặc Dựng kênh. Dữ liệu tự lưu khi bạn chỉnh. AI dùng Groq; khảo sát YouTube cần khóa riêng.');break;
 case 'niche-step':{const next=Number(el.dataset.step);if(!Number.isInteger(next)||next<0||next>5||STAGES.slice(0,next).some(st=>s.nicheFlow?.[st]?.passed!==true))return toast('Chưa qua cổng trước.',true);s.nicheStep=next;await save();render();break;}
 case 'niche-field':await nicheAction('field',{market:s.market,language:s.language,format:s.format});break;
-case 'niche-template':await nicheAction('template',{mode:s.nicheMode||'import',channel:s.leadChannel,angle:s.angle,confirmComplete:s.completeImport===true});break;
-case 'niche-use-template':await nicheAction('template',{mode:s.nicheMode||'import',channel:s.leadChannel,angle:s.angle,confirmComplete:s.completeImport===true,template:s.templateChoice||s.nicheFlow?.template?.value});break;
-case 'niche-shelf':await nicheAction('shelf',{mode:s.nicheMode||'import',confirmComplete:s.completeImport===true,extraChannels:(s.extraChannelsText||'').split('\n').map(x=>x.trim()).filter(Boolean)});break;
+case 'niche-analyze':{
+ if(!s.leadChannel?.trim())return toast('Nhập kênh tham khảo trước khi phân tích.',true);
+ if(!s.angle?.trim())return toast('Nhập góc kể bạn muốn làm trước khi phân tích.',true);
+ if(s.nicheMode!=='live'&&!s.completeImport)return toast('Xác nhận kho nhập đầy đủ trong phần nguồn dữ liệu.',true);
+ await nicheAction('field',{market:s.market,language:s.language,format:s.format},[{stage:'template',extras:templateRequest(s)}]);break;
+}
+case 'niche-template':await nicheAction('template',templateRequest(s));break;
+case 'niche-use-template':await nicheAction('template',templateRequest(s,true),[{stage:'shelf',extras:shelfRequest(s)}]);break;
+case 'niche-shelf':await nicheAction('shelf',shelfRequest(s));break;
+case 'niche-add-channel':{const input=document.querySelector('[data-bind="survey.extraChannelsText"]');input?.scrollIntoView({behavior:'smooth',block:'center'});input?.focus();break;}
 case 'niche-groups':await nicheAction('groups');break;
 case 'niche-manual-groups':await nicheAction('groups',{groups:JSON.parse(s.groupDraft||'[]')});break;
 case 'niche-choose-group':await nicheAction('groups',{groupId:el.dataset.id});break;
-case 'niche-probe':await nicheAction('probe',{mode:s.probeMode||'import',queries:(s.probeQueries||'').split('\n').map(x=>x.trim()).filter(Boolean),samples:s.probeMode==='live'?undefined:JSON.parse(s.probeSamples||'[]'),confirmComplete:s.probeConfirmed===true});break;
+case 'niche-probe':{const mode=s.probeMode||s.nicheMode||'import';await nicheAction('probe',{mode,queries:probeQueriesFor(s).split('\n').map(x=>x.trim()).filter(Boolean),samples:mode==='live'?undefined:JSON.parse(s.probeSamples||'[]'),confirmComplete:s.probeConfirmed===true});break;}
 case 'niche-topics':await nicheAction('topics');break;
 case 'niche-manual-topics':await nicheAction('topics',{titles:(s.topicDraft||'').split('\n').map(x=>x.trim()).filter(Boolean)});break;
 case 'survey-step':if(Number(el.dataset.step)>0&&!s.videos.length)return toast('Nhập hoặc khảo sát video trước.',true);s.step=Number(el.dataset.step);await save();render();break;

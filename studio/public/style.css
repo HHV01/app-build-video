@@ -6,3 +6,9 @@
 :root .template-choice:has(input:checked){border-color:var(--green)}
 :root .template-choice input{width:auto;margin-right:8px;accent-color:var(--green)}
 :root .template-choice p{margin:8px 0 0;padding-left:24px}
+
+.niche-details{border:1px solid var(--line);border-radius:8px;padding:13px 16px;margin:18px 0;color:var(--muted)}
+.niche-details summary,.template-candidates summary{cursor:pointer;color:var(--text);font-weight:600;line-height:1.6}
+.niche-details[open]>summary{margin-bottom:18px}
+.template-candidates details{margin-top:14px}.template-candidates details[open]>summary{margin-bottom:12px}
+.niche-substeps{margin-top:-12px}.niche-substeps button{font-size:11px;padding:7px 12px}

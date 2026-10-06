@@ -90,3 +90,11 @@ Theo [tài liệu Google hiện hành](https://developers.google.com/youtube/v3/
 `node --test studio/core.test.mjs studio/rx.test.mjs studio/niche.test.mjs studio/niche-api.test.mjs studio/production.test.mjs studio/integration.test.mjs`
 
 39 kiểm thử. [Chi tiết bản sửa và phần chưa kiểm chứng](REVIEW_FIXES.md).
+
+## Flow tìm ngách rút gọn
+
+Kênh tham khảo → Chọn khuôn → Kiểm tra ngách (kho kênh, nhóm, nhu cầu) → 20 chủ đề → Dựng kênh. Dán link hoặc @handle, nhập góc kể rồi bấm **Phân tích kênh**. Thị trường, ngôn ngữ, định dạng và tên khảo sát nằm trong mục mở rộng. Khảo sát mới mặc định dùng YouTube API; kho JSON/CSV vẫn có trong nguồn dữ liệu.
+
+Khuôn dài nhất được đề xuất; mở **Xem thêm lựa chọn** để chọn khuôn khác đã đạt hơn 50%. **Dùng khuôn này** tự kiểm tra kho. Thiếu kênh thì xem số còn thiếu, thêm kênh hoặc thử khuôn khác. Các cổng ở backend giữ nguyên; không có khuôn gõ tự do.
+
+Chọn nhóm xong, câu tìm gợi ý được lưu và có thể sửa; ô cố ý xoá trống không bị tự điền lại. Các bước liên tiếp dừng khi chưa đạt hoặc API lỗi, giữ kết quả đã hoàn thành. Tạo kênh dùng lại khuôn, góc kể, nhóm, 20 chủ đề và link tham khảo.
