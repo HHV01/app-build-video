@@ -22,3 +22,8 @@ export function validateAnimations(items, scenes) {
   if(expected.size)throw Error('Thiếu prompt chuyển động.');
   return items;
 }
+
+export function compactSceneContext(context, windows) {
+ const keys=['visualProfile','topic','language','angle','audience','niche','characterDescription','researchAngle'];
+ return {...Object.fromEntries(keys.filter(key=>context[key]!==undefined).map(key=>[key,context[key]])),narration:windows.map(w=>w.narration).join(' ')};
+}

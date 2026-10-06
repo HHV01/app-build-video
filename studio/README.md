@@ -116,3 +116,7 @@ Bước đầu chỉ nhập kênh tham khảo và bấm Phân tích kênh. Khi k
 ## Model dự phòng tự động
 
 Trong Kết nối API, bật Tự chuyển model và nhập tối đa ba model dự phòng, mỗi dòng một ID có trong gateway. Thứ tự: model chính rồi lần lượt các model dự phòng; mỗi model chỉ thử một lần. Áp dụng cho tác vụ nội dung chữ (góc, research, script, cảnh, prompt...). Chuyển khi HTTP 429/500/502/503/504 hoặc mất kết nối/timeout; không chuyển vì khóa sai, dữ liệu sai, JSON không hợp lệ hay thiếu đầu ra. Bật dự phòng có timeout 45 giây mỗi model, tối đa bốn lượt (180 giây). Model chính không bị đổi vĩnh viễn; thông báo và nhật ký ghi model thực tế. Ảnh, TTS và STT dùng cấu hình riêng. Model cùng provider có thể dùng chung quota nên dự phòng khác provider hữu ích hơn; chi phí tùy tài khoản/provider đã nối.
+
+## Chế độ tiết kiệm ảnh/token
+
+Tạo ảnh qua API đã tắt; dùng Chép prompt hoặc Xuất prompt + ảnh ZIP rồi nạp ảnh từ công cụ ngoài. Giữ ảnh và reference đã nạp. Tác vụ chia cảnh chỉ gửi narration của batch cùng topic/ngôn ngữ/góc kể/visual profile/mascot; không lặp research sources, outline và packaging ở mỗi batch. Mức tiết kiệm phụ thuộc độ dài dữ liệu; chưa đo token provider thật.

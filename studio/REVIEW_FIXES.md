@@ -155,3 +155,7 @@ Thêm withModelFallback với danh sách có thứ tự, loại trùng, tối đ
 ## Sửa nhật ký thiếu activity (06/10/2026)
 
 State thật revision620 thiếu activity; frontend gọi unshift trước khi trả output AI nên tác vụ dừng dù provider có thể đã tạo xong. appendActivity khởi tạo mảng khi thiếu/sai dạng, giữ các mục cũ và giới hạn60. Không đổi cảnh/script hiện có. Test hồi quy đỏ trước sửa, toàn bộ117test xanh sau. Không tạo lại cảnh qua provider trong kiểm thử này.
+
+## Tiết kiệm token và ảnh (06/10/2026)
+
+Bỏ nút tạo ảnh tất cả/từng cảnh, chặn API image428 với hướng dẫn xuất prompt/nạp ảnh. Không xoá asset đã có. compactSceneContext giới hạn context batch, giữ visual identity và narration gốc để coverage vẫn do sceneWindows kiểm soát. Test context đỏ trước sửa, 118test xanh sau. Chưa đo token trước/sau bằng provider thật.

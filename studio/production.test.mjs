@@ -17,3 +17,8 @@ test('Animation batches reject wrong, duplicate, missing or empty scene IDs',()=
  const scenes=[{scene:5},{scene:9}],good=[{scene:9,prompt:'move'},{scene:5,prompt:'blink'}];assert.deepEqual(validateAnimations(good,scenes),good);
  for(const bad of [[],[{scene:5,prompt:'a'},{scene:5,prompt:'b'}],[{scene:5,prompt:'a'},{scene:9,prompt:''}],[{scene:1,prompt:'a'},{scene:2,prompt:'b'}]])assert.throws(()=>validateAnimations(bad,scenes));
 });
+
+test('scene context sends batch narration and visual identity without full research or outline',async()=>{
+ const {compactSceneContext}=await import('./production.mjs');const c=compactSceneContext({topic:'Sumer',angle:'Law',sources:[{text:'HUGE'}],outline:['HUGE'],narration:'FULL',visualProfile:{style:'flat'},characterDescription:'Mascot',language:'vi'},[{narration:'Only this batch'}]);
+ assert.equal(c.narration,'Only this batch');assert.equal(c.topic,'Sumer');assert.deepEqual(c.visualProfile,{style:'flat'});assert(!('sources' in c));assert(!('outline' in c));
+});

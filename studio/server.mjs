@@ -628,6 +628,7 @@ if (url.pathname === '/api/youtube/publish' && req.method === 'POST') return jso
       // Tạo ảnh qua gateway. Studio vẫn không bắt buộc dùng: nút này là tuỳ chọn,
 // luồng dán prompt ra công cụ ngoài vẫn chạy và tốn 0 đồng.
 async function makeImage(b) {
+  throw failure('Tạo ảnh qua API đã tắt trong chế độ tiết kiệm. Xuất prompt và nạp ảnh từ công cụ ngoài.',428);
   if (!env.OPENAI_API_KEY) throw failure('Chưa có cấu hình gateway trong .env.', 503);
   const prompt = String(b.prompt || '').trim();
   if (!prompt) throw failure('Chưa có prompt ảnh.', 400);
