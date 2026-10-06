@@ -383,35 +383,29 @@ export function contentVideos(videos, format = 'long', rules = RULES) {
 }
 
 // KHUÔN = cụm mở đầu DÀI NHẤT lặp ở hơn nửa số tiêu đề mới nhất. Được phép trả null.
-export function findTemplate(titles, rules = RULES) {
-  const list = Array.isArray(titles) ? titles.slice(0, rules.titlesForTemplate).filter(t => typeof t === 'string' && t.trim()) : [];
-  const total = list.length;
-  // Ít hơn 20 thì lấy hết, nhưng vẫn cần đủ mẫu để khuôn có ý nghĩa.
-  if (total < rules.minTitlesForTemplate) {
-    return { template: null, total, passed: false, complete: false, reason: `Cần ít nhất ${rules.minTitlesForTemplate} tiêu đề nội dung mới nhất, đang có ${total}.` };
-  }
-  const tok = list.map(tokens);
-  for (let k = Math.max(...tok.map(t => t.length)); k >= rules.minTemplateWords; k--) {
-    const counts = new Map();
-    for (const t of tok) if (t.length >= k) { const key = t.slice(0, k).join(' '); counts.set(key, (counts.get(key) || 0) + 1); }
-    let best = null;
-    for (const [template, matches] of counts) if (matches / total > rules.templateRatio && (!best || matches > best.matches)) best = { template, matches };
-    if (best) {
-      // Khuôn kết thúc bằng mạo từ không dùng được. Bỏ qua k đó và thử k-1.
-      if (ARTICLES.has(best.template.split(' ').pop())) continue;
-      return {
-        template: best.template,
-        words: k,
-        matches: best.matches,
-        total,
-        ratio: best.matches / total,
-        titles: list.filter((_, i) => tok[i].slice(0, k).join(' ') === best.template),
-        passed: true,
-        complete: true
-      };
+function templateTitles(titles,rules){
+  const input=Array.isArray(titles)?titles:[];
+  // Video objects use the same B4 content filter; string titles are already filtered by the caller.
+  const list=input.some(v=>v&&typeof v==='object')?contentVideos(input,'long',rules).map(v=>v.title):input;
+  return list.slice(0,rules.titlesForTemplate).filter(t=>typeof t==='string'&&t.trim());
+}
+export function templateCandidates(titles,rules=RULES){
+  const list=templateTitles(titles,rules),total=list.length,candidates=[];
+  if(total>=rules.minTitlesForTemplate){
+    const tok=list.map(tokens);
+    for(let k=Math.max(...tok.map(t=>t.length));k>=rules.minTemplateWords;k--){
+      const counts=new Map();for(const t of tok)if(t.length>=k){const key=t.slice(0,k).join(' ');counts.set(key,(counts.get(key)||0)+1);}
+      for(const [template,matches] of counts)if(matches/total>rules.templateRatio&&!ARTICLES.has(template.split(' ').at(-1)))candidates.push({template,words:k,matches,total,ratio:matches/total});
     }
   }
-  return { template: null, total, passed: false, complete: true, reason: 'Không có cụm mở đầu nào lặp quá nửa số tiêu đề: kênh này không có khuôn.' };
+  candidates.sort((a,b)=>b.words-a.words||b.matches-a.matches);
+  if(!candidates.length)Object.defineProperty(candidates,'reason',{value:total<rules.minTitlesForTemplate?'Cần ít nhất '+rules.minTitlesForTemplate+' tiêu đề nội dung mới nhất, đang có '+total+'.':'Kênh này không có khuôn, đổi kênh chỉ đường.'});
+  return candidates;
+}
+export function findTemplate(titles,rules=RULES){
+  const list=templateTitles(titles,rules),candidates=templateCandidates(list,rules),best=candidates[0];
+  if(!best)return {template:null,candidates:[],total:list.length,passed:false,complete:list.length>=rules.minTitlesForTemplate,reason:candidates.reason};
+  return {...best,candidates,titles:list.filter(t=>tokens(t).slice(0,best.words).join(' ')===best.template),passed:true,complete:true};
 }
 
 // Tiêu đề có mang khuôn không. Chuẩn hoá y hệt findTemplate rồi so tiền tố

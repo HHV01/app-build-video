@@ -50,6 +50,24 @@ const flow = {
   topics: { passed: false, chosen: [], errors: ['Thực thể đã có trong kho: the entire history of rome'] },
 };
 const survey = (extra = {}) => ({ id: 's1', name: 'Test', market: 'US', language: 'en', format: 'long', nicheMode: 'live', probeMode: 'live', nicheStep: 4, nicheFlow: flow, ...extra });
+test('B8 older passed results request candidate refresh instead of claiming no template',()=>{
+ const html=renderNiche(survey({nicheStep:1}),ui);assert.match(html,/Chạy lại/);assert(!html.includes('Kênh này không có khuôn.'));
+});
+
+test('B8 · candidate radios show counts, examples, broad/tight labels and escaped text',()=>{
+ const template={passed:true,value:'the entire history of ancient',examples:['The Entire History of Ancient Rome <img>'],candidates:[{template:'the entire history of ancient',words:5,matches:20,total:20},{template:'the entire history of',words:4,matches:20,total:20},{template:'the entire history',words:3,matches:20,total:20}]};
+ const html=renderNiche(survey({nicheStep:1,nicheFlow:{...flow,template}}),ui);
+ assert.equal((html.match(/type="radio"/g)||[]).length,3);assert.match(html,/20\/20/);assert.match(html,/rộng nhất/);assert.match(html,/chặt nhất/);assert.match(html,/Dùng khuôn này/);assert.match(html,/Rome &lt;img&gt;/);assert(!html.includes('Rome <img>'));
+});
+test('B8 · no candidate hides radios and blocks later steps',()=>{
+ const html=renderNiche(survey({nicheStep:1,nicheFlow:{field:{passed:true},template:{passed:false,candidates:[],reason:'không có khuôn'}}}),ui);
+ assert(!html.includes('type="radio"'));assert.match(html,/Hãy đổi kênh chỉ đường/);assert.match(html,/data-step="2" disabled/);
+});
+test('B8 · manual channel input is live-only and failed manually added rows show reasons',()=>{
+ const shelf={...flow.shelf,channels:[{channelTitle:'Manual',addedByUser:true,sameTemplate:false,matureCount:0,median:null,pass:false,reason:'Lặp khuôn khác'}]};
+ const html=renderNiche(survey({nicheStep:2,nicheFlow:{...flow,shelf}}),ui);assert.match(html,/survey.extraChannelsText/);assert.match(html,/do bạn thêm/);assert.match(html,/Lặp khuôn khác/);
+ const imported=renderNiche(survey({nicheStep:2,nicheMode:'import',nicheFlow:{...flow,shelf}}),ui);assert(!imported.includes('survey.extraChannelsText'));
+});
 
 test('B7 · màn gõ thử điền sẵn 3 câu từ nhóm bội số trung vị cao nhất', () => {
   const html = renderNiche(survey(), ui);

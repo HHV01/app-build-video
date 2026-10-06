@@ -1,5 +1,15 @@
 # Bản sửa theo góp ý trong “Đọc repo ứng dụng.docx”
 
+## B8 · Chọn khuôn đạt ngưỡng và thêm kênh tay (06/10/2026)
+
+Rà soát trước push: đã sửa thống kê `result` theo ứng viên thực sự được chọn (không giữ matches của cụm dài mặc định), và kết quả cũ thiếu candidates yêu cầu chạy lại thay vì báo nhầm không có khuôn. Hai test hồi quy bổ sung đã chạy đỏ rồi xanh.
+
+B1/B2/B3/B4 đã có trước khi làm B8; ngưỡng hơn 50%, lọc contentVideos, lọc video mang khuôn và shelfGate không đổi. Sáu test B8 được viết và chạy đỏ trước khi triển khai. `templateCandidates` giữ tất cả prefix đạt ngưỡng, loại mạo từ cuối, sắp dài → ngắn; `findTemplate` dùng lại helper và kèm danh sách. API chọn lại khuôn chỉ chấp nhận ứng viên vừa tính từ kênh chỉ đường, khóa đúng cụm được chọn, xóa stage phụ thuộc. Khuôn ≤2 từ chỉ cảnh báo.
+
+UI hiển thị radio, tỷ lệ khớp, ví dụ, rộng nhất/chặt nhất và nút Dùng khuôn này; không có khuôn thì khóa bước sau. Kênh thêm tay live được catalog và kiểm tra như kênh tìm tự động, loại trùng theo channelId, không đạt vẫn hiển thị lý do. Import bỏ qua extraChannels. Chưa có cơ chế C2 riêng trong repo: B8 cộng ước tính theo channels/playlist pages/video-detail batches và ghi rõ cache có thể làm khác số thực tế.
+
+Kiểm tra bằng adapter YouTube giả lập và render UI thật; chưa kiểm chứng B8 bằng một lần cào YouTube thật. Không coi dữ liệu kiểm thử là bằng chứng một niche đạt.
+
 Ngày kiểm tra: 05/10/2026. Giữ ứng dụng hiện có, dùng lại `rx.mjs` và `core.mjs` theo hướng C.
 
 ## Đã nối vào ứng dụng

@@ -17,6 +17,10 @@ Chạy `node studio/server.mjs` hoặc `start_studio.bat`; mở http://localhost
 
 ## Tìm ngách
 
+Sau khi **Tìm khuôn tiêu đề**, chọn một radio trong danh sách cụm mở đầu đã lặp ở **hơn 50%** tiêu đề nội dung mới nhất rồi bấm **Dùng khuôn này**. Mặc định là cụm dài nhất; các cụm có cùng số tiêu đề khớp được đánh dấu **rộng nhất** / **chặt nhất** ở hai đầu. Các cụm ở giữa vẫn chọn được. Khuôn kết thúc bằng `the`, `a`, `an` bị loại. Không có ô gõ khuôn tự do: server tính lại danh sách từ kênh chỉ đường và từ chối mọi giá trị ngoài danh sách, tránh vượt cổng bằng cách gõ tay. Chọn lại khuôn xóa kết quả từ bước Kho trở đi.
+
+Ở bước **Kho**, nguồn **YouTube Data API** có ô **Thêm kênh bạn biết cùng khuôn**: tối đa 5 dòng, mỗi dòng là URL `/@handle`, `/channel/UC…`, ID `UC…` hoặc `@handle`. Mỗi kênh vẫn phải cùng khuôn, chỉ tính video mang khuôn và qua ngưỡng trưởng thành/view. Kênh không đạt vẫn hiện nhãn **do bạn thêm** và lý do; kênh trùng chỉ đếm một lần. Nguồn nhập JSON/CSV bỏ qua danh sách thêm tay và thông báo rõ. Ước tính quota của lần cào có tính cả lượt đọc kênh thêm tay, chưa phải quota thực tế sau cache.
+
 Sân → khuôn tiêu đề → kho ít nhất 3 kênh → 4–7 nhóm → ba mẫu gõ thử → khóa 20 chủ đề.
 
 Khuôn là cụm mở đầu dài nhất lặp **trên** 50% của tối đa 20 tiêu đề nội dung mới nhất (cần ít nhất 10,

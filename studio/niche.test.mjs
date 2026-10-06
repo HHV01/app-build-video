@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { findTemplate, channelShelf, shelfGate, probeGate, nextStage, lockedNiche, groupCountGate, carriesTemplate, contentVideos, entityOf, overlapsShelf, suggestedQueries, validateTopics, RULES } from './rx.mjs';
+import { findTemplate, templateCandidates, channelShelf, shelfGate, probeGate, nextStage, lockedNiche, groupCountGate, carriesTemplate, contentVideos, entityOf, overlapsShelf, suggestedQueries, validateTopics, RULES } from './rx.mjs';
 const now = Date.parse('2026-10-05');
 const mk = (ch, n, days, views) => Array.from({ length: n }, (_, i) => ({ id: ch + i, channelId: ch, channelTitle: ch, title: 't', views, publishedAt: new Date(now - (days + i) * 86400000).toISOString() }));
 

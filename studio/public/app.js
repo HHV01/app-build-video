@@ -140,8 +140,8 @@ async function nicheAction(stage, extras={}) {
     state.revision=result.revision;
     const updated=result.survey, current=updated.nicheFlow[stage];
     updated.nicheStep=STAGES.indexOf(stage);
-    if(current.passed && (stage!=='groups'||current.chosen))updated.nicheStep=Math.min(5,updated.nicheStep+1);
-    if(stage==='template'&&current.passed)updated.template=current.value;
+    if(current.passed && (stage!=='template'||Object.hasOwn(extras,'template')) && (stage!=='groups'||current.chosen))updated.nicheStep=Math.min(5,updated.nicheStep+1);
+    if(stage==='template'&&current.passed){updated.template=current.value;updated.templateChoice=current.value;}
     if(stage==='groups'&&current.chosen)updated.niche=current.groups.find(g=>g.id===current.chosen)?.name||updated.niche;
     if(stage==='topics'&&current.passed)updated.topicDraft=current.chosen.join('\n');
     state.surveys[state.surveys.findIndex(x=>x.id===s.id)]=updated;
@@ -348,7 +348,8 @@ case 'guide':toast('Bắt đầu Tìm ngách hoặc Dựng kênh. Dữ liệu t�
 case 'niche-step':{const next=Number(el.dataset.step);if(!Number.isInteger(next)||next<0||next>5||STAGES.slice(0,next).some(st=>s.nicheFlow?.[st]?.passed!==true))return toast('Chưa qua cổng trước.',true);s.nicheStep=next;await save();render();break;}
 case 'niche-field':await nicheAction('field',{market:s.market,language:s.language,format:s.format});break;
 case 'niche-template':await nicheAction('template',{mode:s.nicheMode||'import',channel:s.leadChannel,angle:s.angle,confirmComplete:s.completeImport===true});break;
-case 'niche-shelf':await nicheAction('shelf',{mode:s.nicheMode||'import',confirmComplete:s.completeImport===true});break;
+case 'niche-use-template':await nicheAction('template',{mode:s.nicheMode||'import',channel:s.leadChannel,angle:s.angle,confirmComplete:s.completeImport===true,template:s.templateChoice||s.nicheFlow?.template?.value});break;
+case 'niche-shelf':await nicheAction('shelf',{mode:s.nicheMode||'import',confirmComplete:s.completeImport===true,extraChannels:(s.extraChannelsText||'').split('\n').map(x=>x.trim()).filter(Boolean)});break;
 case 'niche-groups':await nicheAction('groups');break;
 case 'niche-manual-groups':await nicheAction('groups',{groups:JSON.parse(s.groupDraft||'[]')});break;
 case 'niche-choose-group':await nicheAction('groups',{groupId:el.dataset.id});break;

@@ -16,6 +16,8 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
     return survey;
   }
   async function catalog(raw) {
+    raw=String(raw||'').trim();
+    if(raw.startsWith('@'))raw='https://www.youtube.com/'+raw;
     let selector;
     if (/^UC[\w-]{22}$/.test(String(raw))) selector = { id: raw };
     else {
@@ -35,7 +37,7 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
       pageToken = page.nextPageToken; pages++;
     } while (pageToken && pages < 20);
     const videos = newest(await videoDetails([...ids]));
-    return { id: channel.id, name: channel.snippet?.title || channel.id, videos, pages, complete: !pageToken && videos.length === ids.size, provenance: 'youtube', warning: pageToken ? 'Đã dừng ở 1.000 video. Chưa đủ toàn bộ kho để kết luận.' : '' };
+    return { id: channel.id, name: channel.snippet?.title || channel.id, videos, pages, complete: !pageToken && videos.length === ids.size, provenance: 'youtube', quotaEstimate:{readUnits:1+pages+Math.ceil(ids.size/50)}, warning: pageToken ? 'Đã dừng ở 1.000 video. Chưa đủ toàn bộ kho để kết luận.' : '' };
   }
   function imported(survey, id, confirmed) {
     if (confirmed !== true) throw fault('Cần xác nhận kho nhập có đủ video công khai và 20 tiêu đề mới nhất.');
@@ -71,11 +73,20 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
       const cat = body.mode === 'live' ? await catalog(body.channel) : body.mode === 'import' ? imported(survey, body.channel, body.confirmComplete) : null;
       if (!cat) throw fault('Chọn nguồn YouTube hoặc kho nhập.');
       const result = findTemplate(contentVideos(cat.videos, flow.field.format).map(v => v.title));
-      value = { passed: Boolean(result.template && result.complete), value: result.template, angle, channelId: cat.id, result, provenance: cat.provenance };
+      let selected=result.candidates[0];
+      if(Object.hasOwn(body,'template')){
+        const normalized=typeof body.template==='string'?body.template.normalize('NFC').toLowerCase().trim().replace(/\s+/g,' '):'';
+        selected=result.candidates.find(c=>c.template===normalized);
+        if(!selected)throw fault('Khuôn này không lặp ở hơn nửa số tiêu đề mới nhất của kênh chỉ đường.',400);
+      }
+      value={passed:Boolean(selected&&result.complete),value:selected?.template||null,candidates:result.candidates,angle,channelId:cat.id,result,provenance:cat.provenance,examples:selected?contentVideos(cat.videos,flow.field.format).slice(0,RULES.titlesForTemplate).map(v=>v.title):[],reason:result.reason};
+      if(selected){value.result={...result,...selected,titles:value.examples.filter(t=>carriesTemplate(t,selected.template)||t.normalize('NFC').toLowerCase().trim().replace(/\s+/g,' ')===selected.template)};}
+      if(selected?.words<=2)value.warning='Khuôn quá chung, kho dễ nhiễu.';
     } else if (stage === 'shelf') {
-      let catalogs;
-      if (body.mode === 'import') catalogs = [...new Set(survey.videos.map(v => v.channelId))].map(id => imported(survey, id, body.confirmComplete));
+      let catalogs,notice,extraReadUnits=0;
+      if (body.mode === 'import'){catalogs = [...new Set(survey.videos.map(v => v.channelId))].map(id => imported(survey, id, body.confirmComplete));if(body.extraChannels?.length)notice='Bỏ qua kênh thêm tay: kho nhập đã có sẵn danh sách kênh.';}
       else if (body.mode === 'live') {
+        if(body.extraChannels!==undefined&&(!Array.isArray(body.extraChannels)||body.extraChannels.length>5||body.extraChannels.some(x=>typeof x!=='string'||!x.trim())))throw fault('Chỉ thêm tối đa 5 kênh, mỗi kênh là một link hoặc @handle.',400);
         // Tìm bằng VIDEO mang khuôn, không tìm bằng tên kênh: search type=channel
         // chỉ khớp tên, nên kênh có khuôn tiêu đề đúng vẫn không xuất hiện.
         const found = await youtube('search', {
@@ -84,11 +95,16 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
           regionCode: flow.field.market, relevanceLanguage: flow.field.language,
         });
         const ids = [...new Set([flow.template.channelId, ...(found.items || []).map(i => i.snippet?.channelId)].filter(Boolean))].slice(0, 10);
-        catalogs = []; for (const id of ids) catalogs.push(await catalog(id));
+        catalogs = []; for (const id of ids) catalogs.push({...await catalog(id),discovered:true});
+        for(const raw of new Set(body.extraChannels||[])){
+          try{const cat=await catalog(raw);extraReadUnits+=cat.quotaEstimate.readUnits;const found=catalogs.find(c=>c.id===cat.id);if(found)found.addedByUser=true;else catalogs.push({...cat,addedByUser:true});}
+          catch(e){if(!e.status)throw e;extraReadUnits++;catalogs.push({id:'unresolved:'+raw,name:raw,videos:[],complete:false,provenance:'youtube',addedByUser:true,lookupError:e.message,quotaEstimate:{readUnits:1}});}
+        }
       } else throw fault('Chọn nguồn dữ liệu.');
-      const channels = catalogs.map(cat => evaluateChannel(cat, flow.template.value, flow.field.format));
+      const channels = catalogs.map(cat => ({...evaluateChannel(cat,flow.template.value,flow.field.format),addedByUser:Boolean(cat.addedByUser),...(cat.lookupError?{reason:cat.lookupError}:{} )}));
       const gate = shelfGate(channels);
-      value = { ...gate, channels, videos: channels.filter(c => c.pass).flatMap(c => c.videos), provenance: body.mode, formatWarning: 'Phân loại video dài/Shorts theo dữ liệu nhập hoặc thời lượng là gần đúng.' };
+      const readUnits=catalogs.filter(c=>c.discovered).reduce((n,c)=>n+(c.quotaEstimate?.readUnits||0),0)+extraReadUnits;
+      value = { ...gate, channels, notice, quotaEstimate:body.mode==='live'?{searchCalls:1,readUnits,extraReadUnits,note:'Ước tính theo số trang và lô chi tiết; cache có thể giảm số lượt thực tế.'}:undefined, videos: channels.filter(c => c.pass).flatMap(c => c.videos), provenance: body.mode, formatWarning: 'Phân loại video dài/Shorts theo dữ liệu nhập hoặc thời lượng là gần đúng.' };
     } else if (stage === 'groups') {
       if (body.groupId) {
         if (!flow.groups?.passed || !flow.groups.groups.some(g => g.id === body.groupId)) throw fault('Chọn một nhóm trong kết quả đã đạt.', 409);
