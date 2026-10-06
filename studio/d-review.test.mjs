@@ -42,3 +42,13 @@ test('D3 generic single-word shelf entities require equality; specific entities 
  assert.equal(overlapsShelf('The Entire History of Romeo',template,['The Entire History of Rome']),false);
  assert.equal(overlapsShelf('The Entire History of Rome',template,['The Entire History of Romeo']),false);
 });
+
+test('D4 import reports missing duration at 80 percent and leaves complete data and explicit Shorts alone',async()=>{
+ const missing='Kho nhập thiếu thời lượng (cột duration). Thêm cột này hoặc đánh dấu format=short cho Shorts.';
+ const h=harness();h.state().surveys[0].videos=videos().map(v=>({...v,duration:0}));
+ const before=structuredClone(h.state());await assert.rejects(h.act('template',{channel:uc(1)}),e=>e.status===400&&e.message===missing);assert.deepEqual(h.state(),before);
+ const shelf=(await h.act('shelf')).survey.nicheFlow.shelf;assert.equal(shelf.channels[0].pass,false);assert.match(shelf.channels[0].reason,/Kho nhập thiếu thời lượng \(cột duration\)/);
+ const normal=harness();assert.equal((await normal.act('template',{channel:uc(1)})).survey.nicheFlow.template.passed,true);
+ const threshold=harness();threshold.state().surveys[0].videos=videos().map((v,i)=>({...v,duration:i<16?0:600}));await assert.rejects(threshold.act('template',{channel:uc(1)}),e=>e.message===missing);
+ const shorts=harness();shorts.state().surveys[0].videos=videos().map(v=>({...v,duration:0,format:'short'}));shorts.state().surveys[0].nicheFlow.field.format='short';assert.equal((await shorts.act('template',{channel:uc(1)})).survey.nicheFlow.template.passed,true);
+});

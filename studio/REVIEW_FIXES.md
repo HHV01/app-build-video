@@ -109,3 +109,7 @@ Mỗi tiêu đề mới được so với cả kho và danh sách good. Egypt / 
 ## D3 · Giảm trùng nhầm từ chung
 
 Thực thể trong kho chỉ gồm war/history/story/life/world/empire/time/man/people chỉ trùng khi thực thể mới bằng đúng nó. Thực thể từ hai từ vẫn dùng luật chứa theo ranh giới từ. Bước 20 chủ đề luôn nhắc người dùng tự đối chiếu đồng nghĩa. Test logic và UI đã đỏ trước, xanh sau; các ca Egypt và Rome/Romeo giữ nguyên.
+
+## D4 · Kho nhập thiếu duration
+
+Kênh có ít nhất 80% video duration=0 và không phải format=short: template trả 400 với hướng dẫn bổ sung cột; shelf giữ dòng không đạt với cùng lý do. Shorts được đánh dấu rõ không bị coi là thiếu thời lượng. Test 0 giây, 600 giây, mốc 80% và Shorts đã đỏ trước, xanh sau.

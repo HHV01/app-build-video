@@ -42,7 +42,10 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
   function imported(survey, id, confirmed) {
     if (confirmed !== true) throw fault('Cần xác nhận kho nhập có đủ video công khai và 20 tiêu đề mới nhất.');
     const videos = newest((survey.videos || []).filter(v => v.channelId === id));
-    return { id, name: videos[0]?.channelTitle || id, videos, complete: true, provenance: 'user-declared-import' };
+    const missing = videos.filter(v => Number(v.duration ?? 0) === 0 && v.format !== 'short').length;
+    const durationWarning = videos.length && missing / videos.length >= 0.8
+      ? 'Kho nhập thiếu thời lượng (cột duration). Thêm cột này hoặc đánh dấu format=short cho Shorts.' : '';
+    return { id, name: videos[0]?.channelTitle || id, videos, complete: true, provenance: 'user-declared-import', durationWarning };
   }
   function evaluateChannel(cat, template, format) {
     const result = findTemplate(contentVideos(cat.videos, format).map(v => v.title));
@@ -55,9 +58,9 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
     // Hai kênh cùng khuôn khi khuôn của kênh này CHỨA khuôn đã chốt. So sánh
     // bằng nhau là quá chặt: kênh lặp cụm dài hơn vẫn là cùng một dòng khuôn.
     const sameTemplate = Boolean(result.template) && `${result.template} `.startsWith(`${template} `);
-    const pass = cat.complete && result.complete === true && sameTemplate && shelf.pass;
+    const pass = !cat.durationWarning && cat.complete && result.complete === true && sameTemplate && shelf.pass;
     const otherReason = result.template ? `Lặp khuôn khác: "${result.template}"` : result.reason || 'Không lặp cùng khuôn';
-    return { ...shelf, channelId: cat.id, channelTitle: cat.name, complete: cat.complete, template: result, sameTemplate, pass, videos: pass ? shelf.videos : [], provenance: cat.provenance, reason: pass ? '' : [!cat.complete && 'Kho chưa đầy đủ', !sameTemplate && otherReason, !shelf.pass && (shelf.reason || 'Chưa qua cổng view')].filter(Boolean).join(' · ') };
+    return { ...shelf, channelId: cat.id, channelTitle: cat.name, complete: cat.complete, template: result, sameTemplate, pass, videos: pass ? shelf.videos : [], provenance: cat.provenance, reason: pass ? '' : cat.durationWarning || [!cat.complete && 'Kho chưa đầy đủ', !sameTemplate && otherReason, !shelf.pass && (shelf.reason || 'Chưa qua cổng view')].filter(Boolean).join(' · ') };
   }
   async function act(stage, body) {
     const snapshot = getState(), revision = snapshot.revision;
@@ -72,6 +75,7 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
       if (!angle) throw fault('Nhập angle của kênh bạn trước khi chốt khuôn.');
       const cat = body.mode === 'live' ? await catalog(body.channel) : body.mode === 'import' ? imported(survey, body.channel, body.confirmComplete) : null;
       if (!cat) throw fault('Chọn nguồn YouTube hoặc kho nhập.');
+      if (cat.durationWarning) throw fault(cat.durationWarning);
       const result = findTemplate(contentVideos(cat.videos, flow.field.format).map(v => v.title));
       let selected=result.candidates[0];
       if(Object.hasOwn(body,'template')){
