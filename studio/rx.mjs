@@ -465,6 +465,44 @@ export function groupCountGate(groups, rules = RULES) {
   return { passed: count >= rules.groupMin && count <= rules.groupMax, count, min: rules.groupMin, max: rules.groupMax };
 }
 
+// THỰC THỂ = phần tiêu đề còn lại sau khi bỏ khuôn và bỏ mạo từ đầu.
+// "…of Ancient Egypt" và "…of Egypt" là CÙNG một thực thể; so khớp nguyên
+// tiêu đề không bắt được nên kho gộp được video trùng chủ đề.
+export function entityOf(title, template) {
+  const text = String(title ?? '').normalize('NFC').toLowerCase().trim().replace(/\s+/g, ' ');
+  const want = tokens(template).join(' ');
+  let rest = text;
+  if (want) {
+    if (text === want) rest = '';
+    else if (text.startsWith(want + ' ')) rest = text.slice(want.length + 1);
+  }
+  let words = tokens(rest);
+  while (words.length && ARTICLES.has(words[0])) words = words.slice(1);
+  return words.join(' ');
+}
+
+// Chứa nhau theo CỤM TỪ LIÊN TIẾP, không phải theo chuỗi con: "egypt" ăn trong
+// "ancient egypt" nhưng KHÔNG ăn trong "egyptian empire".
+const hasWordRun = (hay, needle) => {
+  if (!needle.length || needle.length > hay.length) return false;
+  for (let i = 0; i + needle.length <= hay.length; i++) {
+    if (needle.every((w, j) => hay[i + j] === w)) return true;
+  }
+  return false;
+};
+
+// Chủ đề mới có trùng với kho không: thực thể của nó chứa (hoặc bị chứa bởi)
+// thực thể của một tiêu đề nào đó trong kho.
+export function overlapsShelf(title, template, shelfTitles) {
+  const mine = entityOf(title, template).split(' ').filter(Boolean);
+  if (!mine.length) return false;
+  return (Array.isArray(shelfTitles) ? shelfTitles : []).some(other => {
+    const theirs = entityOf(other, template).split(' ').filter(Boolean);
+    if (!theirs.length) return false;
+    return hasWordRun(mine, theirs) || hasWordRun(theirs, mine);
+  });
+}
+
 // Máy trạng thái: stage nào chưa passed thì chặn các stage sau.
 export const STAGES = ['field', 'template', 'shelf', 'groups', 'probe', 'topics'];
 export const nextStage = project => STAGES.find(s => !project?.niche?.[s]?.passed) || 'done';
@@ -485,6 +523,10 @@ export function validateTopics(titles, existing, template, rules = RULES) {
   for (const t of normTitles) {
     if (!t.startsWith(normTemplate + ' ')) errors.push(`Title does not start with template: ${t}`);
     if (normExisting.has(t)) errors.push(`Title already exists: ${t}`);
+  }
+  // Trùng thực thể: kho có "…of Egypt" thì "…of Ancient Egypt" cũng là đã có.
+  for (const t of normTitles) {
+    if (overlapsShelf(t, template, existing)) errors.push(`Thực thể đã có trong kho: ${t}`);
   }
   return { passed: errors.length === 0, errors, titles: normTitles };
 }

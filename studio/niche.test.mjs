@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { findTemplate, channelShelf, shelfGate, probeGate, nextStage, lockedNiche, groupCountGate, carriesTemplate, contentVideos, RULES } from './rx.mjs';
+import { findTemplate, channelShelf, shelfGate, probeGate, nextStage, lockedNiche, groupCountGate, carriesTemplate, contentVideos, entityOf, overlapsShelf, validateTopics, RULES } from './rx.mjs';
 const now = Date.parse('2026-10-05');
 const mk = (ch, n, days, views) => Array.from({ length: n }, (_, i) => ({ id: ch + i, channelId: ch, channelTitle: ch, title: 't', views, publishedAt: new Date(now - (days + i) * 86400000).toISOString() }));
 
@@ -77,6 +77,47 @@ test('B4 · findTemplate lấy tối đa 20 nhưng chỉ cần tối thiểu min
   // Trên 20 tiêu đề thì vẫn chỉ lấy 20 mới nhất.
   const nhieu = findTemplate(Array.from({ length: 30 }, (_, i) => `Entire history of Rome ${i}`));
   assert.equal(nhieu.total, RULES.titlesForTemplate);
+});
+test('B6 · entityOf bỏ khuôn và mạo từ đầu, chuẩn hoá NFC/hoa thường', () => {
+  assert.equal(entityOf('The Entire History of Rome', 'the entire history of'), 'rome');
+  assert.equal(entityOf('The Entire History of the Rome', 'the entire history of'), 'rome');
+  assert.equal(entityOf('The Entire History of a Rome', 'the entire history of'), 'rome');
+  assert.equal(entityOf('The Entire History of an Rome', 'the entire history of'), 'rome');
+  assert.equal(entityOf('The Entire History of Rome', 'the entire history of'), 'rome');
+  assert.equal(entityOf('  The   ENTIRE   History Of   Rome  ', 'the entire history of'), 'rome');
+  assert.equal(entityOf('The Entire History of Rome', 'nonexistent template'), 'entire history of rome', 'khuôn không khớp thì giữ nguyên tiêu đề, chỉ bỏ mạo từ đầu');
+  assert.equal(entityOf('The Entire History of', 'the entire history of'), '', 'không có thực thể');
+  assert.equal(entityOf(null, 'x'), '');
+  assert.equal(entityOf('Rome', ''), 'rome');
+});
+test('B6 · overlapsShelf khớp theo ranh giới từ, không khớp chuỗi con', () => {
+  const shelf = ['The Entire History of Egypt'];
+  // Có "Egypt" trong kho thì "Ancient Egypt" là đã có.
+  assert.equal(overlapsShelf('The Entire History of Ancient Egypt', 'the entire history of', shelf), true);
+  // Ngược lại: kho có "Ancient Egypt" thì "Egypt" cũng là đã có.
+  assert.equal(overlapsShelf('The Entire History of Egypt', 'the entire history of', ['The Entire History of Ancient Egypt']), true);
+  // "Egyptian Empire" KHÔNG phải "Egypt" — ranh giới từ bắt buộc.
+  assert.equal(overlapsShelf('The Entire History of the Egyptian Empire', 'the entire history of', shelf), false);
+  // "Rome" không khớp trong "Romeo".
+  assert.equal(overlapsShelf('The Entire History of Romeo', 'the entire history of', ['The Entire History of Rome']), false);
+  assert.equal(overlapsShelf('The Entire History of Rome', 'the entire history of', ['The Entire History of Romeo']), false);
+  // Cụm nhiều từ phải khớp trọn vẹn theo thứ tự.
+  assert.equal(overlapsShelf('The Entire History of Ancient Roman Empire', 'the entire history of', ['The Entire History of Roman Republic']), false);
+  assert.equal(overlapsShelf('The Entire History of the Roman Republic', 'the entire history of', ['The Entire History of Ancient Roman Empire']), false);
+  // Chủ đề hoàn toàn khác thì không chặn.
+  assert.equal(overlapsShelf('The Entire History of Japan', 'the entire history of', shelf), false);
+  assert.equal(overlapsShelf('The Entire History of Japan', 'the entire history of', []), false);
+  assert.equal(overlapsShelf('The Entire History of Japan', 'the entire history of', null), false);
+});
+test('B6 · validateTopics loại chủ đề trùng thực thể với kho, không chỉ trùng nguyên tiêu đề', () => {
+  const template = 'the entire history of';
+  const shelf = Array.from({ length: 20 }, (_, i) => `the entire history of egypt ${i}`);
+  const trung = validateTopics(Array.from({ length: 20 }, (_, i) => `The Entire History of Ancient Egypt ${i}`), shelf, template);
+  assert.equal(trung.passed, false, '"Ancient Egypt" phải bị loại vì kho đã có "Egypt"');
+  assert.ok(trung.errors.some(e => /đã có trong kho/i.test(e)));
+  // "Egyptian Empire" là thực thể khác, phải qua.
+  const khac = validateTopics(Array.from({ length: 20 }, (_, i) => `The Entire History of the Egyptian Empire ${i}`), shelf, template);
+  assert.equal(khac.passed, true, khac.errors.join(' | '));
 });
 test('B3 · carriesTemplate nhận tiêu đề mang khuôn, từ chối phần còn lại', () => {
   assert.equal(carriesTemplate('The Entire History of Rome', 'the entire history of'), true);

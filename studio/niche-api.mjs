@@ -1,5 +1,5 @@
 // Integrates existing rx/core rules; it contains no second set of thresholds.
-import { RULES, STAGES, findTemplate, carriesTemplate, contentVideos, channelShelf, shelfGate, probeGate, blindTitles, groupCountGate, nextStage, lockedNiche, validateTopics } from './rx.mjs';
+import { RULES, STAGES, findTemplate, carriesTemplate, contentVideos, overlapsShelf, channelShelf, shelfGate, probeGate, blindTitles, groupCountGate, nextStage, lockedNiche, validateTopics } from './rx.mjs';
 import { median, validateGroups } from './core.mjs';
 
 const fault = (message, status = 400) => Object.assign(new Error(message), { status });
@@ -117,16 +117,29 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
     } else if (stage === 'topics') {
       const group = flow.groups.groups.find(g => g.id === flow.groups.chosen);
       const shelfTitles = flow.shelf.videos.map(v => v.title);
-      const propose = extra => body.titles || generate({ action: 'topics', context: { group: group.name, template: flow.template.value, angle: flow.template.angle, shelfTitles, ...extra } }).then(r => r.output.topics?.map(t => t.title));
       const norm = s => String(s).normalize('NFC').toLowerCase().trim().replace(/\s+/g, ' ');
       const existing = new Set(shelfTitles.map(norm));
       const good = [];
       const seen = new Set();
+      // "cao" > "vừa" > "thấp". Bỏ dấu để "Cao"/"vừa"/"thấp" đều ra đúng khoá.
+      const knownKey = v => String(v ?? '').normalize('NFD').toLowerCase().replace(/\p{Diacritic}/gu, '').replace(/[^\p{L}\p{N}]+/gu, '');
+      const KNOWN_RANK = { cao: 0, vua: 1, thuong: 1, trungbinh: 1, thap: 2 };
+      const knownRank = v => KNOWN_RANK[knownKey(v)] ?? 1;
+      const propose = extra => body.titles
+        ? body.titles.map(title => ({ title }))
+        : generate({ action: 'topics', context: { group: group.name, template: flow.template.value, angle: flow.template.angle, shelfTitles, ...extra } }).then(r => r.output.topics || []);
       const take = raw => {
-        for (const t of Array.isArray(raw) ? raw : []) {
+        // Xếp theo mức nhiều người biết TRƯỚC khi cắt còn 20: chủ đề đông
+        // người biết phải được giữ, chủ đề vắng người biết là phần dư.
+        const list = [...(Array.isArray(raw) ? raw : [])].sort((x, y) => knownRank(x?.knownBy) - knownRank(y?.knownBy));
+        for (const item of list) {
+          const t = typeof item === 'string' ? item : item?.title;
+          if (typeof t !== 'string' || !t.trim()) continue;
           const n = norm(t);
           if (!n.startsWith(norm(flow.template.value) + ' ') || existing.has(n) || seen.has(n)) continue;
-          seen.add(n); good.push(String(t).trim());
+          // Trùng thực thể với kho: kho có "…of Egypt" thì "…of Ancient Egypt" cũng là đã có.
+          if (overlapsShelf(t, flow.template.value, shelfTitles)) continue;
+          seen.add(n); good.push(t.trim());
         }
       };
       take(await propose());

@@ -280,3 +280,48 @@ test('A5 · mỗi tác vụ AI gửi max_tokens đủ lớn, không action nào 
     assert.ok(byCall.packaging.max_tokens >= 3500, `packaging có ${byCall.packaging.max_tokens}, cần ≥ 3500 cho 16 mục`);
   } finally { await s.stop(); await gw.stop(); await rm(envFile, { force: true }); }
 });
+
+// ---- B6: prompt topics không được đẩy AI về chủ đề ít nổi tiếng ----
+
+// Gateway giả ghi lại TOÀN BỘ thân yêu cầu để kiểm tra prompt gửi đi.
+async function promptGateway() {
+  const seen = [];
+  const reply = {
+    ok: true, groups: [], ideas: [], variants: [], names: [], topics: [], animations: [],
+    segments: [], scenes: [], channels: [], summary: '', sensory: '', cast: [], angles: [],
+    claims: [], questions: [], facts: [], timeline: [], narration: '', editorNotes: [],
+  };
+  const srv = http.createServer((req, res) => {
+    const chunks = [];
+    req.on('data', d => chunks.push(d));
+    req.on('end', () => {
+      let sent = null;
+      try { sent = JSON.parse(Buffer.concat(chunks).toString()); } catch { /* bỏ qua */ }
+      seen.push(sent);
+      const payload = JSON.stringify({ model: sent?.model || 'mock', choices: [{ message: { content: JSON.stringify(reply) }, finish_reason: 'stop' }] });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(payload);
+    });
+  });
+  await new Promise(r => srv.listen(0, '127.0.0.1', r));
+  return { seen, url: `http://127.0.0.1:${srv.address().port}/v1`, stop: () => new Promise(r => srv.close(r)) };
+}
+
+test('B6 · prompt topics đòi thực thể nhiều người biết, không đẩy sang chủ đề vắng', async () => {
+  const gw = await promptGateway();
+  const envFile = path.join(tempRoot, `env-b6-${Date.now()}.env`);
+  await writeFile(envFile, `OPENAI_BASE_URL=${gw.url}\nOPENAI_API_KEY=test-key\n`, 'utf8');
+  const s = await boot({ STUDIO_ENV_FILE: envFile });
+  try {
+    const r = await s.req('/api/generate', 'POST', {
+      action: 'topics',
+      context: { group: 'Thành phố', template: 'the entire history of', shelfTitles: ['the entire history of egypt'] },
+    });
+    assert.equal(r.status, 200, r.body.error);
+    const prompt = JSON.stringify(gw.seen[0] || {});
+    assert.ok(!/ÍT NỔI TIẾNG HƯỢN HƠN/i.test(prompt), 'prompt không được bảo AI chọn chủ đề ít nổi tiếng hơn');
+    assert.match(prompt, /nhiều người biết/, 'phải yêu cầu thực thể nhiều người biết');
+    assert.match(prompt, /trùng thực thể/, 'phải yêu cầu loại trùng thực thể với kho');
+    assert.match(prompt, /knownBy/, 'phải yêu cầu điền knownBy để xếp hạng');
+  } finally { await s.stop(); await gw.stop(); await rm(envFile, { force: true }); }
+});

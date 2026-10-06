@@ -182,6 +182,42 @@ test('B5 · chế độ live không cào quá 10 kênh',async()=>{
  assert.equal(new Set(ids).size,10,'không có channelId lặp');
  assert.equal(calls.filter(c=>c.endpoint==='channels').length-truoc,10,'đúng 10 lần gọi channels ở bước kho');
 });
+test('B6 · bước chủ đề loại thực thể đã có trong kho dù tiêu đề khác nhau',async()=>{
+ const h=harness(fixture());await prepare(h);
+ const videos=h.state().surveys[0].nicheFlow.shelf.videos;
+ const norm=s=>String(s).normalize('NFC').toLowerCase().trim().replace(/\s+/g,' ');
+ await h.act('groups',{groups:Array.from({length:4},(_,i)=>({name:'G'+i,videoIds:videos.filter((_,j)=>j%4===i).map(v=>v.id)}))});await h.act('groups',{groupId:'group-0'});
+ await h.act('probe',{samples:Array.from({length:3},()=>Array.from({length:20},(_,i)=>i<11?20001:20000))});
+ // Lấy một tiêu đề THẬT của kho rồi thêm hậu tố: tiêu đề khác hẳn nên so
+ // khớp nguyên văn không bắt được, chỉ so thực thể mới bắt được.
+ const mau=videos.find(v=>/ 5 a$/.test(v.title)).title;
+ assert.ok(mau,'cần ít nhất một tiêu đề kho');
+ const trung=Array.from({length:20},(_,i)=>`${mau} Revisited ${i}`);
+ assert.ok(!videos.some(v=>norm(v.title)===norm(trung[0])),'tiêu đề thử phải khác hẳn tiêu đề trong kho');
+ assert.equal((await h.act('topics',{titles:trung})).survey.nicheFlow.topics.passed,false,'thực thể đã có trong kho phải bị loại');
+ const ok=Array.from({length:20},(_,i)=>'Entire history of New Subject '+i);
+ const done=await h.act('topics',{titles:ok});
+ assert.equal(done.survey.nicheFlow.topics.passed,true,(done.survey.nicheFlow.topics.errors||[]).join(' | '));
+ assert.equal(done.survey.nicheFlow.topics.chosen.length,20);
+});
+test('B6 · chủ đề AI trả về được sắp theo knownBy rồi mới lấy 20',async()=>{
+ const h=harness(fixture(),{generate:async()=>({output:{topics:[
+  // 12 chủ đề "thấp" đứng trước 8 chủ đề "cao". Phải cắt theo mức độ nổi tiếng.
+  ...Array.from({length:12},(_,i)=>({title:`Entire history of Low Topic ${i}`,knownBy:'thấp'})),
+  ...Array.from({length:8},(_,i)=>({title:`Entire history of High Topic ${i}`,knownBy:'cao'})),
+ ]}})});
+ await prepare(h);
+ const videos=h.state().surveys[0].nicheFlow.shelf.videos;
+ await h.act('groups',{groups:Array.from({length:4},(_,i)=>({name:'G'+i,videoIds:videos.filter((_,j)=>j%4===i).map(v=>v.id)}))});await h.act('groups',{groupId:'group-0'});
+ await h.act('probe',{samples:Array.from({length:3},()=>Array.from({length:20},(_,i)=>i<11?20001:20000))});
+ const done=await h.act('topics');
+ const chosen=done.survey.nicheFlow.topics.chosen;
+ assert.equal(done.survey.nicheFlow.topics.passed,true,(done.survey.nicheFlow.topics.errors||[]).join(' | '));
+ assert.equal(chosen.length,20);
+ assert.equal(chosen.filter(t=>/High Topic/.test(t)).length,8);
+ assert.ok(chosen.slice(0,8).every(t=>/High Topic/.test(t)),'8 chủ đề cao phải nằm TRƯỚC 12 chủ đề thấp');
+ assert.equal(chosen[8],'Entire history of Low Topic 0');
+});
 test('probe missing results and invalid views cannot pass',async()=>{
  const h=harness();await prepare(h);const videos=h.state().surveys[0].nicheFlow.shelf.videos;
  await h.act('groups',{groups:Array.from({length:4},(_,i)=>({name:'G'+i,videoIds:videos.filter((_,j)=>j%4===i).map(v=>v.id)}))});await h.act('groups',{groupId:'group-0'});
