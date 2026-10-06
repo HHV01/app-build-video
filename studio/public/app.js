@@ -1,9 +1,10 @@
+import { mergeState } from '/sync.mjs';
 import { STICKMAN_PROFILE, STAGES, GATES, HIT_FLOOR_VIEWS, describeGate, analyzeChannels, videoPool, analyzeGroups, nextHook, HOOK_TYPES, thumbLineCheck, batchScenes, suggestClips, sceneFileName, clipFileName, referencePlan, estimateRead, timingCheck, packagingBlockers, MUSIC_PLAN, COST_REFERENCE, QUOTA, FULL_BLEED, NO_TEXT_IN_IMAGE, DEFAULT_WPM, BACKGROUND_REFERENCE_MIN_SCENES, REFERENCE_RULE, THUMB_LAYOUTS, THUMB_RULES, findLayout, SUB_LINES } from '/rx.mjs';
 import { makeZip } from '/zip.mjs';
 import { scriptPlan, sceneWindows, validateAnimations } from '/production.mjs';
 import { renderNiche } from './niche-ui.mjs';
 
-let state, settings, caps = {}, busy = false, saveQueue = Promise.resolve(), toastTimer, voiceURL;
+let persistedState, state, settings, caps = {}, busy = false, saveQueue = Promise.resolve(), toastTimer, voiceURL;
 const app = document.querySelector('#app');
 const uid = () => crypto.randomUUID();
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -31,14 +32,35 @@ function toast(message, error = false) {
 }
 async function api(url, method = 'GET', body) {
   const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-Studio-Request': '1' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
-  const data = await res.json(); if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`); return data;
+  const data = await res.json(); if (!res.ok) throw Object.assign(new Error(data.error || `HTTP ${res.status}`),{status:res.status}); return data;
+}
+function updateInPlace(target,source){
+  if(Array.isArray(source)){
+    const previous=[...target];target.length=0;
+    for(let i=0;i<source.length;i++){const value=source[i],old=value?.id?previous.find(x=>x?.id===value.id):previous[i];if(old&&value&&typeof old==='object'&&typeof value==='object'&&Array.isArray(old)===Array.isArray(value)){updateInPlace(old,value);target.push(old);}else target.push(structuredClone(value));}return;
+  }
+  for(const key of Object.keys(target))if(!(key in source))delete target[key];
+  for(const [key,value] of Object.entries(source)){if(target[key]&&value&&typeof target[key]==='object'&&typeof value==='object'&&Array.isArray(target[key])===Array.isArray(value))updateInPlace(target[key],value);else target[key]=structuredClone(value);}
 }
 function save() {
   const snapshot = structuredClone(state);
   saveQueue = saveQueue.catch(()=>{}).then(async () => {
     document.querySelector('.save-state')?.replaceChildren('Đang lưu…');
     snapshot.revision = state.revision;
-    const result = await api('/api/state', 'PUT', snapshot); state.revision = result.revision;
+    let outgoing=snapshot,result;
+    for(let attempt=0;attempt<3;attempt++){
+      try{result=await api('/api/state','PUT',outgoing);break;}catch(e){
+        if(e.status!==409)throw e;
+        const remote=await api('/api/state');const merged=mergeState(persistedState,outgoing,remote);
+        if(merged.conflicts.length){localStorage.setItem('tich-unsaved-recovery',JSON.stringify(state));throw Error('Cùng một mục đã được sửa ở hai phiên. Bản đang nhập được giữ trên trang và lưu bản phục hồi; chưa ghi đè. Mục: '+merged.conflicts.slice(0,3).join(', '));}
+        outgoing=merged.state;
+      }
+    }
+    if(!result)throw Error('Dữ liệu đang được cập nhật liên tục. Nội dung trên trang vẫn được giữ; thử lưu lại.');
+    outgoing.revision=result.revision;
+    for(const ref of result.mediaRefs||[]){let target=outgoing;for(const k of ref.path.slice(0,-1))target=target[k];target[ref.path.at(-1)]=ref.url;}
+    for(const flow of result.surveyFlows||[]){const survey=outgoing.surveys.find(x=>x.id===flow.id);if(survey){survey.nicheFlow=flow.nicheFlow;survey.lockedNiche=flow.lockedNiche;}}
+    const reconciled=mergeState(snapshot,state,outgoing);updateInPlace(state,reconciled.state);state.revision=result.revision;persistedState=structuredClone(outgoing);
     for(const ref of result.mediaRefs||[]){let current=state,original=snapshot;for(const k of ref.path.slice(0,-1)){current=current?.[k];original=original?.[k];}const key=ref.path.at(-1);if(current&&current[key]===original?.[key])current[key]=ref.url;}
     for(const flow of result.surveyFlows||[]){const s=state.surveys.find(x=>x.id===flow.id);if(s){s.nicheFlow=flow.nicheFlow;s.lockedNiche=flow.lockedNiche;}}
     document.querySelector('.save-state')?.replaceChildren('Đã lưu trên máy');
@@ -65,7 +87,7 @@ async function run(label, fn) {
   const panel = document.querySelector('#busy'); panel.hidden = false; document.querySelector('#busy-label').textContent = label;
   // Ghi nhớ nút vốn đã tắt. Sau khi render() DOM là mới, nút mới đã tự tính đúng trạng thái
   // nên chỉ cần trả lại trạng thái cho node cũ còn nối — không bật tất cả.
-  const before = [...document.querySelectorAll('button')].map(b => [b, b.disabled]);
+  const before = [...document.querySelectorAll('button,input,select,textarea')].map(b => [b, b.disabled]);
   before.forEach(([b]) => { b.disabled = true; });
   // Hàm con thường tự render(). Đếm số lần render để không vẽ lại lần nữa —
   // vẽ lại sẽ xoá mất thông báo vừa hiện.
@@ -73,7 +95,7 @@ async function run(label, fn) {
   try { await fn(); await save(); if (renderCount === drawn) render(); } catch (e) { toast(e.message, true); render(); }
   finally {
     busy = false; panel.hidden = true;
-    before.forEach(([b, off]) => { if (off && b.isConnected) b.disabled = true; });
+    before.forEach(([b, off]) => { if (b.isConnected) b.disabled = off; });
   }
 }
 async function generate(action, context) { const r = await api('/api/generate', 'POST', { action, context, jobId: uid() }); activity(`AI · ${action} · ${r.model} · ${n(r.usage?.total_tokens)} token`); return r.output; }
@@ -112,7 +134,9 @@ async function nicheAction(stage, extras={}) {
   const s=currentSurvey();
   await run('Đang kiểm tra cổng '+stage+'…',async()=>{
     await save();
-    const result=await api('/api/niche/'+stage,'POST',{surveyId:s.id,revision:state.revision,...extras});
+    let result;
+    saveQueue=saveQueue.catch(()=>{}).then(async()=>{result=await api('/api/niche/'+stage,'POST',{surveyId:s.id,revision:state.revision,...extras});state.revision=result.revision;persistedState.revision=result.revision;const old=persistedState.surveys.findIndex(x=>x.id===s.id);persistedState.surveys[old]=structuredClone(result.survey);});
+    await saveQueue;
     state.revision=result.revision;
     const updated=result.survey, current=updated.nicheFlow[stage];
     updated.nicheStep=STAGES.indexOf(stage);
@@ -426,4 +450,4 @@ app.addEventListener('change',async e=>{
 app.addEventListener('input',e=>{if(e.target.dataset.bind?.startsWith('project.thumbnail')){const {object,keys}=boundObject(e.target.dataset.bind);if(object)object[keys[0]]=e.target.value;drawThumbnail();}});
 window.addEventListener('hashchange',render);
 window.addEventListener('beforeunload',e=>{if(busy){e.preventDefault();e.returnValue='';}});
-try{[state,settings,caps]=await Promise.all([api('/api/state'),api('/api/settings'),api('/api/capabilities')]);if(localStorage.getItem('tich-theme')==='light')document.body.classList.add('light');render();}catch(e){app.innerHTML=`<div class="content">${heading('Không tải được Studio','Kiểm tra server và tải lại trang.')}${notice(esc(e.message),'error')}</div>`;}
+try{[state,settings,caps]=await Promise.all([api('/api/state'),api('/api/settings'),api('/api/capabilities')]);persistedState=structuredClone(state);if(localStorage.getItem('tich-theme')==='light')document.body.classList.add('light');render();}catch(e){app.innerHTML=`<div class="content">${heading('Không tải được Studio','Kiểm tra server và tải lại trang.')}${notice(esc(e.message),'error')}</div>`;}

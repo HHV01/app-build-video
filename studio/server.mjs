@@ -740,7 +740,7 @@ async function makeImage(b) {
     }
     if (req.method !== 'GET') return json(res, 405, { error: 'Method không được phép.' });
     // rx.mjs / zip.mjs là nghiệp vụ dùng chung cho cả server lẫn trình duyệt.
-    const aliases = { '/production.mjs': path.join(root, 'studio', 'production.mjs'), '/rx.mjs': path.join(root, 'studio', 'rx.mjs'), '/zip.mjs': path.join(root, 'studio', 'zip.mjs') };
+    const aliases = { '/sync.mjs':path.join(root,'studio','sync.mjs'), '/production.mjs': path.join(root, 'studio', 'production.mjs'), '/rx.mjs': path.join(root, 'studio', 'rx.mjs'), '/zip.mjs': path.join(root, 'studio', 'zip.mjs') };
     const requested = aliases[url.pathname] || path.resolve(publicRoot, '.' + (url.pathname === '/' ? '/index.html' : decodeURIComponent(url.pathname)));
     const base = aliases[url.pathname] ? path.dirname(requested) : publicRoot;
     const file = requested;
