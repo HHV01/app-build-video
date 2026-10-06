@@ -1,4 +1,4 @@
-import { mergeState } from '/sync.mjs';
+import { mergeState, appendActivity } from '/sync.mjs';
 import { STICKMAN_PROFILE, STAGES, GATES, HIT_FLOOR_VIEWS, describeGate, analyzeChannels, videoPool, analyzeGroups, nextHook, HOOK_TYPES, thumbLineCheck, batchScenes, suggestClips, sceneFileName, clipFileName, referencePlan, estimateRead, timingCheck, packagingBlockers, MUSIC_PLAN, COST_REFERENCE, QUOTA, FULL_BLEED, NO_TEXT_IN_IMAGE, DEFAULT_WPM, BACKGROUND_REFERENCE_MIN_SCENES, REFERENCE_RULE, THUMB_LAYOUTS, THUMB_RULES, findLayout, SUB_LINES } from '/rx.mjs';
 import { makeZip } from '/zip.mjs';
 import { scriptPlan, sceneWindows, validateAnimations } from '/production.mjs';
@@ -68,7 +68,7 @@ function save() {
   }).catch(e => { toast(e.message, true); document.querySelector('.save-state')?.replaceChildren('Chưa lưu — giữ trang mở'); throw e; });
   return saveQueue;
 }
-function activity(text) { state.activity.unshift({ id: uid(), text, at: new Date().toISOString() }); state.activity = state.activity.slice(0, 60); }
+function activity(text) { appendActivity(state,{ id: uid(), text, at: new Date().toISOString() }); }
 function route() { const p = location.hash.slice(1).split('/'); return { page: p[0] || 'home', id: p[1], tab: p[2] || 'overview', project: p[3], step: Number(p[4] || 0) }; }
 function go(hash) { if (busy) return toast('Đợi tác vụ hiện tại hoàn tất.'); location.hash = hash; if (location.hash.slice(1) === hash) render(); }
 const currentSurvey = () => state.surveys.find(s => s.id === route().id);

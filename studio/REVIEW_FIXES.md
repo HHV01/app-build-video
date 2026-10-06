@@ -151,3 +151,7 @@ Bỏ góc kể khỏi bước Kênh tham khảo và bỏ yêu cầu angle khi ph
 ## AI · Dự phòng model (06/10/2026)
 
 Thêm withModelFallback với danh sách có thứ tự, loại trùng, tối đa ba dự phòng, chỉ chuyển lỗi upstream tạm thời. Server giữ status upstream riêng thay vì gom mọi lỗi thành 502; UI lưu checkbox/danh sách và thông báo model thực tế. Chỉ nội dung chữ, không đổi model chính hoặc bỏ kiểm tra đầu ra. Test đỏ trước tạo helper; 116 test đạt gồm kiểm thử HTTP gateway giả lập primary503 → backup200, lưu cấu hình và xác nhận primary giữ nguyên. Đã bật trên máy Gemini3Flash → Groq gpt-oss120b → Gemini2.5Flash (IDs có trong gateway). Danh sách gateway không chứng minh model còn quota/đã hoạt động; chưa ép lỗi 503 trên provider thật. Timeout45 giây mỗi model khi bật dự phòng; yêu cầu timeout có thể vẫn phát sinh chi phí ở provider dù app bỏ chờ.
+
+## Sửa nhật ký thiếu activity (06/10/2026)
+
+State thật revision620 thiếu activity; frontend gọi unshift trước khi trả output AI nên tác vụ dừng dù provider có thể đã tạo xong. appendActivity khởi tạo mảng khi thiếu/sai dạng, giữ các mục cũ và giới hạn60. Không đổi cảnh/script hiện có. Test hồi quy đỏ trước sửa, toàn bộ117test xanh sau. Không tạo lại cảnh qua provider trong kiểm thử này.

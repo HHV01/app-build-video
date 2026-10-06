@@ -9,3 +9,9 @@ test('Same-field edits, delete versus edit, and scene array changes are conflict
  const base={surveys:[{id:'s',name:'old'}]},local={surveys:[{id:'s',name:'mine'}]},remote={surveys:[{id:'s',name:'theirs'}]};assert.deepEqual(mergeState(base,local,remote).conflicts,['surveys[s].name']);assert(mergeState(base,{surveys:[]},remote).conflicts.length);
  const s={scenes:[{prompt:'old'}]};assert(mergeState(s,{scenes:[{prompt:'a'}]},{scenes:[{prompt:'b'}]}).conflicts.length);
 });
+
+test('activity logging repairs missing/non-array legacy activity and keeps prior entries',async()=>{
+ const {appendActivity}=await import('./sync.mjs');
+ for(const activity of [undefined,null,{}]){const state={activity};appendActivity(state,{id:'new',text:'AI success'});assert.equal(state.activity[0].id,'new');}
+ const state={activity:[{id:'old'}]};appendActivity(state,{id:'new'});assert.deepEqual(state.activity.map(x=>x.id),['new','old']);
+});

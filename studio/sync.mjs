@@ -18,3 +18,8 @@ export function mergeState(base, local, remote) {
   }
   return {state:merge(base,local,remote,''),conflicts};
 }
+
+// Older saved states can omit the activity collection. Logging must not discard AI output.
+export function appendActivity(state, entry) {
+ state.activity=[entry,...(Array.isArray(state.activity)?state.activity:[])].slice(0,60);
+}
