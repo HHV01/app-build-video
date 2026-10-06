@@ -72,7 +72,7 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
       value = { passed: true, market: body.market, language: body.language, format: body.format };
     } else if (stage === 'template') {
       const angle = String(body.angle || survey.angle || '').trim();
-      if (!angle) throw fault('Nhập angle của kênh bạn trước khi chốt khuôn.');
+
       const cat = body.mode === 'live' ? await catalog(body.channel) : body.mode === 'import' ? imported(survey, body.channel, body.confirmComplete) : null;
       if (!cat) throw fault('Chọn nguồn YouTube hoặc kho nhập.');
       if (cat.durationWarning) throw fault(cat.durationWarning);
@@ -85,8 +85,16 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
       }
       value={passed:Boolean(selected&&result.complete),value:selected?.template||null,candidates:result.candidates,angle,channelId:cat.id,result,provenance:cat.provenance,examples:selected?contentVideos(cat.videos,flow.field.format).slice(0,RULES.titlesForTemplate).map(v=>v.title):[],reason:result.reason};
       if(selected){value.result={...result,...selected,titles:value.examples.filter(t=>carriesTemplate(t,selected.template)||t.normalize('NFC').toLowerCase().trim().replace(/\s+/g,' ')===selected.template)};}
+      if(body.suggestAngles===true && selected){
+        try {
+          const response=await generate({action:'angles',context:{titles:value.examples,template:value.value,language:flow.field.language}});
+          value.angleSuggestions=(response.output.angles||[]).filter(x=>typeof x.angle==='string'&&x.angle.trim()).slice(0,3).map(x=>({angle:x.angle.trim(),reason:String(x.reason||'')}));
+          if(!value.angleSuggestions.length)value.angleSuggestionError='Chưa nhận được gợi ý góc kể. Bạn có thể thử lại hoặc tự nhập.';
+        } catch(e){value.angleSuggestionError='Chưa lấy được gợi ý góc kể: '+e.message+' Bạn có thể thử lại hoặc tự nhập.';}
+      }
       if(selected?.words<=2)value.warning='Khuôn quá chung, kho dễ nhiễu.';
     } else if (stage === 'shelf') {
+      if(!flow.template.angle?.trim())throw fault('Chọn hoặc nhập góc kể trước khi kiểm tra kho.');
       let catalogs,notice,extraReadUnits=0;
       if (body.mode === 'import'){catalogs = [...new Set(survey.videos.map(v => v.channelId))].map(id => imported(survey, id, body.confirmComplete));if(body.extraChannels?.length)notice='Bỏ qua kênh thêm tay: kho nhập đã có sẵn danh sách kênh.';}
       else if (body.mode === 'live') {

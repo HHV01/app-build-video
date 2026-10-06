@@ -169,6 +169,7 @@ async function discover(b) {
   return { videos: enrichVideos(videos), channels: [...channels.values()].map(c => ({ id: c.id, name: c.snippet.title, subscribers: c.statistics.hiddenSubscriberCount ? null : Number(c.statistics.subscriberCount || 0), sampleOnly: true })), usage, formatWarning: 'Phân loại dài/Shorts dựa trên thời lượng là gần đúng. Kiểm tra và sửa loại video trong kho.' };
 }
 const schemas = {
+  angles: '{"angles":[{"angle":"góc kể","reason":"căn cứ từ tiêu đề nguồn"}]}',
   templates: '{"channels":[{"name":"tên kênh","subscribers":0,"maxViews":0,"templates":[{"name":"khuôn tiêu đề lặp","matches":3,"ratio":0.6}]}],"note":"giới hạn chỉ trong mẫu đã lấy"}',
   groups: '{"groups":[{"name":"nhóm vấn đề","angle":"câu hỏi xuyên suốt","reason":"lý do từ mẫu","videoIds":["ID có thật"]}]}',
   packaging: '{"variants":[{"title":"tiêu đề","thumbnailVisual":"mô tả cảnh tiếng Anh","overlay":"1–4 tiếng, phải nằm trong title","flavour":"khuôn + kiểu hook","hookType":"id trong 10 kiểu hook","hook":"15 giây mở đầu","promise":"lời hứa video trả lời"}]}',
@@ -190,6 +191,7 @@ async function generate(b) {
     const context = JSON.stringify(ctxObj);
     if (context.length > 65000) throw failure('Dữ liệu quá dài. Giảm số transcript hoặc video trong một lượt.');
     const directives = {
+      angles: 'Đề xuất đúng 3 góc kể khác nhau cho kênh mới dựa trên các tiêu đề tham khảo context.titles. Viết góc kể và lý do bằng tiếng Việt. Mỗi góc là câu hỏi hoặc hướng giải thích cụ thể, có thể dùng cho nhiều video. Chỉ suy luận từ tiêu đề được cung cấp, không khẳng định đã xem nội dung hoặc biết giọng nguồn. Không bịa dữ kiện; nêu rõ căn cứ tiêu đề trong reason.',
       templates: 'Dữ liệu đầu vào là `{"videos":[{"name":"tên kênh","titles":["tiêu đề 1","tiêu đề 2"]}]}`. Với từng kênh, tìm các khuôn tiêu đề lặp lại ở 2 video trở lên. `matches` là số video khớp, `ratio` là matches chia tổng số tiêu đề của kênh đó — đếm từ danh sách được cung cấp, không ước lượng. Kênh không có khuôn lặp thì trả templates rỗng. Giữ nguyên chữ trong tiêu đề.',
       groups: 'Chia video thành 4–7 nhóm vấn đề độc lập, CHỈ dựa trên tiêu đề (không có view, không đoán view). Mỗi ID chỉ ở một nhóm. Không sáng tạo ID. Tên nhóm viết ngắn, viết HOA để làm nhãn bảng.',
       identity: 'Trích nguyên tắc giọng, hook và title từ transcript nếu có. Chỉ có title thì đánh dấu giọng/style chưa xác minh. Đề xuất 5 tên kênh nguyên bản phù hợp niche và angle đã chọn; không thay angle người dùng bằng angle nguồn.',

@@ -143,3 +143,7 @@ Kiểm chứng trình duyệt tái hiện ô JSON có thể chưa vào state khi
 ## Sửa tab giữ giao diện cũ (06/10/2026)
 
 Tab đang mở giữ giao diện sáu bước và mã khảo sát không có trong state server. Đã sao lưu state cùng các ô đang nhập, khôi phục riêng khảo sát này (link @CuThongThai, VN/vi/video dài), rồi tải lại tab. Không ghi đè dữ liệu các kênh khác. Static HTML/JS trả Cache-Control: no-store; khảo sát không tồn tại có nút bắt đầu khảo sát mới. Test header thất bại trước sửa, toàn bộ 109 test đạt sau sửa. Kiểm tra trình duyệt: giao diện năm bước, link giữ nguyên, nút Phân tích phản hồi bằng yêu cầu nhập góc kể. Chưa gọi YouTube thật hoặc AI cho khảo sát này vì chưa có góc kể của người dùng.
+
+## UX · Chọn góc sau phân tích (06/10/2026)
+
+Bỏ góc kể khỏi bước Kênh tham khảo và bỏ yêu cầu angle khi phân tích template. Khi suggestAngles=true và có ứng viên, dùng tác vụ angles qua Groq hiện có, đầu vào chỉ các tiêu đề đã phân tích. Hiện gợi ý cùng lý do, nút chọn và ô sửa ở bước Chọn khuôn. Chưa chọn thì UI và API shelf cùng chặn; chốt template lưu góc đã chọn cho lockedNiche. Lỗi AI không phá kết quả khuôn, hiện thông báo cho phép tự nhập/thử lại. Test phân tích không angle và vị trí ô nhập đỏ trước sửa, xanh sau; bổ sung ca gợi ý và fallback. Tổng 112 test đạt. Tab thật đã tải giao diện bước đầu không angle. Chưa xác nhận gợi ý Groq/chuỗi YouTube thật trong lần sửa này.

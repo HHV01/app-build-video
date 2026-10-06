@@ -252,3 +252,25 @@ test('channel pagination reaches older uploads beyond latest50; blind grouping r
  const cat=await h.api.catalog('UC'+'a'.repeat(22));assert.equal(cat.pages,2);assert.equal(cat.videos.length,60);assert.equal(cat.complete,true);
  await prepare(h);await h.act('groups');assert.ok(observed.videos.every(v=>Object.keys(v).sort().join(',')==='id,title'));
 });
+
+test('reference analysis accepts no angle; shelf requires a chosen angle',async()=>{
+ const h=harness(); h.state().surveys[0].angle='';
+ await h.act('field',{market:'US',language:'en',format:'long'});
+ const result=await h.act('template',{channel:'a'});
+ assert.equal(result.survey.nicheFlow.template.passed,true);
+ assert.equal(result.survey.nicheFlow.template.angle,'');
+ await assert.rejects(h.act('shelf'),e=>e.status===400&&/góc kể/.test(e.message));
+ await h.act('template',{channel:'a',angle:'My selected angle'});
+ assert.equal((await h.act('shelf')).survey.nicheFlow.shelf.passed,true);
+});
+
+test('angle proposals use only analyzed titles and provider failure preserves template',async()=>{
+ let context; const h=harness(fixture(),{generate:async request=>{context=request;return{output:{angles:[{angle:'Why institutions change',reason:'Title evidence'}]}};}});
+ await h.act('field',{market:'US',language:'en',format:'long'});
+ const value=(await h.act('template',{channel:'a',suggestAngles:true})).survey.nicheFlow.template;
+ assert.equal(context.action,'angles');assert.deepEqual(context.context.titles,value.examples);
+ assert.equal(value.angleSuggestions[0].angle,'Why institutions change');
+ const failed=harness();await failed.act('field',{market:'US',language:'en',format:'long'});
+ const fallback=(await failed.act('template',{channel:'a',suggestAngles:true})).survey.nicheFlow.template;
+ assert.equal(fallback.passed,true);assert.match(fallback.angleSuggestionError,/tự nhập/);
+});

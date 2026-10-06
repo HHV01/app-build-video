@@ -108,3 +108,7 @@ Gõ thử YouTube lấy 25 kết quả, lọc chi tiết/view hợp lệ rồi d
 Test chạy trên dữ liệu riêng. Thiếu ffmpeg/ffprobe chỉ bỏ qua subtest dựng, vẫn kiểm chứng HTTP. Workflow GitHub Actions kiểm thử Ubuntu/Windows với Node 22; chưa có kết quả chạy CI từ GitHub cho bản sửa này. [Kiểm kê file và lần dọn đã duyệt](FILE_REVIEW_INVENTORY.md). Các thay đổi D1/D5 và chuỗi khảo sát mới chưa được kiểm chứng với YouTube thật; test dùng mock, không tiêu quota thật.
 
 Các nút tìm ngách đọc trực tiếp nội dung ô nhập trước khi chạy, nên không phụ thuộc việc rời ô để lưu. Kiểm chứng UI trên kho giả lập riêng đã đi từ Phân tích kênh → duyệt khuôn/tự chạy kho → chọn nhóm → nhập mẫu nhu cầu → chốt 20 chủ đề → dựng kênh, giữ đúng khuôn và angle. [Ảnh kiểm chứng](screenshots/niche-ux-review.jpg).
+
+## Góc kể sau phân tích kênh
+
+Bước đầu chỉ nhập kênh tham khảo và bấm Phân tích kênh. Khi kênh có khuôn đạt ngưỡng, Groq đề xuất tối đa ba góc kể từ tiêu đề tham khảo. Ở bước Chọn khuôn, chọn một góc rồi chỉnh nếu muốn, hoặc tự nhập; bấm Dùng khuôn này để chốt góc và kiểm tra kho. Gợi ý là suy luận từ tiêu đề, không phải phân tích transcript. Nếu Groq lỗi, kết quả khuôn vẫn giữ; có thể tự nhập hoặc chạy lại Tìm khuôn tiêu đề. Phải chọn góc trước bước Kho; luật khuôn hơn 50% không đổi.

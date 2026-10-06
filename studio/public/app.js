@@ -132,7 +132,7 @@ const SURVEY_STEPS = ['Bước 0 · Chọn sân','Bước 1 · Kênh chỉ đư�
 function gateOf(s) { return s?.gate || 'vua'; }
 function niche(){const s=currentSurvey();return s?renderNiche(s,{heading,panel,notice,field,select,btn,esc,n}):empty('Khảo sát này không còn trên server','Tải lại trang hoặc bắt đầu khảo sát mới để tiếp tục.',btn('Bắt đầu khảo sát mới','new-survey','primary'));}
 const nicheLabels={field:'Lưu thị trường',template:'Phân tích tiêu đề của kênh',shelf:'Tìm và kiểm tra kho kênh',groups:'Phân nhóm chủ đề',probe:'Kiểm tra nhu cầu',topics:'Kiểm tra 20 chủ đề'};
-function templateRequest(s, choose=false){return {mode:s.nicheMode||'import',channel:s.leadChannel,angle:s.angle,confirmComplete:s.completeImport===true,...(choose?{template:s.templateChoice||s.nicheFlow?.template?.value}:{})};}
+function templateRequest(s, choose=false){return {mode:s.nicheMode||'import',channel:s.leadChannel,angle:s.angle,confirmComplete:s.completeImport===true,suggestAngles:!choose,...(choose?{template:s.templateChoice||s.nicheFlow?.template?.value}:{})};}
 function shelfRequest(s){return {mode:s.nicheMode||'import',confirmComplete:s.completeImport===true,extraChannels:(s.extraChannelsText||'').split('\n').map(x=>x.trim()).filter(Boolean)};}
 async function applyNicheStage(stage, extras={}) {
     const s=currentSurvey(), previousGroup=s.nicheFlow?.groups?.chosen;
@@ -369,12 +369,13 @@ case 'niche-step':{const next=Number(el.dataset.step);if(!Number.isInteger(next)
 case 'niche-field':await nicheAction('field',{market:s.market,language:s.language,format:s.format});break;
 case 'niche-analyze':{
  if(!s.leadChannel?.trim())return toast('Nhập kênh tham khảo trước khi phân tích.',true);
- if(!s.angle?.trim())return toast('Nhập góc kể bạn muốn làm trước khi phân tích.',true);
+
  if(s.nicheMode!=='live'&&!s.completeImport)return toast('Xác nhận kho nhập đầy đủ trong phần nguồn dữ liệu.',true);
  await nicheAction('field',{market:s.market,language:s.language,format:s.format},[{stage:'template',extras:templateRequest(s)}]);break;
 }
 case 'niche-template':await nicheAction('template',templateRequest(s));break;
-case 'niche-use-template':await nicheAction('template',templateRequest(s,true),[{stage:'shelf',extras:shelfRequest(s)}]);break;
+case 'niche-choose-angle':{const suggestion=s.nicheFlow?.template?.angleSuggestions?.[Number(el.dataset.index)];if(suggestion){s.angle=suggestion.angle;await save();render();}break;}
+case 'niche-use-template':if(!s.angle?.trim())return toast('Chọn một gợi ý hoặc nhập góc kể trước khi tiếp tục.',true);await nicheAction('template',templateRequest(s,true),[{stage:'shelf',extras:shelfRequest(s)}]);break;
 case 'niche-shelf':await nicheAction('shelf',shelfRequest(s));break;
 case 'niche-add-channel':{const input=document.querySelector('[data-bind="survey.extraChannelsText"]');input?.scrollIntoView({behavior:'smooth',block:'center'});input?.focus();break;}
 case 'niche-groups':await nicheAction('groups');break;

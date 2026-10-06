@@ -59,7 +59,7 @@ test('Quick start puts the reference channel first and optional settings in deta
  assert(html.indexOf('survey.leadChannel')<html.indexOf('survey.name'));
  assert.match(html,/Phân tích kênh/);assert.match(html,/data-action="niche-analyze"/);
  assert.match(html,/<details[^>]*>[\s\S]*Tên khảo sát/);
- assert.match(html,/survey.angle/);
+ assert(!html.includes("survey.angle"));
 });
 test('Recommended template keeps alternatives collapsed and explains the next action',()=>{
  const template={passed:true,value:'the entire history of',candidates:[{template:'the entire history of',words:4,matches:20,total:20},{template:'the entire history',words:3,matches:20,total:20}],examples:['The Entire History of Rome']};
@@ -144,4 +144,12 @@ test('five-step navigation retains all six gated screens', () => {
     assert.ok(html.length > 200, `bước ${step} phải có nội dung`);
   }
   assert.doesNotThrow(() => renderNiche({}, ui), 'không có nicheFlow vẫn phải render được');
+});
+
+test('angle is chosen after analysis, outside collapsed channel settings',()=>{
+ const first=renderNiche(survey({nicheStep:0}),ui);
+ assert(!first.includes('data-bind="survey.angle"'));
+ const second=renderNiche(survey({nicheStep:1,nicheFlow:{...flow,template:{...flow.template,angleSuggestions:[{angle:'Giải thích lựa chọn',reason:'Dựa trên tiêu đề nguồn'}]}}}),ui);
+ assert.match(second,/niche-choose-angle/);
+ assert(second.indexOf('data-bind="survey.angle"')<second.indexOf('Đổi kênh tham khảo'));
 });
