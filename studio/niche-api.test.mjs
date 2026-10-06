@@ -130,6 +130,58 @@ test('B4 · kênh 14 video hợp lệ vẫn tìm được khuôn; kênh 6 video 
  assert.equal(bad.passed,false); assert.equal(bad.value,null);
  assert.match(bad.result.reason,/Cần ít nhất 10 tiêu đề/);
 });
+// ---- B5: chế độ live tìm kênh bằng VIDEO có khuôn ----
+
+const uc = n => 'UC' + String(n).padStart(22, '0');
+// Mỗi kênh trả 20 video nội dung, mọi tiêu đề cùng mang khuôn "the entire history of".
+const liveCatalog = hits => async (endpoint, params) => {
+  if (endpoint === 'search') return { items: hits.map((cid, i) => ({ id: { videoId: 'v' + i }, snippet: { channelId: cid } })) };
+  if (endpoint === 'channels') return { items: [{ id: params.id || params.forHandle, snippet: { title: 'Kênh ' + (params.id || params.forHandle) }, contentDetails: { relatedPlaylists: { uploads: 'up' } } }] };
+  if (endpoint === 'playlistItems') return { items: Array.from({ length: 20 }, (_, i) => ({ contentDetails: { videoId: (params.playlistId || 'x') + i } })) };
+  throw Error(endpoint);
+};
+const liveVideos = ids => ids.map((id, i) => ({
+  id, channelId: 'UC' + id.replace(/\D/g, '').slice(0, 22).padEnd(22, '0'), channelTitle: 'K',
+  title: `The Entire History of ${['Rome', 'Japan', 'Egypt'][i % 3]} part ${i}`,
+  views: 30000, publishedAt: new Date(Date.now() - (200 + i) * 86400000).toISOString(), duration: 600, format: 'long',
+}));
+
+test('B5 · chế độ live tìm kênh bằng VIDEO có khuôn trong ngoặc kép, loại trùng channelId',async()=>{
+ const calls=[];
+ const wrap=async(ep,p)=>{calls.push({endpoint:ep,params:p});return liveCatalog([uc(1),uc(1),uc(2),uc(1),uc(3)])(ep,p);};
+ const h=harness([],{youtube:wrap,videoDetails:liveVideos});
+ await h.act('field',{market:'VN',language:'vi',format:'long'});
+ await h.act('template',{mode:'live',channel:uc(99),angle:'x'});
+ const r=await h.act('shelf',{mode:'live'});
+ const search=calls.filter(c=>c.endpoint==='search');
+ assert.equal(search.length,1);
+ const q=search[0].params;
+ assert.equal(q.type,'video','phải tìm theo TIÊU ĐỀ video, không theo tên kênh');
+ assert.equal(q.q,'"the entire history of"','truy vấn phải có khuôn trong ngoặc kép');
+ assert.equal(q.maxResults,'50');
+ assert.equal(q.publishedAfter,`${new Date().getFullYear()}-01-01T00:00:00Z`);
+ assert.equal(q.regionCode,'VN');
+ assert.equal(q.relevanceLanguage,'vi');
+ // Không tìm channel nữa.
+ assert.ok(calls.every(c=>!(c.endpoint==='search'&&c.params.type==='channel')));
+ // channelId trùng bị gộp, kênh dẫn đường ưu tiên đứng đầu.
+ assert.deepEqual(r.survey.nicheFlow.shelf.channels.map(c=>c.channelId),[uc(99),uc(1),uc(2),uc(3)]);
+});
+test('B5 · chế độ live không cào quá 10 kênh',async()=>{
+ const calls=[];
+ const hits=Array.from({length:50},(_,i)=>uc(i));
+ const wrap=async(ep,p)=>{calls.push({endpoint:ep,params:p});return liveCatalog(hits)(ep,p);};
+ const h=harness([],{youtube:wrap,videoDetails:liveVideos});
+ await h.act('field',{market:'US',language:'en',format:'long'});
+ await h.act('template',{mode:'live',channel:uc(99),angle:'x'});
+ const truoc=calls.filter(c=>c.endpoint==='channels').length;
+ const r=await h.act('shelf',{mode:'live'});
+ const ids=r.survey.nicheFlow.shelf.channels.map(c=>c.channelId);
+ assert.equal(ids.length,10);
+ assert.equal(ids[0],uc(99));
+ assert.equal(new Set(ids).size,10,'không có channelId lặp');
+ assert.equal(calls.filter(c=>c.endpoint==='channels').length-truoc,10,'đúng 10 lần gọi channels ở bước kho');
+});
 test('probe missing results and invalid views cannot pass',async()=>{
  const h=harness();await prepare(h);const videos=h.state().surveys[0].nicheFlow.shelf.videos;
  await h.act('groups',{groups:Array.from({length:4},(_,i)=>({name:'G'+i,videoIds:videos.filter((_,j)=>j%4===i).map(v=>v.id)}))});await h.act('groups',{groupId:'group-0'});

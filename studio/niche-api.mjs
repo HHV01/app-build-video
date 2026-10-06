@@ -76,8 +76,14 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
       let catalogs;
       if (body.mode === 'import') catalogs = [...new Set(survey.videos.map(v => v.channelId))].map(id => imported(survey, id, body.confirmComplete));
       else if (body.mode === 'live') {
-        const found = await youtube('search', { part: 'snippet', type: 'channel', q: flow.template.value, maxResults: '10', regionCode: flow.field.market, relevanceLanguage: flow.field.language });
-        const ids = [...new Set([flow.template.channelId, ...(found.items || []).map(i => i.id?.channelId)].filter(Boolean))].slice(0, 10);
+        // Tìm bằng VIDEO mang khuôn, không tìm bằng tên kênh: search type=channel
+        // chỉ khớp tên, nên kênh có khuôn tiêu đề đúng vẫn không xuất hiện.
+        const found = await youtube('search', {
+          part: 'snippet', type: 'video', q: `"${flow.template.value}"`, maxResults: '50',
+          publishedAfter: `${new Date().getFullYear()}-01-01T00:00:00Z`,
+          regionCode: flow.field.market, relevanceLanguage: flow.field.language,
+        });
+        const ids = [...new Set([flow.template.channelId, ...(found.items || []).map(i => i.snippet?.channelId)].filter(Boolean))].slice(0, 10);
         catalogs = []; for (const id of ids) catalogs.push(await catalog(id));
       } else throw fault('Chọn nguồn dữ liệu.');
       const channels = catalogs.map(cat => evaluateChannel(cat, flow.template.value, flow.field.format));
