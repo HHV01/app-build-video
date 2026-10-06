@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { findTemplate, channelShelf, shelfGate, probeGate, nextStage, lockedNiche, groupCountGate, carriesTemplate } from './rx.mjs';
+import { findTemplate, channelShelf, shelfGate, probeGate, nextStage, lockedNiche, groupCountGate, carriesTemplate, contentVideos, RULES } from './rx.mjs';
 const now = Date.parse('2026-10-05');
 const mk = (ch, n, days, views) => Array.from({ length: n }, (_, i) => ({ id: ch + i, channelId: ch, channelTitle: ch, title: 't', views, publishedAt: new Date(now - (days + i) * 86400000).toISOString() }));
 
@@ -47,6 +47,36 @@ test('kênh: loại video chưa 90 ngày, ngưỡng 5 video và trung vị 20.00
   assert.equal(ok.pass, true); assert.equal(ok.matureCount, 6); assert.equal(ok.videos[0].multiple, 1);
   assert.equal(channelShelf(mk('b', 4, 100, 50000), now)[0].pass, false);
   assert.equal(channelShelf(mk('c', 8, 100, 19999), now)[0].pass, false);
+});
+test('B4 · contentVideos lọc Shorts và video quá ngắn theo MỘT ngưỡng duy nhất', () => {
+  const v = (id, duration, format) => ({ id, duration, format });
+  const list = [v('dai', 600, 'long'), v('short45', 45, 'short'), v('shortDai', 600, 'short'), v('ngan', 30, 'long'), v('dung120', 120, 'long'), v('dung121', 121, 'long')];
+  assert.deepEqual(contentVideos(list, 'long').map(x => x.id), ['dai', 'dung120', 'dung121']);
+  assert.deepEqual(contentVideos(list, 'short').map(x => x.id), ['short45', 'shortDai']);
+  assert.deepEqual(contentVideos(null, 'long'), []);
+  assert.deepEqual(contentVideos(undefined, 'short'), []);
+  assert.equal(RULES.minContentSeconds, 120);
+  // Không còn ngưỡng 180 rải rác: 121 giây là nội dung hợp lệ.
+  assert.ok(contentVideos(list, 'long').some(x => x.duration === 121));
+});
+test('B4 · findTemplate lấy tối đa 20 nhưng chỉ cần tối thiểu minTitlesForTemplate', () => {
+  assert.equal(RULES.minTitlesForTemplate, 10);
+  const duoi = findTemplate(Array(9).fill('Entire history of one'));
+  assert.equal(duoi.template, null); assert.equal(duoi.complete, false);
+  assert.match(duoi.reason, new RegExp(String(RULES.minTitlesForTemplate)));
+  // 14 video hợp lệ vẫn tìm ra khuôn (trước đây đòi đúng 20 nên báo thiếu dữ liệu).
+  const r14 = findTemplate(Array.from({ length: 14 }, (_, i) => `Entire history of Rome ${i}`));
+  assert.equal(r14.template, 'entire history of rome'); assert.equal(r14.total, 14); assert.equal(r14.complete, true);
+  // Tỷ lệ "quá nửa" tính trên số tiêu đề THỰC CÓ, không phải trên 20.
+  const mixed = [...Array.from({ length: 8 }, (_, i) => `Entire history of Rome ${i}`), ...Array.from({ length: 6 }, (_, i) => `Unrelated piece ${i}`)];
+  const rm = findTemplate(mixed);
+  assert.equal(rm.total, 14); assert.equal(rm.matches, 8); assert.equal(rm.ratio, 8 / 14);
+  // Đúng nửa của số thực có vẫn KHÔNG đủ.
+  const half = [...Array.from({ length: 6 }, (_, i) => `Alpha topic Rome ${i}`), ...Array.from({ length: 6 }, (_, i) => `Beta topic Rome ${i}`)];
+  assert.equal(findTemplate(half).template, null);
+  // Trên 20 tiêu đề thì vẫn chỉ lấy 20 mới nhất.
+  const nhieu = findTemplate(Array.from({ length: 30 }, (_, i) => `Entire history of Rome ${i}`));
+  assert.equal(nhieu.total, RULES.titlesForTemplate);
 });
 test('B3 · carriesTemplate nhận tiêu đề mang khuôn, từ chối phần còn lại', () => {
   assert.equal(carriesTemplate('The Entire History of Rome', 'the entire history of'), true);

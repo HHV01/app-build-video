@@ -356,6 +356,10 @@ function deepFreeze(obj){if(obj&&typeof obj==='object'&&!Object.isFrozen(obj)){O
 
 export const RULES = {
   titlesForTemplate: 20, templateRatio: 0.5, minTemplateWords: 2,
+  // Guide chỉ nói "ít hơn 20 thì lấy hết" — 10 là ngưỡng tự chọn, chỉnh được ở đây.
+  minTitlesForTemplate: 10,
+  // Một ngưỡng duy nhất cho "video nội dung". Thay cho mốc 180 giây rải rác trong server.
+  minContentSeconds: 120,
   matureDays: 90, minVideos: 5, minMedian: 20000, minChannels: 3,
   groupMin: 4, groupMax: 7,
   probeSize: 20, probePass: 11, probeViews: 20000,
@@ -369,12 +373,22 @@ const tokens = t => String(t).normalize('NFC').toLowerCase().split(/\s+/)
 // cả 20 chủ đề mới phải bắt đầu bằng "…of the" thay vì "…of <thực thể>".
 const ARTICLES = new Set(['the', 'a', 'an']);
 
+// Chỉ giữ video nội dung đúng định dạng đang tìm. Shorts và video quá ngắn
+// không đại diện cho dòng khuôn nên phải loại TRƯỚC khi lấy tiêu đề.
+// Đây là nơi duy nhất quyết định "video nội dung".
+export function contentVideos(videos, format = 'long', rules = RULES) {
+  const list = Array.isArray(videos) ? videos : [];
+  if (format === 'short') return list.filter(v => v && v.format === 'short');
+  return list.filter(v => v && v.format !== 'short' && Number(v.duration || 0) >= rules.minContentSeconds);
+}
+
 // KHUÔN = cụm mở đầu DÀI NHẤT lặp ở hơn nửa số tiêu đề mới nhất. Được phép trả null.
 export function findTemplate(titles, rules = RULES) {
   const list = Array.isArray(titles) ? titles.slice(0, rules.titlesForTemplate).filter(t => typeof t === 'string' && t.trim()) : [];
   const total = list.length;
-  if (total !== rules.titlesForTemplate) {
-    return { template: null, total, passed: false, complete: false, reason: `Cần đúng ${rules.titlesForTemplate} tiêu đề mới nhất.` };
+  // Ít hơn 20 thì lấy hết, nhưng vẫn cần đủ mẫu để khuôn có ý nghĩa.
+  if (total < rules.minTitlesForTemplate) {
+    return { template: null, total, passed: false, complete: false, reason: `Cần ít nhất ${rules.minTitlesForTemplate} tiêu đề nội dung mới nhất, đang có ${total}.` };
   }
   const tok = list.map(tokens);
   for (let k = Math.max(...tok.map(t => t.length)); k >= rules.minTemplateWords; k--) {

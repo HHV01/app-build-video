@@ -11,8 +11,9 @@ function harness(videos=fixture(), adapters={}){
  return {api,act,state:()=>state};
 }
 async function prepare(h){await h.act('field',{market:'US',language:'en',format:'long'});await h.act('template',{channel:'a',angle:'Original angle'});return h.act('shelf');}
-test('20 titles are required; exact 50% is not a template; empty template cannot validate topics',()=>{
- assert.equal(findTemplate(Array(19).fill('Entire history of one')).complete,false);
+test('below the title minimum is not a template; exact 50% is not a template; empty template cannot validate topics',()=>{
+ assert.equal(findTemplate(Array(9).fill('Entire history of one')).complete,false);
+ assert.equal(findTemplate([]).complete,false);
  assert.equal(findTemplate([...Array(10).fill('Entire history of one'),...Array(10).fill('Something different now')]).template,null);
  assert.equal(validateTopics(Array.from({length:20},(_,i)=>'Topic '+i),[],'').passed,false);
 });
@@ -23,7 +24,7 @@ test('API refuses nonexistent surveys, skips and falsified passed values',async(
 test('three complete channels must repeat the same template; five old videos suffice independently of hit count',async()=>{
  const h=harness();const shelf=await prepare(h);assert.equal(shelf.survey.nicheFlow.shelf.passed,true);assert.equal(shelf.survey.nicheFlow.shelf.count,3);
  const bad=harness(fixture().map(v=>v.channelId==='c'?{...v,title:'Different new format '+v.id}:v));assert.equal((await prepare(bad)).survey.nicheFlow.shelf.passed,false);
- const sparse=harness(fixture().filter(v=>v.channelId!=='c'||Number(v.id.slice(1))<19));assert.equal((await prepare(sparse)).survey.nicheFlow.shelf.passed,false);
+ const sparse=harness(fixture().filter(v=>v.channelId!=='c'||Number(v.id.slice(1))<9));assert.equal((await prepare(sparse)).survey.nicheFlow.shelf.passed,false,'dưới ngưỡng tiêu đề tối thiểu thì không tìm được khuôn');
 });
 test('full offline workflow validates groups, three 20-result probes, topics, lock and invalidation',async()=>{
  const h=harness();await prepare(h);const videos=h.state().surveys[0].nicheFlow.shelf.videos;
@@ -100,6 +101,34 @@ test('B3 · kho chỉ chứa video MANG KHUÔN; video nóng không mang khuôn k
  const pooled=shelf.videos;
  assert.equal(pooled.length,60);
  assert.ok(pooled.every(v=>!/^completely different subject/i.test(v.title)));
+});
+test('B4 · 20 video có 7 Shorts xen kẽ vẫn tìm được khuôn từ phần video dài',async()=>{
+ const n=Date.now();
+ const long=Array.from({length:13},(_,i)=>({id:'L'+i,channelId:'a',channelTitle:'a',title:`The Entire History of Empire ${i}`,views:30000,publishedAt:new Date(n-(200+i)*86400000).toISOString(),duration:600,format:'long'}));
+ const short=Array.from({length:7},(_,i)=>({id:'S'+i,channelId:'a',channelTitle:'a',title:`Shorts random number ${i}`,views:900000,publishedAt:new Date(n-(2+i)*86400000).toISOString(),duration:50,format:'short'}));
+ // Xen kẽ để Shorts nằm xen giữa các tiêu đề mới nhất.
+ const videos=[];for(let i=0;i<13;i++){videos.push(long[i]);if(i<short.length)videos.push(short[i]);}
+ const h=harness(videos);
+ await h.act('field',{market:'US',language:'en',format:'long'});
+ const r=await h.act('template',{channel:'a',angle:'x'});
+ const t=r.survey.nicheFlow.template;
+ assert.equal(t.passed,true,'Shorts phải bị loại trước khi đếm khuôn');
+ assert.equal(t.value,'the entire history of empire');
+ assert.equal(t.result.total,13,'Shorts không được tính vào 20 tiêu đề xét khuôn');
+ // Không Shorts nào lọt vào danh sách tiêu đề đã xét.
+ assert.ok(t.result.titles.every(x=>!/^Shorts random/.test(x)));
+});
+test('B4 · kênh 14 video hợp lệ vẫn tìm được khuôn; kênh 6 video báo thiếu dữ liệu',async()=>{
+ const mk=(n2)=>Array.from({length:n2},(_,i)=>({id:'a'+i,channelId:'a',channelTitle:'a',title:`The Entire History of Empire ${i}`,views:30000,publishedAt:new Date(Date.now()-(200+i)*86400000).toISOString(),duration:600,format:'long'}));
+ const ok=harness(mk(14));
+ await ok.act('field',{market:'US',language:'en',format:'long'});
+ const good=(await ok.act('template',{channel:'a',angle:'x'})).survey.nicheFlow.template;
+ assert.equal(good.passed,true); assert.equal(good.value,'the entire history of empire');
+ const thin=harness(mk(6));
+ await thin.act('field',{market:'US',language:'en',format:'long'});
+ const bad=(await thin.act('template',{channel:'a',angle:'x'})).survey.nicheFlow.template;
+ assert.equal(bad.passed,false); assert.equal(bad.value,null);
+ assert.match(bad.result.reason,/Cần ít nhất 10 tiêu đề/);
 });
 test('probe missing results and invalid views cannot pass',async()=>{
  const h=harness();await prepare(h);const videos=h.state().surveys[0].nicheFlow.shelf.videos;

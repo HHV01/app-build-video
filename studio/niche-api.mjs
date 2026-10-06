@@ -1,5 +1,5 @@
 // Integrates existing rx/core rules; it contains no second set of thresholds.
-import { RULES, STAGES, findTemplate, carriesTemplate, channelShelf, shelfGate, probeGate, blindTitles, groupCountGate, nextStage, lockedNiche, validateTopics } from './rx.mjs';
+import { RULES, STAGES, findTemplate, carriesTemplate, contentVideos, channelShelf, shelfGate, probeGate, blindTitles, groupCountGate, nextStage, lockedNiche, validateTopics } from './rx.mjs';
 import { median, validateGroups } from './core.mjs';
 
 const fault = (message, status = 400) => Object.assign(new Error(message), { status });
@@ -43,9 +43,9 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
     return { id, name: videos[0]?.channelTitle || id, videos, complete: true, provenance: 'user-declared-import' };
   }
   function evaluateChannel(cat, template, format) {
-    const result = findTemplate(cat.videos.map(v => v.title));
+    const result = findTemplate(contentVideos(cat.videos, format).map(v => v.title));
     // Duration alone cannot definitively distinguish Shorts. Surface this in the UI.
-    const videos = cat.videos.filter(v => format === 'short' ? v.format === 'short' : v.format !== 'short' && v.duration > 180);
+    const videos = contentVideos(cat.videos, format);
     // Kho chỉ tính video MANG KHUÔN. Video nổi bật nhất của kênh nhưng nói về
     // chủ đề khác không thuộc dòng khuôn thì không được vào trung vị/bội số.
     const carrying = videos.filter(v => carriesTemplate(v.title, template));
@@ -70,7 +70,7 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
       if (!angle) throw fault('Nhập angle của kênh bạn trước khi chốt khuôn.');
       const cat = body.mode === 'live' ? await catalog(body.channel) : body.mode === 'import' ? imported(survey, body.channel, body.confirmComplete) : null;
       if (!cat) throw fault('Chọn nguồn YouTube hoặc kho nhập.');
-      const result = findTemplate(cat.videos.map(v => v.title));
+      const result = findTemplate(contentVideos(cat.videos, flow.field.format).map(v => v.title));
       value = { passed: Boolean(result.template && result.complete), value: result.template, angle, channelId: cat.id, result, provenance: cat.provenance };
     } else if (stage === 'shelf') {
       let catalogs;
