@@ -13,6 +13,35 @@ test('khuôn: đúng 50% thì KHÔNG đủ, trả không có khuôn', () => {
   const titles = Array.from({ length: 20 }, (_, i) => i < 10 ? `Cách làm ${i}` : `Khác hoàn toàn ${i}`);
   assert.equal(findTemplate(titles).template, null);
 });
+test('B1 · khuôn không bao giờ kết thúc bằng mạo từ', () => {
+  // 12/20 có "…of the X", 8/20 có "…of X". Khuôn 6 từ "the entire history of the"
+  // đạt 60% nhưng kết thúc bằng mạo từ, nên phải lùi về khuôn 5 từ.
+  const withArticle = ['Rome', 'Japan', 'Egypt', 'Greece', 'China', 'India', 'Korea', 'Maya', 'Aztec', 'Persia', 'Babylon', 'Assyria'];
+  const without = ['Sumer', 'Hatti', 'Sparta', 'Carthage', 'Etruria', 'Nubia', 'Lydia', 'Moche'];
+  const titles = [
+    ...withArticle.map(e => `The Entire History of the ${e}`),
+    ...without.map(e => `The Entire History of ${e}`),
+  ];
+  assert.equal(titles.length, 20);
+  const r = findTemplate(titles);
+  assert.equal(r.template, 'the entire history of');
+  assert.equal(r.words, 4);
+  assert.equal(r.ratio, 1);
+  for (const bad of ['the', 'a', 'an']) assert.notEqual(r.template.split(' ').pop(), bad);
+});
+test('B1 · khuôn hợp lệ không bị bỏ nhầm vì có mạo từ ở giữa', () => {
+  // "The" chỉ nằm ở đầu, cụm khuôn kết thúc bằng danh từ riêng.
+  const titles = Array.from({ length: 20 }, (_, i) => `The Rise and Fall of Empire ${i}`);
+  assert.equal(findTemplate(titles).template, 'the rise and fall of empire');
+});
+test('B1 · từ chứa mạo từ là chữ được, không phải mạo từ', () => {
+  // "android" bắt đầu bằng "a" nhưng không phải mạo từ — không được loại.
+  const titles = [
+    ...Array.from({ length: 12 }, (_, i) => `Guide to android ${i}`),
+    ...Array.from({ length: 8 }, (_, i) => `Guide to other ${i}`),
+  ];
+  assert.equal(findTemplate(titles).template, 'guide to android');
+});
 test('kênh: loại video chưa 90 ngày, ngưỡng 5 video và trung vị 20.000', () => {
   const ok = channelShelf([...mk('a', 6, 100, 30000), ...mk('a', 4, 10, 1)], now)[0];
   assert.equal(ok.pass, true); assert.equal(ok.matureCount, 6); assert.equal(ok.videos[0].multiple, 1);

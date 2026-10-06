@@ -365,6 +365,9 @@ export const RULES = {
 const DAY = 86400000;
 const tokens = t => String(t).normalize('NFC').toLowerCase().split(/\s+/)
   .map(w => w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '')).filter(Boolean);
+// Mạo từ tiếng Anh: một khuôn kết thúc bằng chúng không dùng được, vì nó ép
+// cả 20 chủ đề mới phải bắt đầu bằng "…of the" thay vì "…of <thực thể>".
+const ARTICLES = new Set(['the', 'a', 'an']);
 
 // KHUÔN = cụm mở đầu DÀI NHẤT lặp ở hơn nửa số tiêu đề mới nhất. Được phép trả null.
 export function findTemplate(titles, rules = RULES) {
@@ -380,6 +383,8 @@ export function findTemplate(titles, rules = RULES) {
     let best = null;
     for (const [template, matches] of counts) if (matches / total > rules.templateRatio && (!best || matches > best.matches)) best = { template, matches };
     if (best) {
+      // Khuôn kết thúc bằng mạo từ không dùng được. Bỏ qua k đó và thử k-1.
+      if (ARTICLES.has(best.template.split(' ').pop())) continue;
       return {
         template: best.template,
         words: k,
