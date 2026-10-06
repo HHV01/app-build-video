@@ -8,7 +8,7 @@ import { enrichVideos, normalizeImport, validateGroups, parseAIJSON, durationSec
 import { blindTitles, groupCountGate, RULES, STAGES } from './rx.mjs';
 import { createNicheAPI } from './niche-api.mjs';
 import { createAssetStore } from './assets.mjs';
-import { safeExt, runBinary } from './server-lib.mjs';
+import { safeExt, runBinary, uploadResumable, buildUploadPayload } from './server-lib.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const publicRoot = path.join(root, 'studio', 'public');
@@ -440,7 +440,14 @@ async function serveBuild(res, id) {
 // OAuth 2.0: Studio không bao giờ tự bật lên. Người dùng bấm "Kết nối YouTube",
 // chọn tài khoản, rồi token refresh được lưu trên máy trong settings.json.
 const YOUTUBE_SCOPES = ['https://www.googleapis.com/auth/youtube.upload'];
-const youtubeUploadUrl = 'https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status&uploadType=resumable';
+const YOUTUBE_UPLOAD_DEFAULT = 'https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status&uploadType=resumable';
+// STUDIO_UPLOAD_URL và STUDIO_UPLOAD_CHUNK chỉ để kiểm thử trỏ vào mock.
+// Xem STUDIO.md / README phần "Kiểm thử đăng YouTube".
+const uploadEndpoint = () => settings.youtubeUploadUrl || process.env.STUDIO_UPLOAD_URL || env.STUDIO_UPLOAD_URL || YOUTUBE_UPLOAD_DEFAULT;
+const uploadChunkSize = () => {
+  const n = Number(process.env.STUDIO_UPLOAD_CHUNK);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 8 * 1024 * 1024;
+};
 
 async function oauthToken(body) {
   const redirect = String(body.redirect || '');
@@ -484,70 +491,27 @@ async function uploadYoutube(b) {
   const title = String(b.title || '').trim();
   if (!title) throw failure('Chưa có tiêu đề video.');
   const privacy = ['public', 'unlisted', 'private'].includes(b.privacy) ? b.privacy : 'private';
-  const payload = {
-    snippet: {
-      title,
-      description: String(b.description || '').trim(),
-      tags: (Array.isArray(b.tags) ? b.tags : String(b.tags || '').split(',')).map(t => String(t).trim()).filter(Boolean).slice(0, 30),
-      categoryId: String(b.categoryId || '27'),
-      defaultLanguage: 'vi',
-      selfDeclaredMadeForKids: Boolean(b.madeForKids),
+  const payload = buildUploadPayload({
+    title,
+    description: b.description,
+    tags: b.tags,
+    categoryId: b.categoryId,
+    madeForKids: b.madeForKids,
+    privacy,
+  });
+
+  // 1) Mở phiên resumable, rồi 2) gửi từng khối — cả hai nằm trong uploadResumable.
+  const result = await uploadResumable({
+    openUrl: uploadEndpoint(), token, payload, bytes,
+    chunk: uploadChunkSize(), mime: b.mime || 'video/mp4',
+    onSessionError: async open => {
+      const detail = await open.json().catch(() => ({}));
+      throw failure(/quota|limit/i.test(redact(detail.error?.message || ''))
+        ? 'Hạn mức tải lên của dự án Google đã hết. Google tính 1.600 đơn vị cho mỗi lần tải; bộ đếm trong Studio không biết hạn mức này.'
+        : `YouTube trả HTTP ${open.status}. ${redact(detail.error?.message || 'Không có chi tiết.')}`, 502);
     },
-    status: { privacyStatus: privacy, selfDeclaredMadeForKids: Boolean(b.madeForKids), embeddable: true },
-  };
-
-  // 1) Mở phiên resumable. Location trả về nơi gửi từng khối.
-  let open;
-  try {
-    open = await fetch(youtubeUploadUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json; charset=UTF-8',
-        'X-Upload-Content-Type': b.mime || 'video/mp4',
-        'X-Upload-Content-Length': String(bytes.length),
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(120000),
-    });
-  } catch { throw failure('Không mở được phiên tải lên YouTube. Kiểm tra mạng rồi thử lại.', 502); }
-  const session = open.headers.get('location');
-  if (!open.ok || !session) {
-    const detail = await open.json().catch(() => ({}));
-    throw failure(/quota|limit/i.test(redact(detail.error?.message || ''))
-      ? 'Hạn mức tải lên của dự án Google đã hết. Google tính 1.600 đơn vị cho mỗi lần tải; bộ đếm trong Studio không biết hạn mức này.'
-      : `YouTube trả HTTP ${open.status}. ${redact(detail.error?.message || 'Không có chi tiết.')}`, 502);
-  }
-
-  // 2) Gửi từng khối. 8 MB là mức an toàn với mọi đường nối.
-  const chunk = 8 * 1024 * 1024;
-  let uploaded = 0;
-  while (uploaded < bytes.length) {
-    const slice = bytes.subarray(uploaded, Math.min(uploaded + chunk, bytes.length));
-    const last = slice.length === bytes.length - uploaded;
-    let put;
-    try {
-      put = await fetch(session, {
-        method: 'PUT',
-        headers: { 'Content-Length': String(slice.length), 'Content-Range': `bytes ${uploaded}-${uploaded + slice.length - 1}/${bytes.length}` },
-        body: slice,
-        signal: AbortSignal.timeout(600000),
-      });
-    } catch { throw failure(`Mất kết nối khi tải ở ${(uploaded / 1048576).toFixed(0)} MB. Thử lại — phiên tải đã hết hiệu lực.`, 502); }
-    if (!put.ok) {
-      const detail = await put.json().catch(() => ({}));
-      const code = detail.error?.errors?.[0]?.reason || String(put.status);
-      if (/finalizeRequired|uploadNotFinalizable|404/.test(code)) throw failure(`YouTube đã nhận đủ file nhưng không hoàn tất: ${redact(detail.error?.message || code)}.`, 502);
-      throw failure(`Tải lên thất bại ở ${(uploaded / 1048576).toFixed(0)} MB (HTTP ${put.status}). ${redact(detail.error?.message || '')}`, 502);
-    }
-    uploaded += slice.length;
-    if (last) {
-      const done = await put.json().catch(() => ({}));
-      if (!done.id) throw failure('YouTube không trả về mã video.', 502);
-      return { id: done.id, title, privacy, url: `https://www.youtube.com/watch?v=${done.id}`, sizeBytes: bytes.length };
-    }
-  }
-  throw failure('Không hoàn tất tải lên.', 502);
+  });
+  return { id: result.id, title, privacy, url: `https://www.youtube.com/watch?v=${result.id}`, sizeBytes: result.sizeBytes };
 }
 
 const buildRoot = path.join(dataRoot, 'build');

@@ -47,7 +47,13 @@ FFmpeg/ffprobe được tìm ở tools/ffmpeg/bin hoặc PATH. Dựng MP4 ảnh 
 
 ZIP chứa prompt, ảnh, danh sách clip và tài liệu bàn giao. Chưa xuất project CapCut native hoặc ghép clip animation vào MP4.
 
-Đăng YouTube cần OAuth của bạn, chỉ chạy khi bấm nút đăng, mặc định riêng tư. Chưa kiểm chứng tải lên thật trong bản sửa này.
+Đăng YouTube cần OAuth của bạn, chỉ chạy khi bấm nút đăng, mặc định riêng tư. Upload resumable chia
+khối 8 MB; khối trung gian trả HTTP 308 (Resume Incomplete) được đọc header `Range` rồi gửi tiếp, không
+bị coi là lỗi. `selfDeclaredMadeForKids` chỉ gửi trong `status`, không gửi trong `snippet`.
+**Chưa kiểm chứng tải lên thật trong bản sửa này** — kiểm thử dùng HTTP mock cục bộ.
+
+Hai biến môi trường chỉ dùng cho kiểm thử: `STUDIO_UPLOAD_URL` trỏ endpoint upload sang mock,
+`STUDIO_UPLOAD_CHUNK` ghi đè kích thước khối (mặc định 8 MB).
 
 ## Quota YouTube
 

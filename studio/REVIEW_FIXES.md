@@ -25,11 +25,28 @@ Ngày kiểm tra: 05/10/2026. Giữ ứng dụng hiện có, dùng lại `rx.mjs
 - Bước chủ đề từng trả toàn tiêu đề trùng kho; đã sửa bằng cách gom tiêu đề hợp lệ qua 2 lượt gọi (lượt 2 kèm danh sách tránh) thay vì đòi một lượt đúng hết.
 - 0 lỗi console trên tất cả màn hình đã đi qua.
 
+## Lỗi server đã vá (nhánh `fix/review-2026-10`, 06/10/2026)
+
+| Mã | Lỗi | Cách sửa | Test |
+| --- | --- | --- | --- |
+| A1 | `GET /api/build/<id>` không tồn tại làm unhandled rejection, Node tắt cả Studio | `return await serveBuild(...)`; thêm `process.on('unhandledRejection')` | `/api/build/<uuid>` → 404 JSON, `/api/build/xyz` → 400 JSON, `GET /` vẫn 200 |
+| A2 | `b.ext`, `b.voiceExt`, `b.musicExt` nối thẳng vào đường dẫn, `ext: "x/../../../settings.json"` ghi đè được file ngoài thư mục tạm | `safeExt()` chỉ nhận `[a-z0-9]{1,5}`; fallback lần lượt `bin`/`mp3`/`mp3` | POST `/api/probe` với đuôi độc hại: `settings.json` giữ nguyên, không tạo file nào ngoài `dataRoot/tmp/<uuid>` |
+| A3 | Timeout ffmpeg không bao giờ báo lỗi vì `if (killed)` chạy đồng bộ ngay sau `spawn` | Kiểm `killed` trong handler `close`, reject 504 | Lệnh ngủ 60 giây với timeout 200 ms phải reject 504; lệnh chạy xong vẫn trả kết quả |
+| A4 | HTTP 308 (Resume Incomplete) của khối chưa cuối bị ném lỗi → mọi video > 8 MB hỏng | Đọc header `Range`, gửi tiếp từ `N+1`; thiếu `Range` thì gửi lại khối đó tối đa 3 lần rồi báo lỗi | Mock: 308+`Range` rồi 200 → trả `id`, đúng thứ tự `Content-Range` |
+
+A4 kèm hai việc phụ: `selfDeclaredMadeForKids` chuyển khỏi `snippet` (Google chỉ nhận trong `status`),
+và `STUDIO_UPLOAD_URL` / `STUDIO_UPLOAD_CHUNK` cho phép trỏ upload vào mock khi kiểm thử.
+
+Hàm thuần của server nằm ở `studio/server-lib.mjs` (`safeExt`, `runBinary`, `uploadResumable`,
+`buildUploadPayload`) vì `server.mjs` mở cổng ngay khi được import nên không import được trong test.
+
 ## Kiểm chứng
 
-Chạy `node --test studio/core.test.mjs studio/rx.test.mjs studio/niche.test.mjs studio/niche-api.test.mjs studio/production.test.mjs studio/integration.test.mjs`.
+Chạy `npm run studio:test`.
 
-39 kiểm thử đã qua. Kiểm thử HTTP dùng cổng/data directory riêng, không thay dữ liệu người dùng, không gọi provider trả phí. Bao gồm chống giả cổng, kiểm tra revision đồng thời, phân trang 60 uploads với YouTube giả lập, lưu media và FFmpeg thật.
+Kiểm thử HTTP dùng cổng và thư mục dữ liệu riêng nằm trong workspace, không thay dữ liệu người dùng,
+không gọi provider trả phí. Toàn bộ phần đăng YouTube dùng HTTP mock cục bộ — **chưa kiểm chứng
+với YouTube thật**.
 
 Yêu cầu `/api/test` trên app hiện tại đã trả `{ok:true, model:"openai/gpt-oss-120b"}`. Gateway hiện tại là `https://api.groq.com/openai/v1`; tên model có `openai/` không đổi provider thành OpenAI.
 
