@@ -354,3 +354,17 @@ test('B6 · prompt topics đòi thực thể nhiều người biết, không đ�
     assert.match(prompt, /knownBy/, 'phải yêu cầu điền knownBy để xếp hạng');
   } finally { await s.stop(); await gw.stop(); await rm(envFile, { force: true }); }
 });
+
+test('AI HTTP 503 switches model through gateway and retains primary setting',async()=>{
+ const models=[];const gateway=http.createServer(async(req,res)=>{let raw='';for await(const chunk of req)raw+=chunk;const b=JSON.parse(raw);models.push(b.model);res.setHeader('Content-Type','application/json');if(b.model==='primary'){res.writeHead(503);res.end(JSON.stringify({error:{message:'overloaded'}}));}else res.end(JSON.stringify({model:'backup',choices:[{message:{content:'{"angles":[{"angle":"Test angle","reason":"Titles"}]}'},finish_reason:'stop'}]}));});
+ gateway.listen(0,'127.0.0.1');await once(gateway,'listening');
+ const envDir=await mkdtemp(path.join(tempRoot,'fallback-env-'));const envPath=path.join(envDir,'test.env');await writeFile(envPath,`OPENAI_BASE_URL=http://127.0.0.1:${gateway.address().port}/v1\nOPENAI_API_KEY=test-key\n`);
+ const s=await boot({STUDIO_ENV_FILE:envPath});
+ try{
+  assert.equal((await s.req('/api/settings','PUT',{model:'primary',autoFallback:true,fallbackModels:['backup']})).status,200);
+  const result=await s.req('/api/generate','POST',{action:'angles',context:{titles:['Title']}});
+  assert.equal(result.status,200);assert.equal(result.body.model,'backup');assert.equal(result.body.fallback.used,true);assert.deepEqual(models,['primary','backup']);
+  assert.equal((await s.req('/api/settings')).body.model,'primary');
+  assert.equal((await s.req('/api/settings','PUT',{fallbackModels:['a','b','c','d']})).status,400);
+ }finally{await s.stop();gateway.close();await rm(envDir,{recursive:true,force:true});}
+});

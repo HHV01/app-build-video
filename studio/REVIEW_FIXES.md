@@ -147,3 +147,7 @@ Tab đang mở giữ giao diện sáu bước và mã khảo sát không có tro
 ## UX · Chọn góc sau phân tích (06/10/2026)
 
 Bỏ góc kể khỏi bước Kênh tham khảo và bỏ yêu cầu angle khi phân tích template. Khi suggestAngles=true và có ứng viên, dùng tác vụ angles qua Groq hiện có, đầu vào chỉ các tiêu đề đã phân tích. Hiện gợi ý cùng lý do, nút chọn và ô sửa ở bước Chọn khuôn. Chưa chọn thì UI và API shelf cùng chặn; chốt template lưu góc đã chọn cho lockedNiche. Lỗi AI không phá kết quả khuôn, hiện thông báo cho phép tự nhập/thử lại. Test phân tích không angle và vị trí ô nhập đỏ trước sửa, xanh sau; bổ sung ca gợi ý và fallback. Tổng 112 test đạt. Tab thật đã tải giao diện bước đầu không angle. Chưa xác nhận gợi ý Groq/chuỗi YouTube thật trong lần sửa này.
+
+## AI · Dự phòng model (06/10/2026)
+
+Thêm withModelFallback với danh sách có thứ tự, loại trùng, tối đa ba dự phòng, chỉ chuyển lỗi upstream tạm thời. Server giữ status upstream riêng thay vì gom mọi lỗi thành 502; UI lưu checkbox/danh sách và thông báo model thực tế. Chỉ nội dung chữ, không đổi model chính hoặc bỏ kiểm tra đầu ra. Test đỏ trước tạo helper; 116 test đạt gồm kiểm thử HTTP gateway giả lập primary503 → backup200, lưu cấu hình và xác nhận primary giữ nguyên. Đã bật trên máy Gemini3Flash → Groq gpt-oss120b → Gemini2.5Flash (IDs có trong gateway). Danh sách gateway không chứng minh model còn quota/đã hoạt động; chưa ép lỗi 503 trên provider thật. Timeout45 giây mỗi model khi bật dự phòng; yêu cầu timeout có thể vẫn phát sinh chi phí ở provider dù app bỏ chờ.

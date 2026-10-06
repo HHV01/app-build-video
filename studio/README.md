@@ -112,3 +112,7 @@ Các nút tìm ngách đọc trực tiếp nội dung ô nhập trước khi ch�
 ## Góc kể sau phân tích kênh
 
 Bước đầu chỉ nhập kênh tham khảo và bấm Phân tích kênh. Khi kênh có khuôn đạt ngưỡng, Groq đề xuất tối đa ba góc kể từ tiêu đề tham khảo. Ở bước Chọn khuôn, chọn một góc rồi chỉnh nếu muốn, hoặc tự nhập; bấm Dùng khuôn này để chốt góc và kiểm tra kho. Gợi ý là suy luận từ tiêu đề, không phải phân tích transcript. Nếu Groq lỗi, kết quả khuôn vẫn giữ; có thể tự nhập hoặc chạy lại Tìm khuôn tiêu đề. Phải chọn góc trước bước Kho; luật khuôn hơn 50% không đổi.
+
+## Model dự phòng tự động
+
+Trong Kết nối API, bật Tự chuyển model và nhập tối đa ba model dự phòng, mỗi dòng một ID có trong gateway. Thứ tự: model chính rồi lần lượt các model dự phòng; mỗi model chỉ thử một lần. Áp dụng cho tác vụ nội dung chữ (góc, research, script, cảnh, prompt...). Chuyển khi HTTP 429/500/502/503/504 hoặc mất kết nối/timeout; không chuyển vì khóa sai, dữ liệu sai, JSON không hợp lệ hay thiếu đầu ra. Bật dự phòng có timeout 45 giây mỗi model, tối đa bốn lượt (180 giây). Model chính không bị đổi vĩnh viễn; thông báo và nhật ký ghi model thực tế. Ảnh, TTS và STT dùng cấu hình riêng. Model cùng provider có thể dùng chung quota nên dự phòng khác provider hữu ích hơn; chi phí tùy tài khoản/provider đã nối.
