@@ -1,14 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm, readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, readdir, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { once } from 'node:events';
 import http from 'node:http';
 import { safeExt, runBinary, uploadResumable, buildUploadPayload } from './server-lib.mjs';
+import * as serverTools from './server-lib.mjs';
 
 const root = path.resolve('.');
 const tempRoot = path.join(root, 'tmp');
+await mkdir(tempRoot,{recursive:true});
+
+test('C1 binary discovery tries plain and .exe names locally and on PATH',async()=>{
+ assert.equal(typeof serverTools.findBinary,'function');
+ const dir=await mkdtemp(path.join(tempRoot,'binary-test-')),localDir=path.join(dir,'local'),searchDir=path.join(dir,'path');
+ await mkdir(localDir);await mkdir(searchDir);
+ try{
+  await writeFile(path.join(localDir,'ffmpeg.exe'),'');
+  assert.equal(serverTools.findBinary('ffmpeg',{localDir,searchPath:searchDir,platform:'linux'}),path.join(localDir,'ffmpeg.exe'));
+  await rm(path.join(localDir,'ffmpeg.exe'));await writeFile(path.join(searchDir,'ffmpeg'),'');
+  assert.equal(serverTools.findBinary('ffmpeg',{localDir,searchPath:searchDir,platform:'win32'}),path.join(searchDir,'ffmpeg'));
+  assert.equal(serverTools.findBinary('ffprobe',{localDir,searchPath:searchDir}),null);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
 
 // Mỗi test dựng server riêng với cổng và thư mục dữ liệu nằm trong workspace.
 let nextPort = 33400;

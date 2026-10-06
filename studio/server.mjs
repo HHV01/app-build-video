@@ -8,7 +8,7 @@ import { enrichVideos, normalizeImport, validateGroups, parseAIJSON, durationSec
 import { blindTitles, groupCountGate, RULES, STAGES } from './rx.mjs';
 import { createNicheAPI } from './niche-api.mjs';
 import { createAssetStore } from './assets.mjs';
-import { safeExt, runBinary, uploadResumable, buildUploadPayload, tokenBudget } from './server-lib.mjs';
+import { safeExt, runBinary, uploadResumable, buildUploadPayload, tokenBudget, findBinary } from './server-lib.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const publicRoot = path.join(root, 'studio', 'public');
@@ -26,15 +26,7 @@ if (STUDIO_DATA_DIR) {
 // ffmpeg nằm trong tools/ffmpeg/bin nếu đã tải kèm, nếu không dùng bản có sẵn trên PATH.
 // Không cài vào hệ thống và không sửa PATH: mọi thứ chạy từ thư mục dự án.
 const ffmpegDir = path.join(root, 'tools', 'ffmpeg', 'bin');
-const exeName = process.platform === 'win32' ? '.exe' : '';
-function findBinary(name) {
-  const local = path.join(ffmpegDir, name + exeName);
-  if (existsSync(local)) return local;
-  const from = (process.env.PATH || '').split(path.delimiter).filter(Boolean);
-  for (const dir of from) { const full = path.join(dir, name + exeName); if (existsSync(full)) return full; }
-  return null;
-}
-const bin = { ffmpeg: findBinary('ffmpeg'), ffprobe: findBinary('ffprobe') };
+const bin = { ffmpeg: findBinary('ffmpeg',{localDir:ffmpegDir}), ffprobe: findBinary('ffprobe',{localDir:ffmpegDir}) };
 
 // Chạy một lệnh ffmpeg/ffprobe và trả về stdout. Không dùng shell.
 function run(tool, args, timeout = 180000) {

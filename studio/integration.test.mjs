@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp,readFile,rm,writeFile } from 'node:fs/promises';
+import { mkdtemp,readFile,rm,writeFile,mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { once } from 'node:events';
 import { createAssetStore } from './assets.mjs';
+import { findBinary } from './server-lib.mjs';
 const root=path.resolve('.'),tempRoot=path.join(root,'tmp');
+await mkdir(tempRoot,{recursive:true});
 test('Media stored separately, deduplicated, typed and restricted to safe identifiers',async()=>{
  const dir=await mkdtemp(path.join(tempRoot,'assets-test-')),store=createAssetStore(dir);
  try{const data='data:image/png;base64,'+Buffer.from('test media').toString('base64');const a=await store.put(data),b=await store.put(data);assert.equal(a.url,b.url);
@@ -15,7 +17,7 @@ test('Media stored separately, deduplicated, typed and restricted to safe identi
  }finally{await rm(dir,{recursive:true,force:true});}
 });
 
-test('Real HTTP routes enforce revisions and niche gates, persist media and render without dropping narration',async()=>{
+test('Real HTTP routes enforce revisions and niche gates, persist media and render without dropping narration',async(t)=>{
  const dir=await mkdtemp(path.join(tempRoot,'http-test-')),port=33219;
  const server=spawn(process.execPath,['studio/server.mjs'],{cwd:root,env:{...process.env,STUDIO_PORT:String(port),STUDIO_DATA_DIR:dir},windowsHide:true,stdio:['ignore','pipe','pipe']});
  let errors='';server.stderr.on('data',d=>errors+=d);
@@ -34,12 +36,16 @@ test('Real HTTP routes enforce revisions and niche gates, persist media and rend
    const writes=await Promise.all([req('/api/state','PUT',snapshot),req('/api/state','PUT',snapshot)]);assert.deepEqual(writes.map(x=>x.status).sort(),[200,409]);
    const latest=(await req('/api/state')).body;latest.channels=[{id:'c',surveyId:'s'}];assert.equal((await req('/api/state','PUT',latest)).status,409);
    const asset=await req('/api/assets','POST',{data:'data:audio/wav;base64,'+wav(2).toString('base64')});assert.equal(asset.status,200);assert.equal((await fetch(base+asset.body.url)).headers.get('content-type'),'audio/wav');
+   await t.test('FFmpeg renders every scene and preserves narration',async(t)=>{
+   const localDir=path.join(root,'tools','ffmpeg','bin'),ffmpeg=findBinary('ffmpeg',{localDir}),ffprobe=findBinary('ffprobe',{localDir});
+   if(!ffmpeg||!ffprobe)return t.skip('Cần ffmpeg và ffprobe để kiểm chứng dựng video; các test HTTP vẫn chạy.');
    const invalid=await req('/api/render','POST',{scenes:[{duration:1,image:''}],voice:asset.body.url});assert.equal(invalid.status,422);assert.match(invalid.body.error,/thiếu ảnh/);
    const pngFile=path.join(dir,'frame.png');
-   const ff=spawn(path.join(root,'tools/ffmpeg/bin/ffmpeg.exe'),['-y','-hide_banner','-loglevel','error','-f','lavfi','-i','color=c=white:s=320x180','-frames:v','1',pngFile],{windowsHide:true});assert.equal((await once(ff,'close'))[0],0);
+   const ff=spawn(ffmpeg,['-y','-hide_banner','-loglevel','error','-f','lavfi','-i','color=c=white:s=320x180','-frames:v','1',pngFile],{windowsHide:true});assert.equal((await once(ff,'close'))[0],0);
    const image=(await req('/api/assets','POST',{data:'data:image/png;base64,'+(await readFile(pngFile)).toString('base64')})).body.url;
    const rendered=await req('/api/render','POST',{name:'test',width:320,height:180,scenes:[{duration:1,image},{duration:1,image}],voice:asset.body.url,voiceExt:'wav'});assert.equal(rendered.status,200,rendered.body.error);assert.equal(rendered.body.droppedScenes,0);assert.equal(rendered.body.scenesRendered,2);assert(Math.abs(rendered.body.probe.duration-2)<.2);
    const mismatch=await req('/api/render','POST',{width:320,height:180,scenes:[{duration:1,image}],voice:asset.body.url,voiceExt:'wav'});assert.equal(mismatch.status,422);assert.match(mismatch.body.error,/chưa khớp voice/);
+   });
    const mediaState=(await req('/api/state')).body;mediaState.projects=[{id:'p',voiceData:'data:audio/wav;base64,'+wav(2).toString('base64')}];const stored=await req('/api/state','PUT',mediaState);assert.equal(stored.status,200);assert.equal(stored.body.mediaRefs.length,1);assert(!JSON.stringify(JSON.parse(await readFile(path.join(dir,'state.json'),'utf8'))).includes('base64'));
  }finally{server.kill();if(server.exitCode===null)await once(server,'exit');await rm(dir,{recursive:true,force:true});}
 });

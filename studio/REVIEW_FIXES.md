@@ -121,3 +121,7 @@ Search live lấy 25, loại chi tiết thiếu/view không hợp lệ rồi l�
 ## D6 · Xếp lại knownBy sau cả hai lượt
 
 Giữ title và knownBy trong good; sau khi gom cả hai lượt, sắp toàn bộ theo cao → vừa → thấp rồi cắt 20. API chosen vẫn là mảng tiêu đề như trước. Test lượt đầu 19 thấp, lượt sau 2 cao + 1 vừa đã đỏ trước, xanh sau; ca B6 một lượt vẫn đạt.
+
+## C1 · FFmpeg kiểm thử đa nền tảng
+
+findBinary dùng chung, tìm cả tên có/không .exe trong tools/ffmpeg/bin và PATH. Chỉ subtest dựng video được t.skip nếu thiếu ffmpeg/ffprobe; phần kiểm thử HTTP và asset vẫn chạy. Tạo tmp trong test để checkout sạch không cần thư mục sẵn. Test discovery đã đỏ trước, xanh sau. Kiểm chứng cả máy có FFmpeg (dựng thật) và bản sao không có binary/PATH (HTTP đạt, render skip).

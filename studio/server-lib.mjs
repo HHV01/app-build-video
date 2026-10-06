@@ -1,5 +1,14 @@
 import { spawn } from 'node:child_process';
 import http from 'node:http';
+import path from 'node:path';
+import { existsSync } from 'node:fs';
+
+export function findBinary(name,{localDir,searchPath=process.env.PATH||'',platform=process.platform}={}) {
+  const names=platform==='win32'?[name+'.exe',name]:[name,name+'.exe'];
+  const dirs=[localDir,...searchPath.split(path.delimiter)].filter(Boolean);
+  for(const dir of dirs)for(const candidate of names){const full=path.join(dir,candidate);if(existsSync(full))return full;}
+  return null;
+}
 
 // Hàm thuần cho server.mjs. Tách riêng để kiểm thử được, vì server.mjs chạy
 // ngay khi được import (nó mở cổng ngay ở top-level).
