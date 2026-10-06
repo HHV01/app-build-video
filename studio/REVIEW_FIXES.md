@@ -131,3 +131,7 @@ findBinary dùng chung, tìm cả tên có/không .exe trong tools/ffmpeg/bin v�
 README gốc ghi mục đích, Node 22, ffmpeg/ffprobe, lệnh chạy/test và link tài liệu Studio. GitHub Actions chạy npm run studio:test trên Ubuntu/Windows. Test tài liệu/workflow đã đỏ trước, xanh sau. Danh sách đầy đủ trong FILE_REVIEW_INVENTORY.md: tools/*.png 48 file (~15,66 MB), scratch 36 (~2,72 MB), tmp 23.908 (~6,66 GB), docs/ocr 33 (~47,56 KB). Chưa xoá các file được liệt kê.
 
 Nghiệm thu cục bộ: npm run studio:test → 108 đạt, 0 lỗi, 0 skip. Chưa chạy GitHub Actions trên GitHub cho commit mới; chưa kiểm chứng D1/D5 hoặc chuỗi khảo sát mới với YouTube thật. Không dùng kết quả mock để khẳng định API thật đã hoạt động.
+
+## UX · Nhập liệu chưa blur trước khi bấm nút
+
+Kiểm chứng trình duyệt tái hiện ô JSON có thể chưa vào state khi bấm nút. Nút niche đọc các field hiện tại trước khi chạy, lấy đúng checkbox/radio đã chọn. Test hồi quy đỏ trước, xanh sau. UI kho giả lập đã hoàn tất tới dựng kênh, kiểm tra 20 ý tưởng và khóa khuôn/angle được giữ. Ảnh ở screenshots/niche-ux-review.jpg. Nghiệm thu cuối: npm run studio:test → 109 đạt, 0 lỗi, 0 skip. YouTube thật và kết quả CI GitHub vẫn chưa được xác nhận.

@@ -3,7 +3,7 @@ import { STICKMAN_PROFILE, STAGES, GATES, HIT_FLOOR_VIEWS, describeGate, analyze
 import { makeZip } from '/zip.mjs';
 import { scriptPlan, sceneWindows, validateAnimations } from '/production.mjs';
 import { renderNiche } from './niche-ui.mjs';
-import { runNicheSequence, probeQueriesFor } from './niche-workflow.mjs';
+import { runNicheSequence, probeQueriesFor, applySurveyFields } from './niche-workflow.mjs';
 
 let persistedState, state, settings, caps = {}, busy = false, saveQueue = Promise.resolve(), toastTimer, voiceURL;
 const app = document.querySelector('#app');
@@ -352,7 +352,9 @@ function deriveReferences(p){
   return newRefs;
 }
 
-async function handle(action,el){const s=currentSurvey(),c=currentChannel(),p=currentProject();switch(action){
+async function handle(action,el){const s=currentSurvey(),c=currentChannel(),p=currentProject();
+if(s&&(action.startsWith('niche-')||action==='survey-to-channel'))applySurveyFields(s,[...app.querySelectorAll('[data-bind^="survey."]')].map(input=>({binding:input.dataset.bind,type:input.type,value:input.value,checked:input.checked})));
+switch(action){
 case 'home':go('home');break;
 case 'settings':go('settings');break;
 case 'new-survey':newSurvey();break;

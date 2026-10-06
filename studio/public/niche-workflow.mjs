@@ -12,3 +12,10 @@ export async function runNicheSequence(actions, execute) {
 export function probeQueriesFor(survey) {
   return survey.probeQueries ?? (survey.nicheFlow?.groups?.suggestedQueries || []).join('\n');
 }
+
+export function applySurveyFields(survey, fields) {
+  for(const input of fields){
+    if(!/^survey\.[A-Za-z][A-Za-z0-9]*$/.test(input.binding)||input.type==='radio'&&!input.checked)continue;
+    survey[input.binding.slice(7)]=input.type==='checkbox'?Boolean(input.checked):input.value;
+  }
+}

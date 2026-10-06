@@ -89,7 +89,7 @@ Theo [tài liệu Google hiện hành](https://developers.google.com/youtube/v3/
 
 `npm run studio:test`
 
-Nghiệm thu ngày 06/10/2026: 108 kiểm thử đạt, không lỗi, không bỏ qua trên máy có FFmpeg. [Chi tiết bản sửa và phần chưa kiểm chứng](REVIEW_FIXES.md).
+Nghiệm thu ngày 06/10/2026: 109 kiểm thử đạt, không lỗi, không bỏ qua trên máy có FFmpeg. [Chi tiết bản sửa và phần chưa kiểm chứng](REVIEW_FIXES.md).
 
 ## Flow tìm ngách rút gọn
 
@@ -106,3 +106,5 @@ Kênh khám phá không truy cập được hiện thành dòng không đạt, k
 Gõ thử YouTube lấy 25 kết quả, lọc chi tiết/view hợp lệ rồi dùng 20; thiếu sẽ báo số thực có. Chủ đề mới so trùng với kho và với nhau, có ngoại lệ cho thực thể một từ chung; đồng nghĩa vẫn cần đối chiếu tay. knownBy được xếp lại sau cả hai lượt trước khi lấy 20. titles gửi vào phải là mảng.
 
 Test chạy trên dữ liệu riêng. Thiếu ffmpeg/ffprobe chỉ bỏ qua subtest dựng, vẫn kiểm chứng HTTP. Workflow GitHub Actions kiểm thử Ubuntu/Windows với Node 22; chưa có kết quả chạy CI từ GitHub cho bản sửa này. [Kiểm kê file chờ duyệt, chưa xoá](FILE_REVIEW_INVENTORY.md). Các thay đổi D1/D5 và chuỗi khảo sát mới chưa được kiểm chứng với YouTube thật; test dùng mock, không tiêu quota thật.
+
+Các nút tìm ngách đọc trực tiếp nội dung ô nhập trước khi chạy, nên không phụ thuộc việc rời ô để lưu. Kiểm chứng UI trên kho giả lập riêng đã đi từ Phân tích kênh → duyệt khuôn/tự chạy kho → chọn nhóm → nhập mẫu nhu cầu → chốt 20 chủ đề → dựng kênh, giữ đúng khuôn và angle. [Ảnh kiểm chứng](screenshots/niche-ux-review.jpg).

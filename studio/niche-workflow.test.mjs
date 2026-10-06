@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runNicheSequence, probeQueriesFor } from './public/niche-workflow.mjs';
+import * as workflow from './public/niche-workflow.mjs';
 
 test('quick analysis and template approval preserve stage order and chosen template', async () => {
   const calls=[];
@@ -21,4 +22,10 @@ test('displayed probe suggestions are submitted; user edits and intentional clea
   assert.equal(probeQueriesFor(s),'rome\nchina\njapan');
   assert.equal(probeQueriesFor({...s,probeQueries:'my query'}),'my query');
   assert.equal(probeQueriesFor({...s,probeQueries:''}),'');
+});
+test('pending survey input is captured before actions; unchecked radios cannot override the selection',()=>{
+ assert.equal(typeof workflow.applySurveyFields,'function');
+ const s={angle:'old',templateChoice:'long'};
+ workflow.applySurveyFields(s,[{binding:'survey.angle',value:'new',type:'textarea'},{binding:'survey.groupDraft',value:'[]',type:'textarea'},{binding:'survey.templateChoice',value:'long',type:'radio',checked:false},{binding:'survey.templateChoice',value:'short',type:'radio',checked:true},{binding:'survey.completeImport',type:'checkbox',checked:true},{binding:'channel.name',value:'ignore'}]);
+ assert.deepEqual(s,{angle:'new',groupDraft:'[]',templateChoice:'short',completeImport:true});
 });
