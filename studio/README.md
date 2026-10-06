@@ -17,9 +17,31 @@ Chạy `node studio/server.mjs` hoặc `start_studio.bat`; mở http://localhost
 
 ## Tìm ngách
 
-Sân → khuôn 20 title → kho ít nhất 3 kênh → 4–7 nhóm → ba mẫu gõ thử → khóa 20 chủ đề.
+Sân → khuôn tiêu đề → kho ít nhất 3 kênh → 4–7 nhóm → ba mẫu gõ thử → khóa 20 chủ đề.
 
-Khuôn là cụm mở đầu dài nhất lặp trên 50% của 20 tiêu đề mới nhất. Mỗi kênh cần ít nhất 5 video từ 90 ngày và trung vị ít nhất 20.000 view. Gõ thử cần đủ 20 video mỗi mẫu, trung vị số video vượt 20.000 view đạt ít nhất 11/20. Các lựa chọn ngưỡng rộng/vừa/chặt trong helper cũ không áp dụng cho luồng mới.
+Khuôn là cụm mở đầu dài nhất lặp **trên** 50% của tối đa 20 tiêu đề nội dung mới nhất (cần ít nhất 10,
+giá trị trong `RULES.minTitlesForTemplate`). Chỉ tính video dài ≥ 120 giây (`RULES.minContentSeconds`) —
+Shorts và video quá ngắn bị loại **trước** khi đếm khuôn, nên `contentVideos()` là nơi duy nhất quyết định
+"video nội dung". Khuôn không bao giờ kết thúc bằng mạo từ (`the`, `a`, `an`): khuôn kiểu `…of the` bắt
+mọi chủ đề mới phải viết `…of the X`, không dùng được.
+
+Mỗi kênh cần ít nhất 5 video từ 90 ngày và trung vị ít nhất 20.000 view, tính **trên các video mang khuôn**
+— video nổi bật nhất của kênh nhưng nói chủ đề khác không được kéo trung vị hay bội số. Khi so khuôn giữa
+các kênh, kênh lặp cụm **dài hơn** khuôn đã chốt vẫn được tính là cùng khuôn (`startsWith`), vì đó vẫn là
+một dòng tiêu đề.
+
+Ở chế độ trực tiếp, Studio tìm kênh bằng `search type=video` với `q="<khuôn>"`, `maxResults=50`, chỉ trong
+năm hiện tại; lấy `snippet.channelId`, gộp trùng và dừng ở 10 kênh. `search type=channel` không dùng vì nó
+chỉ khớp tên kênh.
+
+Gõ thử cần đủ 20 video mỗi mẫu, trung vị số video vượt 20.000 view đạt ít nhất 11/20. Khi chế độ trực tiếp,
+ba câu tìm được điền sẵn từ **nhóm có bội số trung vị cao nhất**; nếu gõ thử trượt thì có nút quay lại bước
+Chia nhóm để thử nhóm khác. Các lựa chọn ngưỡng rộng/vừa/chặt trong helper cũ không áp dụng cho luồng mới.
+
+Chủ đề cuối phải theo đúng khuôn và **không trùng thực thể** với kho: thực thể là phần tiêu đề còn lại sau
+khi bỏ khuôn và bỏ mạo từ đầu, và so khớp theo cụm từ liên tiếp — kho có `…of Egypt` thì `…of Ancient Egypt`
+là trùng, còn `…of Egyptian Empire` là thực thể khác. Chủ đề do AI đề xuất được xếp theo mức nhiều người biết
+(`knownBy`: cao > vừa > thấp) trước khi cắt còn 20.
 
 Kho nhập JSON/CSV được ghi rõ là do người dùng khai báo. Khảo sát trực tiếp cần YouTube Data API key. Đọc tối đa 1.000 uploads/kênh; vượt giới hạn hoặc thiếu dữ liệu sẽ không chốt cổng. Shorts suy từ thời lượng chưa phải xác nhận tuyệt đối.
 

@@ -5,11 +5,11 @@ Ngày kiểm tra: 05/10/2026. Giữ ứng dụng hiện có, dùng lại `rx.mjs
 ## Đã nối vào ứng dụng
 
 - Khảo sát có sáu bước ở cả UI và API: sân → khuôn → kho → nhóm → gõ thử → chủ đề. Backend từ chối gọi bước sau khi cổng trước chưa đạt. PUT state không thể tự đặt `passed` hoặc giả khóa niche.
-- Một bộ `RULES`: 20 tiêu đề mới nhất, cụm mở đầu dài nhất lặp **trên** 50%; video ít nhất 90 ngày; kênh ít nhất 5 video trưởng thành và trung vị ít nhất 20.000; ít nhất 3 kênh cùng khuôn. Luồng mới không dùng lựa chọn ngưỡng rộng/vừa/chặt của luồng cũ.
+- Một bộ `RULES`: tối đa 20 tiêu đề nội dung mới nhất (cần ít nhất 10), cụm mở đầu dài nhất lặp **trên** 50%; chỉ tính video dài ≥ 120 giây; video ít nhất 90 ngày; kênh ít nhất 5 video trưởng thành và trung vị ít nhất 20.000; ít nhất 3 kênh cùng khuôn. Luồng mới không dùng lựa chọn ngưỡng rộng/vừa/chặt của luồng cũ.
 - Đọc uploads phân trang 50 video/lượt, tối đa 1.000 video/kênh. Khi vẫn còn trang hoặc thiếu chi tiết video, kênh được đánh dấu chưa đầy đủ và không qua cổng. Phân loại Shorts từ thời lượng còn gần đúng, được hiển thị rõ.
 - Chia 4–7 nhóm: AI chỉ nhận ID và title. Code kiểm tra ID, phân loại đủ video, tính view/bội số/số kênh. Người dùng chọn một nhóm trước khi gõ thử.
 - Ba mẫu tìm kiếm, mỗi mẫu đủ 20 kết quả; lấy trung vị số video **vượt** 20.000 view; cần ít nhất 11/20. Mẫu thiếu hoặc số âm không thể đạt.
-- Kiểm tra đúng 20 tiêu đề mới, không rỗng, không trùng nhau hoặc title trong kho, đúng prefix khuôn. Đây là kiểm tra trùng tiêu đề; tính mới về nội dung vẫn cần biên tập viên đối chiếu.
+- Kiểm tra đúng 20 tiêu đề mới, không rỗng, không trùng nhau hoặc title trong kho, đúng prefix khuôn, và **không trùng thực thể** với kho. Đây là kiểm tra trùng chủ đề; tính mới về nội dung vẫn cần biên tập viên đối chiếu.
 - Khóa khuôn, angle, nhóm, 20 chủ đề được clone và đóng băng sâu trong bộ quy tắc. Server giữ khóa vào kênh và dự án. Sửa dữ liệu nguồn hoặc chạy lại bước trước làm mất các kết quả phụ thuộc. Kênh tạo thủ công từ trang chủ vẫn là hồ sơ chưa có bằng chứng khảo sát.
 - Hồ sơ `visualProfile` được gửi cùng yêu cầu tạo prompt. Có preset Stickman và giữ mô tả/character sheet Tích của kênh, caption đặt ở editor.
 - Prompt ảnh và animation tách riêng. Animation chạy từng batch 4 cảnh đã có ảnh; kiểm tra đúng scene ID, duyệt từng prompt và xuất danh sách đã duyệt. AI hiện lập chuyển động từ mô tả ảnh, không thực hiện xem ảnh hoặc tạo clip.
@@ -42,6 +42,24 @@ Hàm thuần của server nằm ở `studio/server-lib.mjs` (`safeExt`, `runBina
 `buildUploadPayload`, `AI_TOKEN_BUDGET`) vì `server.mjs` mở cổng ngay khi được import nên không import được trong test.
 
 `STUDIO_ENV_FILE` cho phép kiểm thử trỏ `OPENAI_BASE_URL` vào gateway giả; không đặt thì server đọc `.env` như cũ.
+
+## Lỗi tìm ngách đã vá (nhánh `fix/review-2026-10`, 06/10/2026)
+
+Bảy lỗi logic, mỗi lỗi một commit, viết test đỏ trước rồi mới sửa.
+
+| Mã | Lỗi | Cách sửa | Test |
+| --- | --- | --- | --- |
+| B1 | Khuôn dừng ở cụm kết thúc bằng mạo từ (`the entire history of the`) vì chỉ cần 12/20 tiêu đề có mạo từ đó; khuôn đó bắt mọi chủ đề mới phải viết `…of the X` | `ARTICLES = {the, a, an}`; `findTemplate` bỏ qua khi cụm tốt nhất ở k đó kết thúc bằng mạo từ rồi thử `k-1` | 12/20 `…of the X` + 8/20 `…of X` → `the entire history of`; `guide to android` (chứa chữ `a`) vẫn là khuôn hợp lệ |
+| B2 | `evaluateChannel` so sánh khuôn bằng `===`, nên kênh lặp cụm **dài hơn** bị loại dù cùng dòng khuôn | `sameTemplate = template của kênh BẮT ĐẦU BẰNG khuôn đã chốt`; kênh lặp khuôn khác bị loại kèm ghi rõ khuôn của nó | 3 kênh chứa khuôn đều tính cùng khuôn → `count 3`; kênh lặp khuôn khác bị loại và lý do nêu đích danh khuôn đó |
+| B3 | Kho tính trung vị/bội số trên **mọi** video của kênh, nên video nóng nhất không mang khuôn làm sai cả kho | `carriesTemplate(title, template)` lọc trước `channelShelf`; kho gộp cũng chỉ gồm video mang khuôn | Kênh có 25 video 300.000 view không mang khuôn: `matureCount` 45→20, trung vị 300.002→30.009, bội số 0,1→1 |
+| B4 | Lấy 20 tiêu đề **gồm Shorts**, và đòi **đúng** 20 nên kênh 14 video bị báo thiếu dữ liệu; ngưỡng 180 giây rải rác hai chỗ | `contentVideos()` là nơi duy nhất quyết định "video nội dung"; `RULES.minContentSeconds = 120`, `RULES.minTitlesForTemplate = 10`; tỷ lệ "quá nửa" tính trên số tiêu đề thực có | 20 video có 7 Shorts xen kẽ vẫn tìm ra khuôn (`total` 13); kênh 14 video ra khuôn, kênh 6 video báo đúng ngưỡng 10 |
+| B5 | Tìm kênh bằng `search type=channel` với `q` là khuôn — chỉ khớp **tên kênh**, nên kênh có khuôn tiêu đề đúng vẫn không xuất hiện | `type=video`, `q="<khuôn>"`, `maxResults=50`, `publishedAfter` 00:00 ngày 01/01 năm nay; lấy `snippet.channelId`, gộp trùng, tối đa 10 kênh | Mock `youtube`: đúng tham số gọi; 5 kết quả/3 kênh → 4 mục (kênh dẫn đường đứng đầu); 50 kết quả → đúng 10 lần gọi `channels` |
+| B6 | Chỉ so trùng **nguyên tiêu đề**, nên kho có `…of Egypt` vẫn nhận `…of Ancient Egypt`; prompt còn bảo AI chọn chủ đề **ÍT NỔI TIẾNG HƠN** | `entityOf()` bỏ khuôn + mạo từ đầu; `overlapsShelf()` khớp theo **cụm từ liên tiếp** (nên `egypt` ăn trong `ancient egypt` nhưng không ăn trong `egyptian empire`); dùng ở `validateTopics` và `take()`; `take()` xếp theo `knownBy` (cao > vừa > thấp) trước khi cắt còn 20; prompt đổi sang "thực thể nhiều người biết" | Kho có `Egypt` → loại `Ancient Egypt`, **giữ** `Egyptian Empire`; 8 chủ đề "cao" nằm trước 12 chủ đề "thấp"; test prompt server khẳng định không còn `ÍT NỔI TIẾNG HƠN` |
+| B7 | Người dùng phải tự nghĩ 3 câu gõ thử; trượt thì không có đường quay lại | `suggestedQueries()` lấy 3 câu từ nhóm có bội số trung vị cao nhất (bỏ nhóm `unclassified`), ghép lại khuôn; `groups` trả `suggestedQueries`; UI điền sẵn 3 ô và hiện nút "Thử nhóm khác" khi `probe` trượt | Nhóm có trung vị 4,5 thắng nhóm ~1,05; 3 câu lấy theo bội số giảm dần; dữ liệu rỗng/sai kiểu trả `[]` |
+
+Hai ngưỡng mới (`minTitlesForTemplate = 10`, `minContentSeconds = 120`) là giá trị đã chọn, nằm trong
+`RULES` nên chỉnh được một chỗ. `discover()` vẫn giữ mốc 180 giây riêng vì nhiệm vụ của nó là
+**phân loại** dài/Shorts theo lựa chọn của người dùng, không phải lọc để tìm khuôn.
 
 ## Kiểm chứng
 
