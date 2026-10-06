@@ -105,3 +105,7 @@ Lỗi catalog có status thành dòng không đạt, kèm lý do; lỗi không c
 ## D2 · Chủ đề mới trùng thực thể với nhau
 
 Mỗi tiêu đề mới được so với cả kho và danh sách good. Egypt / Ancient Egypt chỉ giữ một; nếu thiếu 20 sẽ gọi lượt đề xuất bổ sung. Test hai lượt mock đã đỏ trước, xanh sau; chưa chạy Groq/YouTube thật trong mục này.
+
+## D3 · Giảm trùng nhầm từ chung
+
+Thực thể trong kho chỉ gồm war/history/story/life/world/empire/time/man/people chỉ trùng khi thực thể mới bằng đúng nó. Thực thể từ hai từ vẫn dùng luật chứa theo ranh giới từ. Bước 20 chủ đề luôn nhắc người dùng tự đối chiếu đồng nghĩa. Test logic và UI đã đỏ trước, xanh sau; các ca Egypt và Rome/Romeo giữ nguyên.

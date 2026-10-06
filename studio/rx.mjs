@@ -487,12 +487,14 @@ const hasWordRun = (hay, needle) => {
 
 // Chủ đề mới có trùng với kho không: thực thể của nó chứa (hoặc bị chứa bởi)
 // thực thể của một tiêu đề nào đó trong kho.
+const GENERIC_ENTITIES = new Set(['war','history','story','life','world','empire','time','man','people']);
 export function overlapsShelf(title, template, shelfTitles) {
   const mine = entityOf(title, template).split(' ').filter(Boolean);
   if (!mine.length) return false;
   return (Array.isArray(shelfTitles) ? shelfTitles : []).some(other => {
     const theirs = entityOf(other, template).split(' ').filter(Boolean);
     if (!theirs.length) return false;
+    if (theirs.length === 1 && GENERIC_ENTITIES.has(theirs[0])) return mine.length === 1 && mine[0] === theirs[0];
     return hasWordRun(mine, theirs) || hasWordRun(theirs, mine);
   });
 }

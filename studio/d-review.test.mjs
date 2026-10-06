@@ -32,3 +32,13 @@ test('D2 new overlapping topics are rejected and trigger the second generation',
  assert.equal(calls,2);assert.equal(topics.passed,true);assert.equal(topics.chosen.length,20);
  assert(!topics.chosen.includes('The Entire History of Ancient Egypt'));assert(topics.chosen.includes('The Entire History of Atlantis'));
 });
+
+test('D3 generic single-word shelf entities require equality; specific entities retain word boundaries',()=>{
+ for(const word of ['war','history','story','life','world','empire','time','man','people']){
+  assert.equal(overlapsShelf('The Entire History of the Cold '+word,template,['The Entire History of '+word]),false,word);
+  assert.equal(overlapsShelf('The Entire History of the '+word,template,['The Entire History of '+word]),true,word);
+ }
+ assert.equal(overlapsShelf('The Entire History of Egypt',template,['The Entire History of Ancient Egypt']),true);
+ assert.equal(overlapsShelf('The Entire History of Romeo',template,['The Entire History of Rome']),false);
+ assert.equal(overlapsShelf('The Entire History of Rome',template,['The Entire History of Romeo']),false);
+});

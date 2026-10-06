@@ -72,6 +72,9 @@ test('Failed shelf states the missing channel count and offers recovery actions'
  assert.match(html,/Còn thiếu 1 kênh đạt/);assert.match(html,/data-action="niche-add-channel"/);
  assert.match(html,/Thử khuôn khác/);
 });
+test('D3 topic review always explains the limits of word-based duplicate checks',()=>{
+ assert.match(renderNiche(survey({nicheStep:5}),ui),/Code chỉ bắt trùng theo từ; chủ đề đồng nghĩa \(Rome \/ Roman Empire\) cần bạn tự đối chiếu\./);
+});
 
 test('B8 · candidate radios show counts, examples, broad/tight labels and escaped text',()=>{
  const template={passed:true,value:'the entire history of ancient',examples:['The Entire History of Ancient Rome <img>'],candidates:[{template:'the entire history of ancient',words:5,matches:20,total:20},{template:'the entire history of',words:4,matches:20,total:20},{template:'the entire history',words:3,matches:20,total:20}]};
