@@ -113,3 +113,7 @@ Thực thể trong kho chỉ gồm war/history/story/life/world/empire/time/man/
 ## D4 · Kho nhập thiếu duration
 
 Kênh có ít nhất 80% video duration=0 và không phải format=short: template trả 400 với hướng dẫn bổ sung cột; shelf giữ dòng không đạt với cùng lý do. Shorts được đánh dấu rõ không bị coi là thiếu thời lượng. Test 0 giây, 600 giây, mốc 80% và Shorts đã đỏ trước, xanh sau.
+
+## D5 · Gõ thử lấy dư và kiểm tra kiểu titles
+
+Search live lấy 25, loại chi tiết thiếu/view không hợp lệ rồi lấy đúng 20 theo thứ tự trả về. Dưới 20 báo số thực có, không nới cổng. titles có mặt nhưng không phải mảng trả 400 trước khi gọi AI hoặc ghi state. Test mock mất chi tiết, view sai, mẫu 19 và titles sai đã đỏ trước, xanh sau. Chưa kiểm chứng search YouTube thật.

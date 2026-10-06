@@ -52,3 +52,15 @@ test('D4 import reports missing duration at 80 percent and leaves complete data 
  const threshold=harness();threshold.state().surveys[0].videos=videos().map((v,i)=>({...v,duration:i<16?0:600}));await assert.rejects(threshold.act('template',{channel:uc(1)}),e=>e.message===missing);
  const shorts=harness();shorts.state().surveys[0].videos=videos().map(v=>({...v,duration:0,format:'short'}));shorts.state().surveys[0].nicheFlow.field.format='short';assert.equal((await shorts.act('template',{channel:uc(1)})).survey.nicheFlow.template.passed,true);
 });
+
+test('D5 live probes request 25 and use the first 20 valid views despite missing details',async()=>{
+ const calls=[];
+ const h=harness({youtube:async(endpoint,p)=>{calls.push(p);return {items:Array.from({length:25},(_,i)=>({id:{videoId:'v'+i}}))};},videoDetails:async ids=>ids.slice(1).map((id,i)=>({id,views:i===0?NaN:i===1?-1:30000}))});
+ const probe=(await h.act('probe',{mode:'live',queries:['a','b','c']})).survey.nicheFlow.probe;
+ assert(calls.every(p=>p.maxResults==='25'));assert.equal(probe.passed,true);assert(probe.samples.every(a=>a.length===20));assert(probe.samples.every(a=>a[0].id==='v3'));assert(probe.results.every(r=>r.hits===20));
+ const thin=harness({youtube:async()=>({items:Array.from({length:25},(_,i)=>({id:{videoId:'v'+i}}))}),videoDetails:async ids=>ids.slice(0,19).map(id=>({id,views:30000}))});
+ const partial=(await thin.act('probe',{mode:'live',queries:['a','b','c']})).survey.nicheFlow.probe;assert.equal(partial.passed,false);assert.match(partial.results[0].error,/đang có 19/);
+});
+test('D5 non-array titles return 400 before generation or state mutation',async()=>{
+ const h=harness();for(const titles of ['wrong',{},null,123]){const before=structuredClone(h.state());await assert.rejects(h.act('topics',{titles}),e=>e.status===400&&/mảng/.test(e.message));assert.deepEqual(h.state(),before);}
+});

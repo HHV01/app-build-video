@@ -132,8 +132,9 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
         queries = body.queries;
         if (!Array.isArray(queries) || queries.length !== 3 || queries.some(q => typeof q !== 'string' || !q.trim())) throw fault('Nhập đúng ba câu gõ thử.');
         samples = []; for (const q of queries) {
-          const results = await youtube('search', { part: 'snippet', type: 'video', maxResults: '20', q, regionCode: flow.field.market, relevanceLanguage: flow.field.language });
-          samples.push(await videoDetails([...new Set((results.items || []).map(i => i.id?.videoId).filter(Boolean))]));
+          const results = await youtube('search', { part: 'snippet', type: 'video', maxResults: '25', q, regionCode: flow.field.market, relevanceLanguage: flow.field.language });
+          const details = await videoDetails([...new Set((results.items || []).map(i => i.id?.videoId).filter(Boolean))]);
+          samples.push(details.filter(v => Number.isFinite(v?.views) && v.views >= 0).slice(0,RULES.probeSize));
         }
       } else if (body.mode === 'import' && body.confirmComplete === true) samples = body.samples;
       else throw fault('Chọn nguồn và xác nhận dữ liệu gõ thử.');
@@ -142,6 +143,7 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
       const hits = median(results.map(r => r.hits).filter(Number.isFinite));
       value = { passed: results.every(r => r.size === RULES.probeSize) && hits >= RULES.probePass, results, samples, queries, medianHits: hits, provenance: body.mode };
     } else if (stage === 'topics') {
+      if (Object.hasOwn(body,'titles') && !Array.isArray(body.titles)) throw fault('titles phải là một mảng tiêu đề.',400);
       const group = flow.groups.groups.find(g => g.id === flow.groups.chosen);
       const shelfTitles = flow.shelf.videos.map(v => v.title);
       const norm = s => String(s).normalize('NFC').toLowerCase().trim().replace(/\s+/g, ' ');
