@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { findTemplate, channelShelf, shelfGate, probeGate, nextStage, lockedNiche, groupCountGate, carriesTemplate, contentVideos, entityOf, overlapsShelf, validateTopics, RULES } from './rx.mjs';
+import { findTemplate, channelShelf, shelfGate, probeGate, nextStage, lockedNiche, groupCountGate, carriesTemplate, contentVideos, entityOf, overlapsShelf, suggestedQueries, validateTopics, RULES } from './rx.mjs';
 const now = Date.parse('2026-10-05');
 const mk = (ch, n, days, views) => Array.from({ length: n }, (_, i) => ({ id: ch + i, channelId: ch, channelTitle: ch, title: 't', views, publishedAt: new Date(now - (days + i) * 86400000).toISOString() }));
 
@@ -118,6 +118,32 @@ test('B6 · validateTopics loại chủ đề trùng thực thể với kho, kh�
   // "Egyptian Empire" là thực thể khác, phải qua.
   const khac = validateTopics(Array.from({ length: 20 }, (_, i) => `The Entire History of the Egyptian Empire ${i}`), shelf, template);
   assert.equal(khac.passed, true, khac.errors.join(' | '));
+});
+test('B7 · suggestedQueries lấy 3 câu từ nhóm bội số trung vị cao nhất', () => {
+  const V = (id, title, multiple) => ({ id, title, multiple });
+  const videos = [
+    V('a0', 'The Entire History of Rome 1', 6), V('a1', 'The Entire History of Rome 2', 5),
+    V('a2', 'The Entire History of Rome 3', 4), V('a3', 'The Entire History of Rome 4', 0.2),
+    V('b0', 'The Entire History of Japan 1', 1), V('b1', 'The Entire History of Japan 2', 1.1),
+  ];
+  const groups = [{ id: 'group-0', videoIds: ['a0', 'a1', 'a2', 'a3'] }, { id: 'group-1', videoIds: ['b0', 'b1'] }];
+  // Nhóm 0 có trung vị 4.5, nhóm 1 chỉ ~1.05 → phải gợi ý từ nhóm 0.
+  assert.deepEqual(suggestedQueries(groups, videos, 'the entire history of'),
+    ['the entire history of rome 1', 'the entire history of rome 2', 'the entire history of rome 3']);
+  // Nhóm "chưa phân loại" không được gợi ý.
+  assert.deepEqual(suggestedQueries([{ id: 'unclassified', videoIds: ['a0', 'a1', 'a2', 'a3'] }], videos, 'the entire history of'), []);
+  // Ít video hơn thì chỉ gợi ý được bấy nhiêu.
+  assert.deepEqual(suggestedQueries([{ id: 'group-1', videoIds: ['b0', 'b1'] }], videos, 'the entire history of'),
+    ['the entire history of japan 2', 'the entire history of japan 1']);
+  // Cùng thực thể thì gộp, không gợi ý hai câu gần như giống nhau.
+  const dup = [V('c0', 'The Entire History of Rome 1', 9), V('c1', 'The Entire History of the Rome 1', 8)];
+  assert.deepEqual(suggestedQueries([{ id: 'group-0', videoIds: ['c0', 'c1'] }], dup, 'the entire history of'), ['the entire history of rome 1']);
+  // Dữ liệu rỗng / sai kiểu thì trả về mảng rỗng chứ không ném lỗi.
+  assert.deepEqual(suggestedQueries([], videos, 'the entire history of'), []);
+  assert.deepEqual(suggestedQueries(null, null, 'the entire history of'), []);
+  assert.deepEqual(suggestedQueries([{ id: 'group-0', videoIds: ['khong', 'co'] }], videos, 'the entire history of'), []);
+  assert.deepEqual(suggestedQueries([null, { videoIds: null }], videos, 'the entire history of'), []);
+  assert.deepEqual(suggestedQueries(groups, [V('a0', 'The Entire History of', 9)], 'the entire history of'), [], 'video không có thực thể thì không gợi ý');
 });
 test('B3 · carriesTemplate nhận tiêu đề mang khuôn, từ chối phần còn lại', () => {
   assert.equal(carriesTemplate('The Entire History of Rome', 'the entire history of'), true);

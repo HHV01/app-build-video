@@ -1,5 +1,5 @@
 // Integrates existing rx/core rules; it contains no second set of thresholds.
-import { RULES, STAGES, findTemplate, carriesTemplate, contentVideos, overlapsShelf, channelShelf, shelfGate, probeGate, blindTitles, groupCountGate, nextStage, lockedNiche, validateTopics } from './rx.mjs';
+import { RULES, STAGES, findTemplate, carriesTemplate, contentVideos, overlapsShelf, suggestedQueries, channelShelf, shelfGate, probeGate, blindTitles, groupCountGate, nextStage, lockedNiche, validateTopics } from './rx.mjs';
 import { median, validateGroups } from './core.mjs';
 
 const fault = (message, status = 400) => Object.assign(new Error(message), { status });
@@ -96,7 +96,7 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
       } else {
         const proposed = body.groups || (await generate({ action: 'groups', context: { videos: blindTitles(flow.shelf.videos) } })).output.groups;
         const groups = validateGroups(proposed, flow.shelf.videos), gate = groupCountGate(groups);
-        value = { ...gate, passed: gate.passed && !groups.some(g => g.id === 'unclassified'), groups, chosen: null };
+        value = { ...gate, passed: gate.passed && !groups.some(g => g.id === 'unclassified'), groups, chosen: null, suggestedQueries: suggestedQueries(groups, flow.shelf.videos, flow.template.value) };
       }
     } else if (stage === 'probe') {
       if (!flow.groups.chosen) throw fault('Chọn nhóm trước khi gõ thử.', 409);

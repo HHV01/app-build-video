@@ -218,6 +218,28 @@ test('B6 · chủ đề AI trả về được sắp theo knownBy rồi mới l�
  assert.ok(chosen.slice(0,8).every(t=>/High Topic/.test(t)),'8 chủ đề cao phải nằm TRƯỚC 12 chủ đề thấp');
  assert.equal(chosen[8],'Entire history of Low Topic 0');
 });
+test('B7 · bước chia nhóm gợi ý 3 câu gõ thử từ nhóm bội số trung vị cao nhất',async()=>{
+ const mk=(ch,views)=>Array.from({length:30},(_,i)=>({id:ch+i,channelId:ch,channelTitle:ch,title:`Entire history of ${i} ${ch}`,views:typeof views==='function'?views(i):views,publishedAt:new Date(now-(100+i)*86400000).toISOString(),duration:300,format:'long'}));
+ // Kênh a có 15 video nóng (view tụt dần) + 15 video nguội; b và c đều phẳng.
+ const h=harness([...mk('a',i=>i<15?200000-i*5000:20000),...mk('b',30000),...mk('c',30000)]);
+ await prepare(h);
+ const shelf=h.state().surveys[0].nicheFlow.shelf.videos;
+ const a=shelf.filter(v=>v.channelId==='a');
+ const groups=[
+  {name:'Nong',videoIds:a.filter(v=>v.multiple>1).map(v=>v.id)},
+  {name:'Nguoi',videoIds:a.filter(v=>v.multiple<=1).map(v=>v.id)},
+  {name:'B',videoIds:shelf.filter(v=>v.channelId==='b').map(v=>v.id)},
+  {name:'C',videoIds:shelf.filter(v=>v.channelId==='c').map(v=>v.id)},
+ ];
+ const g=(await h.act('groups',{groups})).survey.nicheFlow.groups;
+ assert.equal(g.passed,true);
+ // 3 câu gõ thử lấy từ nhóm Nong (trung vị bội số cao nhất), theo bội số giảm dần.
+ assert.deepEqual(g.suggestedQueries,['entire history of 0 a','entire history of 1 a','entire history of 2 a']);
+ // Chọn nhóm vẫn giữ nguyên gợi ý.
+ const chon=(await h.act('groups',{groupId:'group-0'})).survey.nicheFlow.groups;
+ assert.equal(chon.chosen,'group-0');
+ assert.deepEqual(chon.suggestedQueries,g.suggestedQueries);
+});
 test('probe missing results and invalid views cannot pass',async()=>{
  const h=harness();await prepare(h);const videos=h.state().surveys[0].nicheFlow.shelf.videos;
  await h.act('groups',{groups:Array.from({length:4},(_,i)=>({name:'G'+i,videoIds:videos.filter((_,j)=>j%4===i).map(v=>v.id)}))});await h.act('groups',{groupId:'group-0'});

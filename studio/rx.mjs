@@ -503,6 +503,34 @@ export function overlapsShelf(title, template, shelfTitles) {
   });
 }
 
+// 3 CÂU GÕ THỬ gợi ý: lấy từ nhóm nào có bội số trung vị CAO nhất, rồi chọn
+// các video bội số cao nhất trong nhóm đó. Thực thể lấy từ phần tiêu đề sau
+// khi bỏ khuôn, rồi ghép lại khuôn để thành câu tìm kiếm dùng được.
+export function suggestedQueries(groups, videos, template, count = 3) {
+  const byId = new Map((Array.isArray(videos) ? videos : []).map(v => [v.id, v]));
+  let best = null;
+  for (const g of Array.isArray(groups) ? groups : []) {
+    if (!g || g.id === 'unclassified') continue;
+    const rows = (Array.isArray(g.videoIds) ? g.videoIds : []).map(id => byId.get(id))
+      .filter(v => v && Number.isFinite(Number(v.multiple)));
+    if (!rows.length) continue;
+    const score = median(rows.map(v => Number(v.multiple)));
+    if (!best || score > best.score) best = { score, rows };
+  }
+  if (!best) return [];
+  const prefix = tokens(template).join(' ');
+  const seen = new Set();
+  const out = [];
+  for (const v of [...best.rows].sort((a, b) => Number(b.multiple) - Number(a.multiple))) {
+    const entity = entityOf(v.title, template);
+    if (!entity || seen.has(entity)) continue;
+    seen.add(entity);
+    out.push(prefix ? `${prefix} ${entity}` : entity);
+    if (out.length >= count) break;
+  }
+  return out;
+}
+
 // Máy trạng thái: stage nào chưa passed thì chặn các stage sau.
 export const STAGES = ['field', 'template', 'shelf', 'groups', 'probe', 'topics'];
 export const nextStage = project => STAGES.find(s => !project?.niche?.[s]?.passed) || 'done';
