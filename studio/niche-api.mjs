@@ -95,7 +95,14 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
           regionCode: flow.field.market, relevanceLanguage: flow.field.language,
         });
         const ids = [...new Set([flow.template.channelId, ...(found.items || []).map(i => i.snippet?.channelId)].filter(Boolean))].slice(0, 10);
-        catalogs = []; for (const id of ids) catalogs.push({...await catalog(id),discovered:true});
+        catalogs = [];
+        for (const id of ids) {
+          try { catalogs.push({...await catalog(id),discovered:true}); }
+          catch(e) {
+            if(!e.status)throw e;
+            catalogs.push({id:'unresolved:'+id,name:id,videos:[],complete:false,discovered:true,lookupError:e.message,quotaEstimate:{readUnits:1}});
+          }
+        }
         for(const raw of new Set(body.extraChannels||[])){
           try{const cat=await catalog(raw);extraReadUnits+=cat.quotaEstimate.readUnits;const found=catalogs.find(c=>c.id===cat.id);if(found)found.addedByUser=true;else catalogs.push({...cat,addedByUser:true});}
           catch(e){if(!e.status)throw e;extraReadUnits++;catalogs.push({id:'unresolved:'+raw,name:raw,videos:[],complete:false,provenance:'youtube',addedByUser:true,lookupError:e.message,quotaEstimate:{readUnits:1}});}

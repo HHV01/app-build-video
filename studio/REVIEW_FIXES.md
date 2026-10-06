@@ -97,3 +97,7 @@ Yêu cầu `/api/test` trên app hiện tại đã trả `{ok:true, model:"opena
 ## UX tìm ngách rút gọn (06/10/2026)
 
 Năm bước hiển thị, sáu cổng backend vẫn giữ nguyên. Phân tích kênh nối field → template; duyệt khuôn nối template → shelf và dừng nếu không đạt. Ẩn lựa chọn nâng cao trong details, thêm nút xử lý kho thiếu kênh, lưu gợi ý câu tìm đúng với dữ liệu gửi. Sáu kiểm thử mới cho UI và chuỗi thao tác đã đạt; chưa kiểm chứng chuỗi tự động với YouTube thật.
+
+## D1 · Kênh khám phá không truy cập được
+
+Lỗi catalog có status thành dòng không đạt, kèm lý do; lỗi không có status vẫn ném tiếp. Kênh lỗi không làm hỏng toàn bộ bước kho và không được tính vào cổng. Test mock items rỗng và lỗi mạng đã đỏ trước, xanh sau. Chưa kiểm chứng với YouTube thật.
