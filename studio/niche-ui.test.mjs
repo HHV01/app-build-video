@@ -83,6 +83,18 @@ test('B7 · chế độ nhập mẫu không lẫn gợi ý câu tìm', () => {
   assert.doesNotMatch(html, /data-bind="survey\.probeQueries"/, 'chế độ nhập mẫu không hiện ô câu tìm');
 });
 
+test('B8 · gợi ý dựng được ít hơn ba câu thì phải nói đúng số câu, không hứa ba câu', () => {
+  // Ca thật từ kho YouTube: nhóm trung vị cao nhất chỉ có 1 video nên chỉ dựng được 1 câu.
+  // Ô này bắt buộc đúng ba dòng, nên ghi "Điền sẵn 3 câu" sẽ khiến người dùng bấm nút rồi bị chặn.
+  const one = survey({ nicheFlow: { ...flow, groups: { ...flow.groups, suggestedQueries: ['entire history of rome'] } } });
+  const html = renderNiche(one, ui);
+  assert.doesNotMatch(html, /Điền sẵn 3 câu/, 'không được hứa ba câu khi chỉ dựng được một');
+  assert.match(html, /1 câu/, 'phải nói đúng số câu thực tế');
+  assert.match(html, /cần ba câu/, 'phải nhắc bước gõ thử cần đúng ba câu');
+  // Đủ ba câu thì vẫn giữ câu chữ cũ, không đổi.
+  assert.match(renderNiche(survey(), ui), /Điền sẵn 3 câu từ nhóm có bội số trung vị cao nhất/);
+});
+
 test('B7 · cả sáu màn hình đều render được', () => {
   const names = ['Chọn sân', 'Khuôn tiêu đề', 'Kho', 'Chia nhóm', 'Gõ thử', '20 chủ đề'];
   for (let step = 0; step < 6; step++) {

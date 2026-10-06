@@ -145,6 +145,43 @@ test('B7 · suggestedQueries lấy 3 câu từ nhóm bội số trung vị cao n
   assert.deepEqual(suggestedQueries([null, { videoIds: null }], videos, 'the entire history of'), []);
   assert.deepEqual(suggestedQueries(groups, [V('a0', 'The Entire History of', 9)], 'the entire history of'), [], 'video không có thực thể thì không gợi ý');
 });
+test('B8 · suggestedQueries ưu tiên nhóm ĐỦ ba câu, không mắc kẹt ở nhóm trung vị cao nhất nhưng ít video', () => {
+  const V = (id, title, multiple) => ({ id, title, multiple });
+  // Ca thật từ kho YouTube: nhóm "s1 video" trung vị 9.1 cao nhất, nhóm 13 video trung vị 2.2.
+  const nhieu = ['Japan', 'Korea', 'Egypt', 'Rome', 'Greece', 'Persia'];
+  const videos = [
+    V('n0', 'The Entire History of Henrich VIII', 9.1),
+    ...nhieu.map((t, i) => V(`m${i}`, `The Entire History of ${t}`, 2.2 - i * 0.05)),
+  ];
+  const groups = [
+    { id: 'group-nho', videoIds: ['n0'] },
+    { id: 'group-lon', videoIds: nhieu.map((_, i) => `m${i}`) },
+  ];
+  // Nhóm nhỏ có trung vị cao hơn nhưng chỉ gợi ý được 1 câu → probe chặn "Nhập đúng ba câu".
+  // Phải lấy 3 câu từ nhóm đủ video, và câu đầu phải là bội số cao nhất trong nhóm đó.
+  assert.deepEqual(suggestedQueries(groups, videos, 'the entire history of'), [
+    'the entire history of japan',
+    'the entire history of korea',
+    'the entire history of egypt',
+  ], 'phải gợi ý đủ 3 câu từ nhóm có đủ thực thể khác nhau');
+  // Nhóm lớn phải đủ ba thực thể; nếu chỉ hai thì vẫn lấy từ nhóm đó thay vì nhóm 1 video.
+  const hai = [
+    V('n0', 'The Entire History of Henrich VIII', 9.1),
+    V('m0', 'The Entire History of Japan', 2.2), V('m1', 'The Entire History of Korea', 2.1),
+  ];
+  assert.deepEqual(suggestedQueries(
+    [{ id: 'group-nho', videoIds: ['n0'] }, { id: 'group-hai', videoIds: ['m0', 'm1'] }],
+    hai, 'the entire history of', 3),
+    ['the entire history of japan', 'the entire history of korea'],
+    'không nhóm nào đủ ba câu thì lấy nhóm nhiều nhất, không phải nhóm trung vị cao nhất');
+  // Không nhóm nào đủ ba câu VÀ nhóm trung vị cao nhất cũng chỉ 1 câu → vẫn trả 1 câu
+  // thay vì trả rỗng; UI hiển thị "Điền sẵn 3 câu" nên phải nói rõ được bao nhiêu.
+  assert.deepEqual(suggestedQueries(
+    [{ id: 'group-a', videoIds: ['n0'] }, { id: 'group-b', videoIds: ['m0'] }],
+    hai.slice(0, 1).concat(hai.slice(2, 3)), 'the entire history of', 3),
+    ['the entire history of henrich viii'],
+    'chỉ còn một nhóm có video: lấy nhóm đó, trả ít câu hơn');
+});
 test('B3 · carriesTemplate nhận tiêu đề mang khuôn, từ chối phần còn lại', () => {
   assert.equal(carriesTemplate('The Entire History of Rome', 'the entire history of'), true);
   assert.equal(carriesTemplate('  The   Entire  History of   Rome  ', 'the entire history of'), true, 'chuẩn hoá khoảng trắng');

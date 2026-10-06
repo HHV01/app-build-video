@@ -503,32 +503,41 @@ export function overlapsShelf(title, template, shelfTitles) {
   });
 }
 
-// 3 CÂU GÕ THỬ gợi ý: lấy từ nhóm nào có bội số trung vị CAO nhất, rồi chọn
-// các video bội số cao nhất trong nhóm đó. Thực thể lấy từ phần tiêu đề sau
-// khi bỏ khuôn, rồi ghép lại khuôn để thành câu tìm kiếm dùng được.
+// 3 CÂU GÕ THỬ gợi ý: ưu tiên nhóm nào vừa có bội số trung vị CAO vừa ĐỦ thực thể
+// khác nhau để ra đúng số câu. Bước gõ thử chỉ nhận đúng ba câu, nên nhóm trung vị
+// cao nhất mà chỉ có một video sẽ dựng sẵn 1 dòng rồi bị chặn. Chỉ khi không nhóm nào
+// đủ số câu mới lùi về nhóm trung vị cao nhất và trả ít hơn. Thực thể lấy từ phần
+// tiêu đề sau khi bỏ khuôn, rồi ghép lại khuôn để thành câu tìm kiếm dùng được.
 export function suggestedQueries(groups, videos, template, count = 3) {
   const byId = new Map((Array.isArray(videos) ? videos : []).map(v => [v.id, v]));
-  let best = null;
+  const prefix = tokens(template).join(' ');
+  const queriesOf = rows => {
+    const seen = new Set();
+    const out = [];
+    for (const v of [...rows].sort((a, b) => Number(b.multiple) - Number(a.multiple))) {
+      const entity = entityOf(v.title, template);
+      if (!entity || seen.has(entity)) continue;
+      seen.add(entity);
+      out.push(prefix ? `${prefix} ${entity}` : entity);
+      if (out.length >= count) break;
+    }
+    return out;
+  };
+  const candidates = [];
   for (const g of Array.isArray(groups) ? groups : []) {
     if (!g || g.id === 'unclassified') continue;
     const rows = (Array.isArray(g.videoIds) ? g.videoIds : []).map(id => byId.get(id))
       .filter(v => v && Number.isFinite(Number(v.multiple)));
     if (!rows.length) continue;
-    const score = median(rows.map(v => Number(v.multiple)));
-    if (!best || score > best.score) best = { score, rows };
+    candidates.push({ score: median(rows.map(v => Number(v.multiple))), queries: queriesOf(rows) });
   }
-  if (!best) return [];
-  const prefix = tokens(template).join(' ');
-  const seen = new Set();
-  const out = [];
-  for (const v of [...best.rows].sort((a, b) => Number(b.multiple) - Number(a.multiple))) {
-    const entity = entityOf(v.title, template);
-    if (!entity || seen.has(entity)) continue;
-    seen.add(entity);
-    out.push(prefix ? `${prefix} ${entity}` : entity);
-    if (out.length >= count) break;
-  }
-  return out;
+  if (!candidates.length) return [];
+  // Ưu tiên nhóm dựng được ĐỦ số câu; trong đó nhiều câu hơn thắng, rồi tới trung vị
+  // cao hơn. Nếu không nhóm nào đủ, vẫn lấy nhóm cho nhiều câu nhất để người dùng có
+  // nhiều dòng nhất có thể sửa, thay vì nhận đúng một dòng rồi bị chặn ở bước sau.
+  candidates.sort((a, b) =>
+    (b.queries.length >= count) - (a.queries.length >= count) || b.queries.length - a.queries.length || b.score - a.score);
+  return candidates[0].queries;
 }
 
 // Máy trạng thái: stage nào chưa passed thì chặn các stage sau.
