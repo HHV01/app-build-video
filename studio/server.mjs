@@ -1,3 +1,5 @@
+import {tagMenu,validateSceneTags} from './public/scene-workflow.mjs';
+import {compactSceneContext,validateAnimations} from './production.mjs';
 import {rosterExtrasContext,validateRosterExtras} from './public/roster.mjs';
 import { withModelFallback, normalizeFallbackModels } from './model-fallback.mjs';
 import http from 'node:http';
@@ -164,6 +166,7 @@ async function discover(b) {
   return { videos: enrichVideos(videos), channels: [...channels.values()].map(c => ({ id: c.id, name: c.snippet.title, subscribers: c.statistics.hiddenSubscriberCount ? null : Number(c.statistics.subscriberCount || 0), sampleOnly: true })), usage, formatWarning: 'Phân loại dài/Shorts dựa trên thời lượng là gần đúng. Kiểm tra và sửa loại video trong kho.' };
 }
 const schemas = {
+  sceneTags: '{"tagsByIndex":[{"index":1,"tags":["wide"],"summary":"short continuity summary, at most 20 words"}]}',
   rosterExtras: '{"extras":[{"name":"name","role":"supporting role","description":"English description, at most 40 words"}],"backgrounds":[{"name":"name","description":"English description, at most 40 words"}]}',
   scenes: '{"scenes":[{"narration":"original batch narration","visual":"subject and action","prompt":"English subject, action, setting and camera angle only","overlay":"editor text or empty","sfx":"sound or empty","characters":["character name"],"background":"setting name"}]}',
   animation: '{"animations":[{"scene":1,"prompt":"English subject movement and camera action only"}]}',
@@ -182,16 +185,21 @@ async function generate(b) {
   const key = String(b.jobId || randomUUID()); if (jobs.has(key)) throw failure('Tác vụ này đang chạy.', 409);
   jobs.add(key);
   try {
-    const sceneAction = ['scenes','animation'].includes(b.action);
-    const ctxObj = b.action === 'rosterExtras' ? rosterExtrasContext({characters:Array.isArray(b.context?.mainCharacters)?b.context.mainCharacters:[]},{narration:b.context?.scriptText}) : b.action === 'scenes' ? {narration:b.context?.narration} : b.action === 'animation' ? {scenes:(Array.isArray(b.context?.scenes)?b.context.scenes:[]).map(s=>({scene:s.scene??s.id,narration:s.narration}))} : b.action === 'groups' ? { ...b.context, videos: blindTitles(b.context?.videos || []) } : (b.context || {});
+    const sceneAction = ['scenes','animation','sceneTags'].includes(b.action);
+    const windows=(Array.isArray(b.context?.windows)?b.context.windows:[]).map(({index,narration})=>({index,narration}));
+    if(['scenes','sceneTags'].includes(b.action)&&windows.length&&(windows.length>4||windows.some(w=>!Number.isInteger(w.index)||w.index<1||typeof w.narration!=='string'||!w.narration.trim())||new Set(windows.map(w=>w.index)).size!==windows.length))throw failure('Cần 1–4 cửa sổ lời kể với index duy nhất.');
+    const ctxObj = b.action === 'rosterExtras' ? rosterExtrasContext({characters:Array.isArray(b.context?.mainCharacters)?b.context.mainCharacters:[]},{narration:b.context?.scriptText}) : b.action === 'sceneTags' ? {windows,tagMenu,summaryPrev:typeof b.context?.summaryPrev==='string'?b.context.summaryPrev.split(/\s+/).slice(0,20).join(' '):''} : b.action === 'scenes' ? (windows.length?compactSceneContext(b.context||{},windows):{narration:b.context?.narration}) : b.action === 'animation' ? {scenes:(Array.isArray(b.context?.scenes)?b.context.scenes:[]).map(s=>({scene:s.scene??s.id,narration:s.narration}))} : b.action === 'groups' ? { ...b.context, videos: blindTitles(b.context?.videos || []) } : (b.context || {});
     if (b.action==='rosterExtras' && (typeof ctxObj.scriptText!=='string'||!ctxObj.scriptText.trim())) throw failure('Cần kịch bản trước khi trích danh sách.');
-    if (b.action==='scenes' && (typeof ctxObj.narration!=='string'||!ctxObj.narration.trim())) throw failure('Cần lời kể của lô cảnh.');
-    if (b.action==='animation' && (!ctxObj.scenes.length||ctxObj.scenes.some(s=>!Number.isInteger(s.scene)||typeof s.narration!=='string'||!s.narration.trim())||new Set(ctxObj.scenes.map(s=>s.scene)).size!==ctxObj.scenes.length)) throw failure('Cần ID cảnh duy nhất và lời kể của từng cảnh.');
+    if(b.action==='sceneTags'&&!windows.length)throw failure('Cần cửa sổ lời kể để chọn thẻ.');
+    if (b.action==='scenes' && !windows.length && (typeof ctxObj.narration!=='string'||!ctxObj.narration.trim())) throw failure('Cần lời kể của lô cảnh.');
+    if (b.action==='animation' && (ctxObj.scenes.length>4||!ctxObj.scenes.length||ctxObj.scenes.some(s=>!Number.isInteger(s.scene)||typeof s.narration!=='string'||!s.narration.trim())||new Set(ctxObj.scenes.map(s=>s.scene)).size!==ctxObj.scenes.length)) throw failure('Cần ID cảnh duy nhất và lời kể của từng cảnh.');
+    if(b.action==='scenes'&&windows.length){try{ctxObj.tagsByIndex=validateSceneTags(ctxObj.tagsByIndex,windows);}catch(e){throw Object.assign(failure(e.message,400),{invalidTags:true});}}
     const context = JSON.stringify(ctxObj);
     if (context.length > 65000) throw failure('Dữ liệu quá dài. Giảm số transcript hoặc video trong một lượt.');
     const directives = {
+      sceneTags: 'Choose only from the supplied tagMenu. Return one entry for each window index in order, with 1–3 suitable tags and a continuity summary of at most 20 words. Never invent tags. Do not describe images or write image or motion prompts. Use only window narration and summaryPrev.',
       rosterExtras: 'Extract at most 6 supporting characters and 6 settings from scriptText. Propose only what is actually needed in the script. Exclude mainCharacters from extras. Do not invent named people, identities or events. Each description must be English, at most 40 words. Return exactly the requested schema; use empty arrays when none are needed.',
-      scenes: 'Split only the supplied batch narration into scenes in its original order. Preserve all narration verbatim in its original language, without adding or translating it. Write each prompt in English, at most 60 words, describing only the specific subject, action, setting and camera angle. Use plain concrete descriptions; omit aesthetic styles, rendering methods, resolution, illumination and global visual instructions. Do not draw text. Put optional text in overlay. Return the requested fields for every scene.',
+      scenes: 'Return exactly one scene for each supplied window, in order, using the validated tagsByIndex. For legacy batch narration, keep its original order. Preserve all narration verbatim in its original language, without adding or translating it. Write each prompt in English, at most 60 words, describing only the specific subject, action, setting and camera angle. Use plain concrete descriptions; omit aesthetic styles, rendering methods, resolution, illumination and global visual instructions. Do not draw text. Put optional text in overlay. Return the requested fields for every scene.',
       animation: 'Return one animation per supplied scene, preserving its scene ID. Use only that scene narration to describe subject movement, object movement and at most one camera action. Write each prompt in English, at most 60 words. Use plain concrete descriptions; omit aesthetic styles, rendering methods, resolution, illumination and global visual instructions. Do not add unrelated events.',
       angles: 'Đề xuất đúng 3 góc kể khác nhau cho kênh mới dựa trên các tiêu đề tham khảo context.titles. Viết góc kể và lý do bằng tiếng Việt. Mỗi góc là câu hỏi hoặc hướng giải thích cụ thể, có thể dùng cho nhiều video. Chỉ suy luận từ tiêu đề được cung cấp, không khẳng định đã xem nội dung hoặc biết giọng nguồn. Không bịa dữ kiện; nêu rõ căn cứ tiêu đề trong reason.',
       groups: 'Chia video thành 4–7 nhóm vấn đề độc lập, CHỈ dựa trên tiêu đề (không có view, không đoán view). Mỗi ID chỉ ở một nhóm. Không sáng tạo ID. Tên nhóm viết ngắn, viết HOA để làm nhãn bảng.',
@@ -210,9 +218,12 @@ async function generate(b) {
     const budget = tokenBudget(b.action);
     const response = await ai(`${directives[b.action]}\n${(sceneAction||b.action==='rosterExtras')?'Batch narration:':'Dữ liệu dự án:'}\n${context}`, schemas[b.action], budget);
     if (b.action==='rosterExtras') { try { validateRosterExtras(response.output,ctxObj.mainCharacters); } catch(e) { throw failure(e.message,422); } }
-    if (sceneAction) {
+    if(b.action==='sceneTags'){try{response.output={tagsByIndex:validateSceneTags(response.output.tagsByIndex,windows)};}catch(e){throw Object.assign(failure(e.message,422),{invalidTags:true});}}
+    if (['scenes','animation'].includes(b.action)) {
       const rows=response.output?.[b.action==='scenes'?'scenes':'animations'];
-      if(!Array.isArray(rows)||!rows.length||rows.some(s=>typeof s.prompt!=='string'||!s.prompt.trim()||s.prompt.trim().split(/\s+/).length>60||/\b(?:cinematic|realistic|matte\s+painting|4k|photorealistic|lighting)\b/i.test(s.prompt))) throw failure('AI trả prompt cảnh không hợp lệ: chỉ mô tả riêng cảnh, tối đa 60 từ.',422);
+      if(!Array.isArray(rows)||!rows.length||rows.some(s=>typeof s.prompt!=='string'||!s.prompt.trim()||(b.action==='animation'&&s.prompt.trim().split(/\s+/).length>60)||/\b(?:cinematic|realistic|matte\s+painting|4k|photorealistic|lighting)\b/i.test(s.prompt))) throw failure('AI trả prompt cảnh không hợp lệ: chỉ mô tả riêng cảnh, tối đa 60 từ.',422);
+      if(b.action==='scenes'&&windows.length&&rows.length!==windows.length)throw failure('AI trả sai số cảnh trong lô.',422);
+      if(b.action==='animation'){try{validateAnimations(rows,ctxObj.scenes);}catch(e){throw failure(e.message,422);}}
       if(b.action==='animation'&&(rows.length!==ctxObj.scenes.length||new Set(rows.map(s=>s.scene)).size!==rows.length||rows.some(s=>!ctxObj.scenes.some(x=>x.scene===s.scene)))) throw failure('AI trả sai ID cảnh chuyển động.',422);
     }
     if (b.action === 'groups') { response.output.groups = validateGroups(response.output.groups, b.context.videos || []); response.output.groupGate = groupCountGate(response.output.groups); }
@@ -322,7 +333,7 @@ const server = http.createServer(async (req, res) => {
     if (!file.startsWith(base + path.sep) && file !== base) return json(res, 403, { error: 'Đường dẫn không được phép.' });
     const content = await readFile(file);
     res.writeHead(200, { 'Cache-Control': 'no-store', 'Content-Type': mime[path.extname(file)] || 'application/octet-stream', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'self'; img-src 'self' data: https://i.ytimg.com; style-src 'self'; script-src 'self'; connect-src 'self'; media-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'" }); res.end(content);
-  } catch (e) { json(res, e.status || (e.code === 'ENOENT' ? 404 : 500), { error: redact(e.status ? e.message : 'Không xử lý được yêu cầu. Kiểm tra dữ liệu hoặc thử lại.') }); }
+  } catch (e) { json(res, e.status || (e.code === 'ENOENT' ? 404 : 500), { error: redact(e.status ? e.message : 'Không xử lý được yêu cầu. Kiểm tra dữ liệu hoặc thử lại.'),...(e.invalidTags?{invalidTags:true}:{}) }); }
 });
 server.listen(port, '127.0.0.1', () => console.log(`Tích Studio: http://localhost:${port}`));
 server.on('error', e => { console.error(e.code === 'EADDRINUSE' ? 'Cổng Studio đã được dùng. Mở ứng dụng đang chạy hoặc đổi STUDIO_PORT.' : 'Không khởi động được Studio.'); process.exitCode = 1; });

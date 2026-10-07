@@ -94,3 +94,9 @@ Hook được coi là định hướng thay vì lời bắt buộc chép nguyên
 - rosterExtras dùng context whitelist (scriptText, mainCharacters rút gọn), directive tiếng Anh và 1.200 token; API từ chối quá số lượng/độ dài.
 - Giữ duy nhất composeImagePrompt để ghép, chỉ chèn mô tả người/bối cảnh có mặt. Hỗ trợ hiển thị, copy, TXT/Markdown/CSV; không ghi prompt đã ghép vào state. Bốn file cung cấp giữ nguyên byte.
 - Test đỏ trước sửa: action chưa hỗ trợ và roster chưa được ghép. 157 test qua; browser QA với dữ liệu riêng kiểm nạp mẫu, thiếu identity, dự án mới, cổng xác nhận, sửa/lưu/tải lại và hai cảnh có/không nhân vật. Hai lượt trích dùng gateway mock; đổi style/copy không thêm lượt. Chưa gọi provider hoặc YouTube thật, chưa đánh giá chất lượng trích bằng model thật; luồng UI sinh lô cảnh và migration đầy đủ ở K4/K5 chưa làm.
+
+### K4 — Chia cảnh xác định, thẻ và resume (07/10/2026)
+- sceneWindows xác định toàn bộ cửa sổ; lô tối đa 4, giữ nguyên narration/index của code, lưu mỗi lô và tiếp tục từ scenes.length. Lô lỗi không thêm cảnh; invalidTags thử lại đúng một lần rồi lưu cảnh báo lô chờ.
+- sceneTags dùng menu cố định trong module riêng, khác bộ thẻ bible được bảo vệ. Whitelist chỉ windows/tagMenu/summaryPrev, 600 token. scenes chỉ windows/tagsByIndex; animation chỉ ID/lời kể. Giữ directive tiếng Anh và chặn sáu từ phong cách. Prompt ảnh dài là cảnh báo, không làm hỏng lô.
+- Kiểm độ phủ >=98%, thứ tự, rỗng/trùng/index, promptLong >80 từ. Animation chỉ chạy khi bấm nút; validateAnimations kiểm đủ số/ID/prompt trước lưu.
+- Test đỏ trước: thiếu module và API sceneTags 400; sau sửa toàn bộ 164 test xanh. Kiểm retry đúng một lần, network không retry validation, hai lô lưu riêng, resume không gửi lại cảnh cũ, cảnh bị AI sửa lời vẫn giữ bản gốc và chuyển động chỉ chạy khi gọi riêng. Bốn file bible/preset không sửa. Chưa gọi YouTube hoặc provider thật; chất lượng chọn thẻ/mô tả bởi model chưa kiểm chứng. Scene card/xuất đầy đủ và nghiệm thu UI tiếp ở K5.

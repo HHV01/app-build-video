@@ -17,7 +17,7 @@ export function scenePromptRows(channel,project) {
   const setting=[scene.prompt||scene.setting||scene.background||'',background||''].filter(Boolean).join(' ');
   const noCharacter=scene.noCharacter??(!character.identity||(channel.type==='faceless'&&!hasRoster));
   return {
-  scene:scene.scene??scene.id??index+1,
+  scene:scene.index??scene.scene??scene.id??index+1,
   prompt:composeImagePrompt({...scene,
    noCharacter,
    subject:noCharacter?(scene.prompt||scene.subject||''):'',setting:noCharacter?(background||(scene.prompt?'':scene.setting||scene.background||'')):setting,overlay:'',

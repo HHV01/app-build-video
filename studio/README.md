@@ -80,3 +80,8 @@ Mở đầu được diễn đạt theo tiêu đề, góc kể, người xem và
 Bản sắc → dán bible rồi Nạp bible, hoặc Nạp mẫu Cậu bé học sinh. Parse lỗi hiển thị rõ và giữ nguyên nhân vật hợp lệ cũ. Khối nhân vật chủ đạo chỉ đọc ở dự án; sửa bible tại kênh trước khi xác nhận. Gợi ý AI chỉ lưu bản nháp, roster đã xác nhận được chụp vào dự án khi Lưu & tiếp tục. Thay đổi mô tả hoặc kịch bản yêu cầu xác nhận lại.
 
 `rosterExtras` chỉ gửi kịch bản và bản tóm tắt nhân vật chủ đạo (tối đa 40 từ/mô tả), ngân sách đầu ra 1.200 token. Không gửi nguồn nghiên cứu, packaging hoặc visualStyle. Chỉ `composeImagePrompt` ghép prompt để hiển thị/copy/xuất; `scene.prompt` vẫn là phần riêng của cảnh. Hàm có sẵn nhận `(scene, character, styleOverride)` nên roster được chuyển thành dữ liệu nhân vật/bối cảnh đầu vào, không sửa bốn file bible/preset.
+
+### Cảnh và prompt (K4)
+Sau khi xác nhận Nhân vật + bối cảnh, bấm **Tạo cảnh và prompt**. Code chia toàn bộ lời kể theo thời lượng (mặc định 150 từ/phút) và nhịp cảnh (mặc định 8 giây). Mỗi lô tối đa 4 cửa sổ: AI chọn 1–3 thẻ trong menu cố định rồi điền mô tả. Lời kể/index do code giữ nguyên. Lô hoàn thành tự lưu; lỗi thì bấm **Tiếp tục tạo cảnh**. Thẻ sai thử lại đúng một lần, vẫn sai hiện đỏ và không tính vào cảnh hoàn thành.
+
+Độ phủ kiểm tra số từ và thứ tự lời kể, cảnh rỗng/trùng/index thiếu; prompt riêng dài hơn 80 từ được cảnh báo. Không thay kịch bản hoặc thời lượng giữa các lô đã lưu; dùng dự án mới nếu muốn chia lại, cảnh cũ được giữ. **Tạo prompt chuyển động** là nút riêng, không tự gọi khi tạo cảnh. Chuyển động cũng theo lô 4, chỉ lưu sau khi đủ prompt/đúng ID. Không tạo ảnh, âm thanh hoặc video.

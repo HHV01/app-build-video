@@ -235,7 +235,7 @@ test('K1b scene actions send only batch narration and return requested schemas',
    assert.deepEqual(Object.keys(result.body.output[key][0]).sort(),fields);
    assert(messages[1].content.includes('60 words'));
   }
-  for(const action of ['scenes','animation'])for(const invalid of ['cinematic','realistic','matte painting','4K','photorealistic','lighting',Array(61).fill('word').join(' ')]){
+  for(const action of ['scenes','animation'])for(const invalid of ['cinematic','realistic','matte painting','4K','photorealistic','lighting',...(action==='animation'?[Array(61).fill('word').join(' ')]:[])]){
    forcedPrompt=invalid;const result=await s.req('/api/generate','POST',{action,context:{narration:'A farmer delivers grain.',scenes:[{scene:7,narration:'A farmer delivers grain.'}]}});
    assert.equal(result.status,422,action+': '+invalid);
   }
@@ -244,6 +244,19 @@ test('K1b scene actions send only batch narration and return requested schemas',
   assert.equal((await s.req('/api/generate','POST',{action:'animation',context:{scenes:[{scene:7,prompt:'old image prompt'}]}})).status,400);
   assert.equal(seen.length,calls,'invalid batch must not call AI');
  }finally{await s.stop();await new Promise(r=>gateway.close(r));await rm(envFile,{force:true});}
+});
+
+test('K4 HTTP sceneTags and scenes whitelist context, validate fixed tags and bound batches',async()=>{
+ const tags=[{index:5,tags:['WIDE','day'],summary:'A person arrives.'}],rows=[{narration:'untrusted rewrite',visual:'A person arrives.',prompt:Array(81).fill('word').join(' '),overlay:'',sfx:'',characters:[],background:'desk'}];
+ const gw=await promptGateway({tagsByIndex:tags,scenes:rows}),envFile=path.join(tempRoot,`env-k4-${Date.now()}.env`);await writeFile(envFile,`OPENAI_BASE_URL=${gw.url}\nOPENAI_API_KEY=test-key\n`);const s=await boot({STUDIO_ENV_FILE:envFile});
+ try{
+  const windows=[{index:5,narration:'A person arrives.'}],forbidden={research:'SECRET_R',sources:'SECRET_S',packaging:'SECRET_P',identity:'SECRET_I',audience:'SECRET_A',niche:'SECRET_N',visualStyle:'SECRET_V',characterDescription:'SECRET_C',researchAngle:'SECRET_G'};
+  const r=await s.req('/api/generate','POST',{action:'sceneTags',context:{windows,summaryPrev:'Before.',tagMenu:{fake:['invented']},...forbidden}});assert.equal(r.status,200,r.body.error);assert.deepEqual(r.body.output.tagsByIndex[0].tags,['wide','day']);
+  const sent=gw.seen.at(-1),ctx=JSON.parse(sent.messages[1].content.split('Batch narration:\n')[1]);assert.deepEqual(Object.keys(ctx).sort(),['summaryPrev','tagMenu','windows']);assert(ctx.tagMenu.camera.includes('wide'));assert.doesNotMatch(JSON.stringify(sent),/SECRET_/);assert(sent.max_tokens<=700);
+  tags[0].tags=['invented'];const bad=await s.req('/api/generate','POST',{action:'sceneTags',context:{windows}});assert.equal(bad.status,422);assert.equal(bad.body.invalidTags,true);tags[0].tags=['wide'];
+  const scenes=await s.req('/api/generate','POST',{action:'scenes',context:{windows,tagsByIndex:tags,...forbidden}});assert.equal(scenes.status,200,scenes.body.error);const sceneContext=JSON.parse(gw.seen.at(-1).messages[1].content.split('Batch narration:\n')[1]);assert.deepEqual(Object.keys(sceneContext).sort(),['tagsByIndex','windows']);assert.doesNotMatch(JSON.stringify(gw.seen.at(-1)),/SECRET_/);assert.equal(scenes.body.output.scenes[0].prompt.split(' ').length,81,'long raw prompts are warnings, not a blocked batch');
+  const before=gw.seen.length;assert.equal((await s.req('/api/generate','POST',{action:'sceneTags',context:{windows:Array.from({length:5},(_,i)=>({index:i+1,narration:'text'}))}})).status,400);assert.equal(gw.seen.length,before);
+ }finally{await s.stop();await gw.stop();await rm(envFile,{force:true});}
 });
 
 
