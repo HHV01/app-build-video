@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "studio": "node studio/server.mjs",
-    "studio:test": "node --test studio/core.test.mjs studio/rx.test.mjs studio/niche.test.mjs studio/niche-api.test.mjs studio/niche-ui.test.mjs studio/niche-workflow.test.mjs studio/production.test.mjs studio/sync.test.mjs studio/server.test.mjs studio/b8.test.mjs studio/d-review.test.mjs studio/model-fallback.test.mjs studio/clipboard.test.mjs studio/script-workflow.test.mjs studio/research-context.test.mjs studio/scene-prompts.test.mjs studio/public/character-bible.test.mjs",
+    "studio:test": "node --test studio/core.test.mjs studio/rx.test.mjs studio/niche.test.mjs studio/niche-api.test.mjs studio/niche-ui.test.mjs studio/niche-workflow.test.mjs studio/production.test.mjs studio/sync.test.mjs studio/server.test.mjs studio/b8.test.mjs studio/d-review.test.mjs studio/model-fallback.test.mjs studio/clipboard.test.mjs studio/script-workflow.test.mjs studio/research-context.test.mjs studio/roster.test.mjs studio/scene-prompts.test.mjs studio/public/character-bible.test.mjs",
     "omniroute": "npx omniroute",
     "omniroute:dashboard": "npx omniroute dashboard",
     "omniroute:test": "node scripts/test-omniroute.mjs",

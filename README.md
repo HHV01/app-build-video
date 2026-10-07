@@ -1,6 +1,6 @@
 # Tích Studio · Tìm ngách và kịch bản
 
-Khảo sát ngách YouTube, xây hồ sơ kênh và viết kịch bản qua bốn bước: Chủ đề → Tiêu đề + Thumbnail → Research → Kịch bản. Copy hoặc xuất văn bản để làm ảnh, giọng và video ở công cụ ngoài.
+Khảo sát ngách YouTube, xây hồ sơ kênh và viết kịch bản qua sáu bước: Chủ đề → Tiêu đề + Thumbnail → Research → Kịch bản → Nhân vật + bối cảnh → Cảnh và prompt. Copy hoặc xuất văn bản để làm ảnh, giọng và video ở công cụ ngoài.
 
 ## Yêu cầu và chạy
 

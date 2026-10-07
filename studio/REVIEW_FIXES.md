@@ -87,3 +87,10 @@ TXT đã bấm xuất nhưng IAB không trả sự kiện download trong 5 giây
 
 ### Mở đầu và kết bài theo nội dung
 Hook được coi là định hướng thay vì lời bắt buộc chép nguyên văn. Phần đầu nhận tối đa 3 dữ kiện supported liên quan; phần cuối nhận câu hỏi mở đầu. Prompt hướng dẫn mở phù hợp lịch sử, giải thích, tài chính; kết luận đầy đủ cả khi tắt CTA. Test đỏ trước sửa và 133 test qua. Chưa kiểm chứng chất lượng đầu ra bằng AI thật; chọn dữ kiện theo từ chỉ là heuristic.
+
+### K3 — Bible nhân vật và roster trước cảnh (07/10/2026)
+- Sáu bước, LAST_STEP=5; step/approved kẹp 0–5, không xóa cảnh cũ. Nạp bible/mẫu trong Bản sắc bằng parser có sẵn; parse lỗi giữ danh sách hợp lệ trước đó.
+- Nhân vật chủ đạo lấy từ channel.characters; dự án mới tự nạp. Gợi ý tối đa 6 phụ + 6 bối cảnh lưu bản nháp. Mô tả phụ/bối cảnh tối đa 40 từ, tên không trùng. Xác nhận mới chốt mainCharacters, extraCharacters, backgrounds và roster. Sửa danh sách hoặc kịch bản làm mất xác nhận.
+- rosterExtras dùng context whitelist (scriptText, mainCharacters rút gọn), directive tiếng Anh và 1.200 token; API từ chối quá số lượng/độ dài.
+- Giữ duy nhất composeImagePrompt để ghép, chỉ chèn mô tả người/bối cảnh có mặt. Hỗ trợ hiển thị, copy, TXT/Markdown/CSV; không ghi prompt đã ghép vào state. Bốn file cung cấp giữ nguyên byte.
+- Test đỏ trước sửa: action chưa hỗ trợ và roster chưa được ghép. 157 test qua; browser QA với dữ liệu riêng kiểm nạp mẫu, thiếu identity, dự án mới, cổng xác nhận, sửa/lưu/tải lại và hai cảnh có/không nhân vật. Hai lượt trích dùng gateway mock; đổi style/copy không thêm lượt. Chưa gọi provider hoặc YouTube thật, chưa đánh giá chất lượng trích bằng model thật; luồng UI sinh lô cảnh và migration đầy đủ ở K4/K5 chưa làm.

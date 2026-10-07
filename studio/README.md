@@ -26,16 +26,18 @@ Không có khuôn gõ tự do để vượt cổng. Khuôn cần ít nhất 10 t
 
 Tạo dự án tại Google Cloud Console, bật YouTube Data API v3 và tạo API key ở Credentials. Nhập ở Kết nối API → YouTube API key → Lưu khóa YouTube. Khóa chỉ lưu ở server; API settings chỉ báo đã có cấu hình. Khóa phục vụ tìm/đọc video và kênh, không đăng video. Không cần khóa nếu nhập kho JSON/CSV có đủ dữ liệu và xác nhận.
 
-## Dự án bốn bước
+## Dự án sáu bước
 
 1. Chủ đề: chọn câu hỏi và thời lượng dự kiến.
 2. Tiêu đề + Thumbnail: chọn lời hứa, hook, khuôn và bố cục thumbnail.
 3. Research: thêm text nguồn, đối chiếu claim và chọn góc nhìn. URL đơn độc không chứng minh đã đọc nguồn.
 4. Kịch bản: dựng dàn ý, viết từng phần, chỉnh narration rồi Hoàn tất kịch bản.
+5. Nhân vật + bối cảnh: nạp bible hợp lệ tại Bản sắc; kiểm tra nhân vật chủ đạo, trích hoặc nhập tối đa 6 nhân vật phụ và 6 bối cảnh. Sửa mô tả tiếng Anh (mỗi mô tả phụ/bối cảnh tối đa 40 từ), tick xác nhận rồi Lưu & tiếp tục.
+6. Cảnh và prompt: hiển thị cảnh đã có, ghép phong cách và roster theo nhân vật/bối cảnh thực sự có mặt; copy hoặc xuất TXT/Markdown/CSV. Luồng sinh lô cảnh trên giao diện sẽ được bổ sung ở mục tiếp theo.
 
 Copy toàn bộ kịch bản, Xuất kịch bản TXT hoặc Xuất Markdown (gồm nguồn). Nếu clipboard bị chặn, dùng Ctrl+C trong hộp thoại hoặc tải TXT. Ảnh, giọng và dựng video thực hiện ở app ngoài. Thumbnail giữ công cụ bố cục/canvas, không có API sinh ảnh.
 
-Dự án cũ ở bước sau kịch bản tự về bước 4; cảnh, audio và các dữ liệu đã lưu vẫn được giữ trong state nhưng không hiển thị. assets.mjs và cơ chế đồng bộ state tiếp tục hoạt động.
+Step và approved của dự án cũ được kẹp về chỉ số 0–5; cảnh và dữ liệu cũ vẫn giữ trong state. Cảnh đã có hiển thị ở bước cuối; dữ liệu audio cũ được giữ nhưng không có giao diện sử dụng. assets.mjs và cơ chế đồng bộ state tiếp tục hoạt động.
 
 ## AI và model dự phòng
 
@@ -73,3 +75,8 @@ Các mục G4 (chương thành dàn ý) và G5 (lấy bình luận) chưa bật.
 Ở bước Kịch bản, ô **Mở đầu / Hook** lấy hook của phương án Tiêu đề đã chọn; bạn có thể sửa trước khi dựng dàn ý và viết. AI nhận hook ở phần đầu, tạo tò mò và nối vào thân bài trong tổng số từ. CTA là lời mời bình luận hoặc đăng ký ở cuối; bỏ chọn để không thêm. Kịch bản đã lưu không tự thay đổi: viết lại khi muốn áp dụng hook mới.
 
 Mở đầu được diễn đạt theo tiêu đề, góc kể, người xem và giọng kênh; nhận tối đa 3 dữ kiện research supported liên quan. Không có dữ kiện thì dùng câu hỏi thay vì bịa chi tiết. Kết bài trả lời câu hỏi mở đầu; CTA tùy chọn chỉ một câu mời bình luận liên quan nội dung. Không thêm lượt gọi AI.
+
+### Bible và roster (K3)
+Bản sắc → dán bible rồi Nạp bible, hoặc Nạp mẫu Cậu bé học sinh. Parse lỗi hiển thị rõ và giữ nguyên nhân vật hợp lệ cũ. Khối nhân vật chủ đạo chỉ đọc ở dự án; sửa bible tại kênh trước khi xác nhận. Gợi ý AI chỉ lưu bản nháp, roster đã xác nhận được chụp vào dự án khi Lưu & tiếp tục. Thay đổi mô tả hoặc kịch bản yêu cầu xác nhận lại.
+
+`rosterExtras` chỉ gửi kịch bản và bản tóm tắt nhân vật chủ đạo (tối đa 40 từ/mô tả), ngân sách đầu ra 1.200 token. Không gửi nguồn nghiên cứu, packaging hoặc visualStyle. Chỉ `composeImagePrompt` ghép prompt để hiển thị/copy/xuất; `scene.prompt` vẫn là phần riêng của cảnh. Hàm có sẵn nhận `(scene, character, styleOverride)` nên roster được chuyển thành dữ liệu nhân vật/bối cảnh đầu vào, không sửa bốn file bible/preset.

@@ -66,13 +66,13 @@ test('B9 · PUT state từ chối khảo sát videos hỏng và bổ sung videos
 // ---- A5: max_tokens phải đủ lớn cho từng tác vụ ----
 
 // Gateway giả theo chuẩn OpenAI, ghi lại max_tokens của mỗi lượt gọi.
-async function mockGateway() {
+async function mockGateway(replyOverride={}) {
   const seen = [];
   const reply = {
     ok: true, groups: [{ name: 'Nhóm 1', angle: 'a', reason: 'r', videoIds: ['v1'] }],
     ideas: [], variants: [], names: [], topics: [], animations: [],
     segments: [], scenes: [], channels: [], summary: '', sensory: '', cast: [], angles: [],
-    claims: [], questions: [], facts: [], timeline: [], narration: '', editorNotes: [],
+    claims: [], questions: [], facts: [], timeline: [], narration: '', editorNotes: [],...replyOverride,
   };
   const srv = http.createServer((req, res) => {
     const chunks = [];
@@ -117,12 +117,12 @@ test('A5 · mỗi tác vụ AI gửi max_tokens đủ lớn, không action nào 
 // ---- B6: prompt topics không được đẩy AI về chủ đề ít nổi tiếng ----
 
 // Gateway giả ghi lại TOÀN BỘ thân yêu cầu để kiểm tra prompt gửi đi.
-async function promptGateway() {
+async function promptGateway(replyOverride={}) {
   const seen = [];
   const reply = {
     ok: true, groups: [], ideas: [], variants: [], names: [], topics: [], animations: [],
     segments: [], scenes: [], channels: [], summary: '', sensory: '', cast: [], angles: [],
-    claims: [], questions: [], facts: [], timeline: [], narration: '', editorNotes: [],
+    claims: [], questions: [], facts: [], timeline: [], narration: '', editorNotes: [],...replyOverride,
   };
   const srv = http.createServer((req, res) => {
     const chunks = [];
@@ -184,7 +184,7 @@ test('E2 removed media routes return 404',async()=>{
 test('E3 legacy settings boot; Data API key remains secret; old media data survives',async()=>{
  const legacyKey=['youtube','ClientId'].join('');const s=await boot({}, {settings:{[legacyKey]:'old',model:'test'},state:{revision:0,channels:[],surveys:[],projects:[{id:'p',step:8,approved:[0,3,8],scenes:[{prompt:'old'}],voiceData:'old',rendered:{id:'old'}}]}});
  try{
-  const state=(await s.req('/api/state')).body;assert.equal(state.projects[0].step,4);assert.deepEqual(state.projects[0].approved,[0,3]);assert.equal(state.projects[0].scenes[0].prompt,'old');assert.equal(state.projects[0].voiceData,'old');assert.equal(state.projects[0].rendered.id,'old');
+  const state=(await s.req('/api/state')).body;assert.equal(state.projects[0].step,5);assert.deepEqual(state.projects[0].approved,[0,3]);assert.equal(state.projects[0].scenes[0].prompt,'old');assert.equal(state.projects[0].voiceData,'old');assert.equal(state.projects[0].rendered.id,'old');
   assert.equal((await s.req('/api/settings','PUT',{youtubeKey:'private-test-key',[legacyKey]:'new'})).status,200);
   const settings=(await s.req('/api/settings')).body;assert.equal(settings.youtubeConfigured,true);assert(!JSON.stringify(settings).includes('private-test-key'));assert(!Object.hasOwn(settings,legacyKey));
   const persisted=JSON.parse(await readFile(path.join(s.dir,'settings.json'),'utf8'));assert.equal(persisted.youtubeKey,'private-test-key');assert.equal(persisted[legacyKey],'old');
@@ -251,7 +251,8 @@ test('K2 identity renders an empty multiline visualStyle and persists edits per 
  const app=await readFile('studio/public/app.js','utf8');
  const viewLine=app.split('\n').find(line=>line.startsWith('function identityView('));
  const fields=[];
- const render=new Function('panel','field','select','THUMB_LAYOUTS',viewLine+';return identityView;')((name,content)=>content,(label,binding,value,type)=>{fields.push({binding,value,type});return `<${binding}>${value??''}</${binding}>`;},()=>'',[]);
+ const {renderBibleBlock}=await import('./public/roster.mjs');
+ const render=new Function('panel','field','select','THUMB_LAYOUTS','renderBibleBlock','esc','btn',viewLine+';return identityView;')((name,content)=>content,(label,binding,value,type)=>{fields.push({binding,value,type});return `<${binding}>${value??''}</${binding}>`;},()=>'',[],renderBibleBlock,s=>String(s??''),()=>'' );
  const first=render({id:'a',identity:{}});
  assert.deepEqual(fields.find(f=>f.binding==='channel.visualStyle'),{binding:'channel.visualStyle',value:'',type:'textarea'});
  const style='Flat ink drawings.\nKeep backgrounds sparse.';
@@ -271,4 +272,22 @@ test('K2 identity renders an empty multiline visualStyle and persists edits per 
   assert(!JSON.stringify(saved).includes(composed));
   const disk=JSON.parse(await readFile(path.join(s.dir,'state.json'),'utf8'));assert.equal(disk.projects[0].scenes[0].prompt,'A farmer lifts a basket.');assert(!JSON.stringify(disk).includes(composed));
  }finally{await s.stop();}
+});
+
+
+test('K3 rosterExtras strips unrelated context and bounds output through real HTTP',async()=>{
+ const extras=[{name:'Keeper',role:'Storekeeper',description:'An older keeper holding a ledger.'}],backgrounds=[{name:'Storehouse',description:'A clay warehouse with grain baskets.'}];
+ const gw=await promptGateway({extras,backgrounds}),envFile=path.join(tempRoot,`env-k3-${Date.now()}.env`);await writeFile(envFile,`OPENAI_BASE_URL=${gw.url}\nOPENAI_API_KEY=test-key\n`);const s=await boot({STUDIO_ENV_FILE:envFile});
+ const context={scriptText:'A boy meets a keeper.',mainCharacters:[{id:'a',name:'Boy',role:'Lead',description:Array(80).fill('word').join(' '),identity:'SECRET'}],research:'SECRET',sources:['SECRET'],packaging:['SECRET'],visualStyle:'SECRET',identity:'SECRET',audience:'SECRET',niche:'SECRET'};
+ try{
+  const result=await s.req('/api/generate','POST',{action:'rosterExtras',context});assert.equal(result.status,200,result.body.error);assert.deepEqual(result.body.output.extras,extras);
+  const sent=gw.seen[0];assert.doesNotMatch(JSON.stringify(sent.messages),/research|sources|packaging|visualStyle|SECRET|audience|niche/);
+  const ctx=JSON.parse(sent.messages[1].content.split('Batch narration:\n')[1]);assert.deepEqual(Object.keys(ctx).sort(),['mainCharacters','scriptText']);assert.equal(ctx.mainCharacters[0].description.split(/\s+/).length,40);
+  assert(sent.max_tokens<=1200);assert.deepEqual(Object.keys(JSON.parse(sent.messages[0].content.split('Cấu trúc JSON cần trả: ')[1])).sort(),['backgrounds','extras']);
+  extras.push(...Array.from({length:6},(_,i)=>({name:'Extra'+i,role:'Other',description:'A person.'})));assert.equal((await s.req('/api/generate','POST',{action:'rosterExtras',context})).status,422);
+  extras.splice(1);extras[0].description=Array(41).fill('word').join(' ');assert.equal((await s.req('/api/generate','POST',{action:'rosterExtras',context})).status,422);
+  extras[0].description='A keeper.';backgrounds.push(...Array.from({length:6},(_,i)=>({name:'Place'+i,description:'A courtyard.'})));assert.equal((await s.req('/api/generate','POST',{action:'rosterExtras',context})).status,422);
+  backgrounds.splice(1);extras[0].name='Boy';assert.equal((await s.req('/api/generate','POST',{action:'rosterExtras',context})).status,422);
+  const calls=gw.seen.length;assert.equal((await s.req('/api/generate','POST',{action:'rosterExtras',context:{scriptText:''}})).status,400);assert.equal(gw.seen.length,calls);
+ }finally{await s.stop();await gw.stop();await rm(envFile,{force:true});}
 });

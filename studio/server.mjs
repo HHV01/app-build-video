@@ -1,3 +1,4 @@
+import {rosterExtrasContext,validateRosterExtras} from './public/roster.mjs';
 import { withModelFallback, normalizeFallbackModels } from './model-fallback.mjs';
 import http from 'node:http';
 import { readFile, writeFile, mkdir, rename, stat, rm } from 'node:fs/promises';
@@ -163,6 +164,7 @@ async function discover(b) {
   return { videos: enrichVideos(videos), channels: [...channels.values()].map(c => ({ id: c.id, name: c.snippet.title, subscribers: c.statistics.hiddenSubscriberCount ? null : Number(c.statistics.subscriberCount || 0), sampleOnly: true })), usage, formatWarning: 'Phân loại dài/Shorts dựa trên thời lượng là gần đúng. Kiểm tra và sửa loại video trong kho.' };
 }
 const schemas = {
+  rosterExtras: '{"extras":[{"name":"name","role":"supporting role","description":"English description, at most 40 words"}],"backgrounds":[{"name":"name","description":"English description, at most 40 words"}]}',
   scenes: '{"scenes":[{"narration":"original batch narration","visual":"subject and action","prompt":"English subject, action, setting and camera angle only","overlay":"editor text or empty","sfx":"sound or empty","characters":["character name"],"background":"setting name"}]}',
   animation: '{"animations":[{"scene":1,"prompt":"English subject movement and camera action only"}]}',
   angles: '{"angles":[{"angle":"góc kể","reason":"căn cứ từ tiêu đề nguồn"}]}',
@@ -181,12 +183,14 @@ async function generate(b) {
   jobs.add(key);
   try {
     const sceneAction = ['scenes','animation'].includes(b.action);
-    const ctxObj = b.action === 'scenes' ? {narration:b.context?.narration} : b.action === 'animation' ? {scenes:(Array.isArray(b.context?.scenes)?b.context.scenes:[]).map(s=>({scene:s.scene??s.id,narration:s.narration}))} : b.action === 'groups' ? { ...b.context, videos: blindTitles(b.context?.videos || []) } : (b.context || {});
+    const ctxObj = b.action === 'rosterExtras' ? rosterExtrasContext({characters:Array.isArray(b.context?.mainCharacters)?b.context.mainCharacters:[]},{narration:b.context?.scriptText}) : b.action === 'scenes' ? {narration:b.context?.narration} : b.action === 'animation' ? {scenes:(Array.isArray(b.context?.scenes)?b.context.scenes:[]).map(s=>({scene:s.scene??s.id,narration:s.narration}))} : b.action === 'groups' ? { ...b.context, videos: blindTitles(b.context?.videos || []) } : (b.context || {});
+    if (b.action==='rosterExtras' && (typeof ctxObj.scriptText!=='string'||!ctxObj.scriptText.trim())) throw failure('Cần kịch bản trước khi trích danh sách.');
     if (b.action==='scenes' && (typeof ctxObj.narration!=='string'||!ctxObj.narration.trim())) throw failure('Cần lời kể của lô cảnh.');
     if (b.action==='animation' && (!ctxObj.scenes.length||ctxObj.scenes.some(s=>!Number.isInteger(s.scene)||typeof s.narration!=='string'||!s.narration.trim())||new Set(ctxObj.scenes.map(s=>s.scene)).size!==ctxObj.scenes.length)) throw failure('Cần ID cảnh duy nhất và lời kể của từng cảnh.');
     const context = JSON.stringify(ctxObj);
     if (context.length > 65000) throw failure('Dữ liệu quá dài. Giảm số transcript hoặc video trong một lượt.');
     const directives = {
+      rosterExtras: 'Extract at most 6 supporting characters and 6 settings from scriptText. Propose only what is actually needed in the script. Exclude mainCharacters from extras. Do not invent named people, identities or events. Each description must be English, at most 40 words. Return exactly the requested schema; use empty arrays when none are needed.',
       scenes: 'Split only the supplied batch narration into scenes in its original order. Preserve all narration verbatim in its original language, without adding or translating it. Write each prompt in English, at most 60 words, describing only the specific subject, action, setting and camera angle. Use plain concrete descriptions; omit aesthetic styles, rendering methods, resolution, illumination and global visual instructions. Do not draw text. Put optional text in overlay. Return the requested fields for every scene.',
       animation: 'Return one animation per supplied scene, preserving its scene ID. Use only that scene narration to describe subject movement, object movement and at most one camera action. Write each prompt in English, at most 60 words. Use plain concrete descriptions; omit aesthetic styles, rendering methods, resolution, illumination and global visual instructions. Do not add unrelated events.',
       angles: 'Đề xuất đúng 3 góc kể khác nhau cho kênh mới dựa trên các tiêu đề tham khảo context.titles. Viết góc kể và lý do bằng tiếng Việt. Mỗi góc là câu hỏi hoặc hướng giải thích cụ thể, có thể dùng cho nhiều video. Chỉ suy luận từ tiêu đề được cung cấp, không khẳng định đã xem nội dung hoặc biết giọng nguồn. Không bịa dữ kiện; nêu rõ căn cứ tiêu đề trong reason.',
@@ -204,7 +208,8 @@ async function generate(b) {
     if (b.action === 'script') directives.script += ' Chỉ dùng fact/claim supported để khẳng định. Ý chưa có nguồn: tự viết lại cho an toàn, bỏ cực cấp đầu tiên/duy nhất/lớn nhất, dùng một trong những, theo các nhà sử học hoặc ước tính; KHÔNG ghi chú cho việc viết lại này. Chỉ editorNotes khi câu có con số, năm hoặc tên riêng cụ thể không có trong facts/claims; tối đa 2 ghi chú mỗi phần, một câu ngắn nêu câu cần kiểm. Không ghi chú về tên nguồn, không nhắc thực thể không có trong context.';
     if (b.context?.lengthCorrection && b.action==='script') directives.script += ' '+b.context.lengthCorrection;
     const budget = tokenBudget(b.action);
-    const response = await ai(`${directives[b.action]}\n${sceneAction?'Batch narration:':'Dữ liệu dự án:'}\n${context}`, schemas[b.action], budget);
+    const response = await ai(`${directives[b.action]}\n${(sceneAction||b.action==='rosterExtras')?'Batch narration:':'Dữ liệu dự án:'}\n${context}`, schemas[b.action], budget);
+    if (b.action==='rosterExtras') { try { validateRosterExtras(response.output,ctxObj.mainCharacters); } catch(e) { throw failure(e.message,422); } }
     if (sceneAction) {
       const rows=response.output?.[b.action==='scenes'?'scenes':'animations'];
       if(!Array.isArray(rows)||!rows.length||rows.some(s=>typeof s.prompt!=='string'||!s.prompt.trim()||s.prompt.trim().split(/\s+/).length>60||/\b(?:cinematic|realistic|matte\s+painting|4k|photorealistic|lighting)\b/i.test(s.prompt))) throw failure('AI trả prompt cảnh không hợp lệ: chỉ mô tả riêng cảnh, tối đa 60 từ.',422);
