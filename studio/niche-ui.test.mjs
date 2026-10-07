@@ -155,3 +155,5 @@ test('angle is chosen after analysis, outside collapsed channel settings',()=>{
 });
 
 test('G3 shelf DNA panel shown only with sufficient videos and has copy',()=>{const s={nicheStep:2,nicheFlow:{template:{value:'History of'},shelf:{channels:[],count:0,videos:Array.from({length:10},(_,i)=>({title:'History of Egypt '+i,multiple:i<5?3:1,tags:['Egypt']}))}}};const html=renderNiche(s,ui);assert.match(html,/DNA tiêu đề và tag/);assert.match(html,/niche-copy-dna/);assert.match(html,/vai trò nhỏ/);s.nicheFlow.shelf.videos=[];assert(!renderNiche(s,ui).includes('DNA tiêu đề và tag'));});
+
+test('G3 DNA uses reader-facing percentages rather than raw field names',()=>{const s={nicheStep:2,nicheFlow:{template:{value:'History of'},shelf:{channels:[],count:0,videos:Array.from({length:10},(_,i)=>({title:'History of Egypt '+i,multiple:i<5?3:1,tags:['Egypt']}))}}};const html=renderNiche(s,ui);assert.match(html,/Có số: 100%/);assert(!html.includes('&quot;numbers&quot;'));});

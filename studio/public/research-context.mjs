@@ -1,7 +1,12 @@
 // Only evaluated research is passed to writing; uncertain evidence is never assertable.
+export function researchRows(value,kind) {
+ if(Array.isArray(value))return value;if(typeof value!=='string'||!value.trim())return [];
+ try{const rows=JSON.parse(value);if(Array.isArray(rows))return rows;}catch{}
+ return value.split('\n').filter(x=>x.trim()).map(line=>{const [a,b,c]=line.split('|').map(x=>x.trim());return kind==='timeline'?{date:a,event:b||a,sourceId:c||''}:kind==='cast'?{name:a,role:b||'',sourceId:c||''}:{claim:a,sourceId:b||'',status:c==='supported'?'supported':'needs_check'};});
+}
 export function researchContext(p={}) {
- const evidence=rows=>(Array.isArray(rows)?rows:[]).filter(x=>['supported','needs_check'].includes(x.status)).map(x=>({...x,assertable:x.status==='supported',...(x.status==='needs_check'?{warning:'Chưa kiểm chứng: không được khẳng định trong lời kể.'}:{})}));
- return {researchSummary:p.researchSummary||'',researchFacts:evidence(p.researchFacts),researchTimeline:p.researchTimeline||[],researchCast:p.researchCast||[],researchSensory:p.researchSensory||'',claims:evidence(p.claims)};
+ const evidence=rows=>researchRows(rows,'facts').filter(x=>['supported','needs_check'].includes(x.status)).map(x=>({...x,assertable:x.status==='supported',...(x.status==='needs_check'?{warning:'Chưa kiểm chứng: không được khẳng định trong lời kể.'}:{})}));
+ return {researchSummary:p.researchSummary||'',researchFacts:evidence(p.researchFacts),researchTimeline:researchRows(p.researchTimeline,'timeline'),researchCast:researchRows(p.researchCast,'cast'),researchSensory:p.researchSensory||'',claims:evidence(p.claims)};
 }
 const terms=s=>new Set(String(s||'').toLowerCase().match(/[\p{L}\p{N}]{3,}/gu)||[]);
 export function scriptPartContext(c,p,part,index,count,parts=[]) {

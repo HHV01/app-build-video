@@ -46,7 +46,8 @@ Giữ model chính và tối đa 3 dự phòng tại Kết nối API. App chuy�
 npm run studio:test dùng fixture và gateway giả lập, không gọi provider hoặc YouTube thật. Dữ liệu nằm trong .studio-data, được ignore. Giữ cửa sổ khi chưa lưu thành công; các xung đột cùng trường cần xử lý trước khi ghi.
 
 Xem [REVIEW_FIXES.md](REVIEW_FIXES.md) cho nghiệm thu bản hiện tại, [REVIEW_FIXES_HISTORY.md](REVIEW_FIXES_HISTORY.md) cho lịch sử, [FILE_REVIEW_INVENTORY.md](FILE_REVIEW_INVENTORY.md) cho file chờ duyệt. Chưa xóa file trong danh sách này.
-`nResearch đã đánh giá (supported/needs_check) được đưa vào dàn ý và kịch bản; dữ kiện needs_check không được khẳng định.
+
+Research đã đánh giá (supported/needs_check) được đưa vào dàn ý và kịch bản; dữ kiện needs_check không được khẳng định.
 
 F2: Viết từng phần chỉ gửi tiêu đề đã chọn, ngữ cảnh nghiên cứu liên quan và tóm tắt hai câu mỗi phần trước; nguồn thô vẫn dùng ở Research.
 
@@ -65,3 +66,5 @@ G3: Bước Kho có ô thu gọn DNA tiêu đề và tag khi có ít nhất 5 vi
 G6: Phương án title được gắn cờ độ dài ngoài p25–p75, thiếu khuôn hoặc trùng thực thể. Không tự xoá. Tag ưu tiên thống kê kho, AI chỉ bổ sung khi dưới 5 tag; Copy tag giới hạn tổng 500 ký tự. Thumbnail thắng chỉ là liên kết mở tab mới.
 
 H1: Tổng quan có Xoá kênh, xác nhận tên/số dự án/số chủ đề; kênh có dự án bắt buộc tick xoá luôn dự án. Khảo sát giữ nguyên. Hoàn tác trong 10 giây, bản sao trong bộ nhớ đến khi tải lại. Trang chủ gợi ý dọn nhiều kênh nháp cùng lúc.
+
+Các mục G4 (chương thành dàn ý) và G5 (lấy bình luận) chưa bật. Bản hiện tại chỉ lấy chương từ mô tả đã trả sẵn, không gọi lấy bình luận. Các chỉ số và test mock không bảo đảm chất lượng kịch bản hoặc hiệu quả tiêu đề thực tế.
