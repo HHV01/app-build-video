@@ -42,3 +42,5 @@ G2: hàm thuần titleDNA/tagStats và test nhóm đủ/thiếu mẫu. Lift là 
 G3: test render panel có/không đủ dữ liệu, copy bằng helper clipboard hiện có. Chưa nghiệm thu dữ liệu YouTube thật.
 
 G6: test flags/title và giới hạn tag; kiểm tra theo code, không bảo đảm chất lượng/CTR. Chưa đối chiếu tiêu đề AI thật.
+
+H1: test xoá không/có dự án, bắt buộc xác nhận, giữ khảo sát và hoàn tác đúng vị trí. mergeState không hồi sinh kênh đã xoá từ tab cũ. Chưa xoá dữ liệu thật để nghiệm thu; sẽ dùng kênh thử.

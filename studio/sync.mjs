@@ -5,6 +5,8 @@ export function mergeState(base, local, remote) {
   const clone=v=>v===undefined?undefined:structuredClone(v);
   function merge(b,l,r,p) {
     if(p==='revision')return r;
+    // Channel deletion wins over edits from a stale tab; surveys retain normal conflicts.
+    if(/^channels\[[^\]]+\]$/.test(p)&&b&&(l===undefined||r===undefined))return undefined;
     if(equal(l,b))return clone(r);
     if(equal(r,b)||equal(l,r))return clone(l);
     if([b,l,r].every(v=>Array.isArray(v)&&v.every(x=>x&&typeof x==='object'&&typeof x.id==='string'))){
