@@ -173,11 +173,10 @@ test('AI HTTP 503 switches model through gateway and retains primary setting',as
  }finally{await s.stop();gateway.close();await rm(envDir,{recursive:true,force:true});}
 });
 
-test('E2 removed routes return 404 and scene AI action is rejected',async()=>{
+test('E2 removed media routes return 404',async()=>{
  const s=await boot();try{
  for(const route of ['tts','image','transcribe','render','probe','youtube/connect','youtube/callback','youtube/publish'])assert.equal((await s.req('/api/'+route,'POST',{})).status,404,route);
  assert.equal((await s.req('/api/build/old')).status,404);
- for(const action of ['scenes','animation'])assert.equal((await s.req('/api/generate','POST',{action,context:{}})).status,400);
  assert.equal((await s.req('/api/state')).status,200);
  }finally{await s.stop();}
 });
@@ -206,3 +205,43 @@ test('F2 mock gateway measures full prompts for seven old and compact script con
  }finally{await s.stop();await gw.stop();await rm(envFile,{force:true});}
 });
 test('F5 channel note preference survives save and reload',async()=>{const s=await boot();try{const cur=(await s.req('/api/state')).body;assert.equal((await s.req('/api/state','PUT',{...cur,channels:[{id:'notes',name:'Notes',hideVerificationNotes:true}]})).status,200);assert.equal((await s.req('/api/state')).body.channels[0].hideVerificationNotes,true);assert.equal(JSON.parse(await readFile(path.join(s.dir,'state.json'),'utf8')).channels[0].hideVerificationNotes,true);}finally{await s.stop();}});
+
+
+test('K1b scene actions send only batch narration and return requested schemas',async()=>{
+ const seen=[];let forcedPrompt;
+ const gateway=http.createServer(async(req,res)=>{
+  let raw='';for await(const chunk of req)raw+=chunk;const sent=JSON.parse(raw);seen.push(sent);
+  const schema=JSON.parse(sent.messages[0].content.split('Cấu trúc JSON cần trả: ')[1]);
+  const output=schema.scenes?{scenes:[{narration:'A farmer delivers grain.',visual:'A farmer delivers grain.',prompt:'A farmer carries a grain basket into a storehouse. Wide shot.',overlay:'',sfx:'',characters:['Farmer'],background:'Storehouse'}]}:{animations:[{scene:7,prompt:'The farmer lifts the basket. The camera stays still.'}]};
+  if(forcedPrompt!==undefined)(output.scenes||output.animations)[0].prompt=forcedPrompt;
+  res.setHeader('Content-Type','application/json');res.end(JSON.stringify({choices:[{message:{content:JSON.stringify(output)},finish_reason:'stop'}]}));
+ });
+ await new Promise(r=>gateway.listen(0,'127.0.0.1',r));
+ const envFile=path.join(tempRoot,`env-k1b-${Date.now()}.env`);
+ await writeFile(envFile,`OPENAI_BASE_URL=http://127.0.0.1:${gateway.address().port}/v1\nOPENAI_API_KEY=test-key\n`);
+ const s=await boot({STUDIO_ENV_FILE:envFile});
+ try{
+  for(const action of ['scenes','animation']){
+   const context={narration:'A farmer delivers grain.',scenes:[{scene:7,narration:'A farmer delivers grain.',prompt:'cinematic realistic matte painting 4K photorealistic lighting'}],research:{secret:'RESEARCH_SENTINEL'},sources:['SOURCES_SENTINEL'],packaging:{title:'PACKAGING_SENTINEL'},visualProfile:{style:'lighting'}};
+   const result=await s.req('/api/generate','POST',{action,context});
+   assert.equal(result.status,200,result.body.error);
+   const messages=seen.at(-1).messages,text=JSON.stringify(messages);
+   assert.doesNotMatch(text,/research|sources|packaging|SENTINEL|cinematic|realistic|matte painting|4K|photorealistic|lighting/i);
+   const data=JSON.parse(messages[1].content.split('Batch narration:\n')[1]);
+   assert.deepEqual(data,action==='scenes'?{narration:context.narration}:{scenes:[{scene:7,narration:context.narration}]});
+   const schema=JSON.parse(messages[0].content.split('Cấu trúc JSON cần trả: ')[1]);
+   const key=action==='scenes'?'scenes':'animations',fields=action==='scenes'?['background','characters','narration','overlay','prompt','sfx','visual']:['prompt','scene'];
+   assert.deepEqual(Object.keys(schema[key][0]).sort(),fields);
+   assert.deepEqual(Object.keys(result.body.output[key][0]).sort(),fields);
+   assert(messages[1].content.includes('60 words'));
+  }
+  for(const action of ['scenes','animation'])for(const invalid of ['cinematic','realistic','matte painting','4K','photorealistic','lighting',Array(61).fill('word').join(' ')]){
+   forcedPrompt=invalid;const result=await s.req('/api/generate','POST',{action,context:{narration:'A farmer delivers grain.',scenes:[{scene:7,narration:'A farmer delivers grain.'}]}});
+   assert.equal(result.status,422,action+': '+invalid);
+  }
+  const calls=seen.length;
+  assert.equal((await s.req('/api/generate','POST',{action:'scenes',context:{research:'not narration'}})).status,400);
+  assert.equal((await s.req('/api/generate','POST',{action:'animation',context:{scenes:[{scene:7,prompt:'old image prompt'}]}})).status,400);
+  assert.equal(seen.length,calls,'invalid batch must not call AI');
+ }finally{await s.stop();await new Promise(r=>gateway.close(r));await rm(envFile,{force:true});}
+});
