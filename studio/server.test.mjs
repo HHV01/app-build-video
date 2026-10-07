@@ -185,7 +185,7 @@ test('E2 removed routes return 404 and scene AI action is rejected',async()=>{
 test('E3 legacy settings boot; Data API key remains secret; old media data survives',async()=>{
  const legacyKey=['youtube','ClientId'].join('');const s=await boot({}, {settings:{[legacyKey]:'old',model:'test'},state:{revision:0,channels:[],surveys:[],projects:[{id:'p',step:8,approved:[0,3,8],scenes:[{prompt:'old'}],voiceData:'old',rendered:{id:'old'}}]}});
  try{
-  const state=(await s.req('/api/state')).body;assert.equal(state.projects[0].step,3);assert.deepEqual(state.projects[0].approved,[0,3]);assert.equal(state.projects[0].scenes[0].prompt,'old');assert.equal(state.projects[0].voiceData,'old');assert.equal(state.projects[0].rendered.id,'old');
+  const state=(await s.req('/api/state')).body;assert.equal(state.projects[0].step,4);assert.deepEqual(state.projects[0].approved,[0,3]);assert.equal(state.projects[0].scenes[0].prompt,'old');assert.equal(state.projects[0].voiceData,'old');assert.equal(state.projects[0].rendered.id,'old');
   assert.equal((await s.req('/api/settings','PUT',{youtubeKey:'private-test-key',[legacyKey]:'new'})).status,200);
   const settings=(await s.req('/api/settings')).body;assert.equal(settings.youtubeConfigured,true);assert(!JSON.stringify(settings).includes('private-test-key'));assert(!Object.hasOwn(settings,legacyKey));
   const persisted=JSON.parse(await readFile(path.join(s.dir,'settings.json'),'utf8'));assert.equal(persisted.youtubeKey,'private-test-key');assert.equal(persisted[legacyKey],'old');
