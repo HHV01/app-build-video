@@ -192,3 +192,8 @@ test('E3 legacy settings boot; Data API key remains secret; old media data survi
   for(const route of ['/','/app.js','/production.mjs','/sync.mjs']){const r=await fetch(s.base+route);assert.equal(r.status,200);assert.match(r.headers.get('cache-control'),/no-store/);}
  }finally{await s.stop();}
 });
+
+test('F1 mock AI receives evaluated evidence for both writing actions',async()=>{
+ const {researchContext}=await import('./public/research-context.mjs');const gw=await promptGateway();const envFile=path.join(tempRoot,`env-f1-${Date.now()}.env`);await writeFile(envFile,`OPENAI_BASE_URL=${gw.url}\nOPENAI_API_KEY=test-key\n`);const s=await boot({STUDIO_ENV_FILE:envFile});
+ try{for(const action of ['outline','script']){const r=await s.req('/api/generate','POST',{action,context:researchContext({researchFacts:[{claim:'verified',status:'supported'}],claims:[{claim:'uncertain',status:'needs_check'}]})});assert.equal(r.status,200);const prompt=JSON.stringify(gw.seen.at(-1));assert.match(prompt,/verified/);assert.match(prompt,/uncertain/);assert.match(prompt,/không được khẳng định/);assert.match(prompt,/assertable/);}}finally{await s.stop();await gw.stop();await rm(envFile,{force:true});}
+});

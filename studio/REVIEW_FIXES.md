@@ -25,3 +25,4 @@ FILE_REVIEW_INVENTORY.md chỉ liệt kê tools/*.png, scratch/, tmp/, docs/ocr/
 Các test API dùng mock, không chứng minh quota/hoạt động YouTube hoặc model thật. Chưa nghiệm thu toàn chuỗi khảo sát live → kênh → research → script với dịch vụ thật. Dữ liệu cũ được giữ; assets có thể chuyển media nhúng sang file như cơ chế có sẵn. Lịch sử chi tiết ở REVIEW_FIXES_HISTORY.md.
 
 Nghiệm thu giao diện thực tế: dự án Greece cũ chuyển từ Cảnh về Kịch bản (4/4), đủ nút hoàn tất/copy/TXT/Markdown; nút Copy báo thành công. Màn cài đặt còn model, fallback và khóa Data API. Chưa xác nhận tải file bằng browser automation (công cụ kiểm tra bị timeout), chưa chạy lại AI hoặc YouTube thật. Tổng 108test xanh, không skip.
+`nF1: đưa facts/claims cùng trạng thái và cảnh báo vào ngữ cảnh viết. Kiểm chứng bằng test; chưa xác nhận với AI thật.
