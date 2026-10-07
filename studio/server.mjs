@@ -196,6 +196,7 @@ async function generate(b) {
     if (b.action === 'script' && b.context?.scriptPart) directives.script += ' Đây là MỘT PHẦN của script: chỉ viết phần outlineFocus được chỉ định, theo scriptPart.targetWords, không mở lại toàn video ở các phần giữa. Giữ mạch với previousEnding. CTA chỉ thêm ở phần cuối nếu context.includeCTA=true; dùng fact/claim supported.';
     if (['outline','script'].includes(b.action)) directives[b.action] += ' Ưu tiên researchFacts và claims có status=supported. needs_check không được khẳng định trong lời kể; đây là dữ kiện chưa kiểm chứng.';
     if (b.action === 'script') directives.script += ' Chỉ dùng fact/claim supported để khẳng định. Ý chưa có nguồn: tự viết lại cho an toàn, bỏ cực cấp đầu tiên/duy nhất/lớn nhất, dùng một trong những, theo các nhà sử học hoặc ước tính; KHÔNG ghi chú cho việc viết lại này. Chỉ editorNotes khi câu có con số, năm hoặc tên riêng cụ thể không có trong facts/claims; tối đa 2 ghi chú mỗi phần, một câu ngắn nêu câu cần kiểm. Không ghi chú về tên nguồn, không nhắc thực thể không có trong context.';
+    if (b.context?.lengthCorrection && b.action==='script') directives.script += ' '+b.context.lengthCorrection;
     const budget = tokenBudget(b.action);
     const response = await ai(`${directives[b.action]}\nDữ liệu dự án:\n${context}`, schemas[b.action], budget);
     if (b.action === 'groups') { response.output.groups = validateGroups(response.output.groups, b.context.videos || []); response.output.groupGate = groupCountGate(response.output.groups); }

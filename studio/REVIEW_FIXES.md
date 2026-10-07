@@ -32,3 +32,5 @@ F2: mock 7 phần, nguồn 20.000 ký tự: tổng JSON context cũ 155.197 ký 
 F3: bỏ nhánh STT và quota upload, context nhân vật và AI templates cũ. Giữ videoTable/hookTable và youtubeKey.
 
 F5: lọc trùng theo giao tập từ khoá >=60%, bỏ ghi chú tên nguồn, ưu tiên ghi chú có số; tối đa 5. Test 7x3 ghi chú và directive/UI. Chưa đo chất lượng ghi chú với AI thật.
+
+F4: test retry một lần, lọc nhãn cảnh/markdown và phát hiện cụm 5 từ trùng. Cảnh báo độ dài riêng với ghi chú kiểm chứng. Chưa kiểm chứng chất lượng thực tế với AI.

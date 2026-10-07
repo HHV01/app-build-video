@@ -53,3 +53,5 @@ F2: Viết từng phần chỉ gửi tiêu đề đã chọn, ngữ cảnh nghi�
 F3: Khuôn tiêu đề được đếm bằng code theo luật hơn 50%; tác vụ AI dò khuôn cũ đã bỏ. Trạng thái viết phần không gắn tên nhà cung cấp.
 
 F5: Ghi chú biên tập nằm trong một ô thu gọn; công tắc Ẩn ghi chú kiểm chứng lưu theo kênh. Code lọc trùng/gần trùng và giữ tối đa 5 ghi chú; dữ kiện chưa có nguồn phải diễn đạt thận trọng.
+
+F4: Mỗi phần lệch mục tiêu hơn 25% được viết lại đúng một lần. Nếu vẫn lệch, cảnh báo được giữ để bạn sửa. Kiểm tra lặp ý so cụm 5 từ giữa các phần bằng code, không gọi AI.
