@@ -245,3 +245,30 @@ test('K1b scene actions send only batch narration and return requested schemas',
   assert.equal(seen.length,calls,'invalid batch must not call AI');
  }finally{await s.stop();await new Promise(r=>gateway.close(r));await rm(envFile,{force:true});}
 });
+
+
+test('K2 identity renders an empty multiline visualStyle and persists edits per channel',async()=>{
+ const app=await readFile('studio/public/app.js','utf8');
+ const viewLine=app.split('\n').find(line=>line.startsWith('function identityView('));
+ const fields=[];
+ const render=new Function('panel','field','select','THUMB_LAYOUTS',viewLine+';return identityView;')((name,content)=>content,(label,binding,value,type)=>{fields.push({binding,value,type});return `<${binding}>${value??''}</${binding}>`;},()=>'',[]);
+ const first=render({id:'a',identity:{}});
+ assert.deepEqual(fields.find(f=>f.binding==='channel.visualStyle'),{binding:'channel.visualStyle',value:'',type:'textarea'});
+ const style='Flat ink drawings.\nKeep backgrounds sparse.';
+ const s=await boot();try{
+  const state=(await s.req('/api/state')).body;
+  state.channels=[{id:'a',identity:{},visualStyle:style},{id:'b',identity:{},visualStyle:''}];
+  state.projects=[{id:'p',channelId:'a',step:3,scenes:[{prompt:'A farmer lifts a basket.'}]}];
+  const {scenePromptRows}=await import('./public/scene-prompts.mjs');
+  const composed=scenePromptRows(state.channels[0],state.projects[0])[0].prompt;
+  assert(composed.includes(style.replace(/\s+/g,' ')));
+  assert.equal((await s.req('/api/state','PUT',state)).status,200);
+  const saved=(await s.req('/api/state')).body;
+  const changed=render(saved.channels[0]);
+  assert.notEqual(first,changed);assert(changed.includes(style));
+  assert.equal(saved.channels[1].visualStyle,'');
+  assert.equal(saved.projects[0].scenes[0].prompt,'A farmer lifts a basket.');
+  assert(!JSON.stringify(saved).includes(composed));
+  const disk=JSON.parse(await readFile(path.join(s.dir,'state.json'),'utf8'));assert.equal(disk.projects[0].scenes[0].prompt,'A farmer lifts a basket.');assert(!JSON.stringify(disk).includes(composed));
+ }finally{await s.stop();}
+});

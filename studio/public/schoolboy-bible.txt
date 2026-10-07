@@ -1,0 +1,54 @@
+# CHARACTER BIBLE — "Cậu bé học sinh" (Schoolboy Stickman)
+
+## 1. STYLE (locked)
+Flat 2D cartoon, thick clean black outlines, simple shapes, soft small oval ground shadow under the feet, clean light background, bright friendly colors. No realistic lighting, no 3D, no photorealism, no gradients on the character. [IF THE CHANNEL HAS ITS OWN STYLE, REPLACE THIS SECTION WITH IT]
+
+## 2. IDENTITY BLOCK (copy word for word into every prompt that has the character)
+Schoolboy stickman character: round white head with a thick black outline, messy dark brown (almost black) side-swept spiky hair, small black dot eyes, soft pink round cheeks, a red open smile. Thin black stick arms and legs, round black fist hands, black rounded shoes. White short-sleeve school shirt, bright red neckerchief, black shorts.
+
+## 3. DO NOT CHANGE
+- The red neckerchief is always visible.
+- Same messy dark hair shape in every scene.
+- Round white head, thick black outline, pink cheeks.
+- Thin black stick limbs with round black hands. No fingers, no realistic anatomy.
+- Default outfit: white shirt + black shorts. Change only if an OUTFIT tag is chosen.
+- Keep proportions: big head, small body.
+
+## 4. TAGS (choose only from these lists; do not write new descriptions)
+
+EXPRESSION (Biểu cảm):
+- happy (vui vẻ): wide smile, closed crescent or dot eyes
+- laughing (cười lớn): big open mouth, eyes squeezed shut
+- surprised (bất ngờ): round wide eyes, small open mouth, red "!" mark
+- excited (phấn khích): star-shaped sparkling eyes, big smile
+- angry (tức giận): furrowed brows, frown, red anger mark
+- sad (buồn): droopy brows, tears streaming
+- scared (hoảng sợ): wide shaky open mouth, sweat drops, tears
+- thinking (suy nghĩ): one eyebrow raised, hand on chin, "?" mark
+
+POSE (Dáng):
+- thumbs-up (thích / OK)
+- pointing (chỉ / giới thiệu)
+- megaphone (thông báo): holding a yellow megaphone
+- blank-sign (banner / text): holding a blank white sign overhead
+- laptop (làm việc): holding a grey laptop
+- giant-pencil (ghi chú): holding a giant yellow pencil
+- running (chạy / hào hứng): mid-run, excited
+- magnifier (tìm hiểu): holding a magnifying glass
+
+OUTFIT (Trang phục):
+- default (thường ngày): white shirt, red neckerchief, black shorts
+- blue-jacket (áo khoác): blue jacket over the white shirt, red neckerchief still visible
+- glasses (kính): round black glasses, holding a yellow notebook
+- cap (mũ): red cap and blue backpack
+
+PROP / SITUATION (Tình huống, tuỳ chọn):
+- eating noodles (ăn mì): bowl of noodles and chopsticks
+- piggy bank (heo đất): pink piggy bank with gold coins
+- empty wallet (ví trống): brown wallet, paper money flying away
+- lightbulb idea (ý tưởng): glowing yellow lightbulb above head
+- reading (đọc sách): green book
+- trophy (chiến thắng): golden trophy held up
+- laptop + bulb: working on laptop with a lightbulb
+
+GRAPHICS (Đồ họa bổ trợ, tuỳ chọn): speech bubble, thought cloud, burst/starburst, exclamation "!!", question mark "?", sparkles, lightbulb, paper money, gold coins.

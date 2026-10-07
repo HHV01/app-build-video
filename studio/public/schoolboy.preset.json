@@ -1,0 +1,239 @@
+{
+  "name": "Cậu bé học sinh",
+  "style": "Flat 2D cartoon, thick clean black outlines, simple shapes, soft small oval ground shadow under the feet, clean light background, bright friendly colors. No realistic lighting, no 3D, no photorealism, no gradients on the character.",
+  "identity": "Schoolboy stickman character: round white head with a thick black outline, messy dark brown (almost black) side-swept spiky hair, small black dot eyes, soft pink round cheeks, a red open smile. Thin black stick arms and legs, round black fist hands, black rounded shoes. White short-sleeve school shirt, bright red neckerchief, black shorts.",
+  "doNotChange": [
+    "The red neckerchief is always visible.",
+    "Same messy dark hair shape in every scene.",
+    "Round white head, thick black outline, pink cheeks.",
+    "Thin black stick limbs with round black hands. No fingers, no realistic anatomy.",
+    "Default outfit: white shirt + black shorts. Change only if an OUTFIT tag is chosen.",
+    "Keep proportions: big head, small body."
+  ],
+  "expressions": [
+    {
+      "tag": "happy",
+      "label": "happy",
+      "vi": "vui vẻ",
+      "desc": "wide smile, closed crescent or dot eyes"
+    },
+    {
+      "tag": "laughing",
+      "label": "laughing",
+      "vi": "cười lớn",
+      "desc": "big open mouth, eyes squeezed shut"
+    },
+    {
+      "tag": "surprised",
+      "label": "surprised",
+      "vi": "bất ngờ",
+      "desc": "round wide eyes, small open mouth, red \"!\" mark"
+    },
+    {
+      "tag": "excited",
+      "label": "excited",
+      "vi": "phấn khích",
+      "desc": "star-shaped sparkling eyes, big smile"
+    },
+    {
+      "tag": "angry",
+      "label": "angry",
+      "vi": "tức giận",
+      "desc": "furrowed brows, frown, red anger mark"
+    },
+    {
+      "tag": "sad",
+      "label": "sad",
+      "vi": "buồn",
+      "desc": "droopy brows, tears streaming"
+    },
+    {
+      "tag": "scared",
+      "label": "scared",
+      "vi": "hoảng sợ",
+      "desc": "wide shaky open mouth, sweat drops, tears"
+    },
+    {
+      "tag": "thinking",
+      "label": "thinking",
+      "vi": "suy nghĩ",
+      "desc": "one eyebrow raised, hand on chin, \"?\" mark"
+    }
+  ],
+  "poses": [
+    {
+      "tag": "thumbs-up",
+      "label": "thumbs-up",
+      "vi": "thích / OK",
+      "desc": ""
+    },
+    {
+      "tag": "pointing",
+      "label": "pointing",
+      "vi": "chỉ / giới thiệu",
+      "desc": ""
+    },
+    {
+      "tag": "megaphone",
+      "label": "megaphone",
+      "vi": "thông báo",
+      "desc": "holding a yellow megaphone"
+    },
+    {
+      "tag": "blank-sign",
+      "label": "blank-sign",
+      "vi": "banner / text",
+      "desc": "holding a blank white sign overhead"
+    },
+    {
+      "tag": "laptop",
+      "label": "laptop",
+      "vi": "làm việc",
+      "desc": "holding a grey laptop"
+    },
+    {
+      "tag": "giant-pencil",
+      "label": "giant-pencil",
+      "vi": "ghi chú",
+      "desc": "holding a giant yellow pencil"
+    },
+    {
+      "tag": "running",
+      "label": "running",
+      "vi": "chạy / hào hứng",
+      "desc": "mid-run, excited"
+    },
+    {
+      "tag": "magnifier",
+      "label": "magnifier",
+      "vi": "tìm hiểu",
+      "desc": "holding a magnifying glass"
+    }
+  ],
+  "outfits": [
+    {
+      "tag": "default",
+      "label": "default",
+      "vi": "thường ngày",
+      "desc": "white shirt, red neckerchief, black shorts"
+    },
+    {
+      "tag": "blue-jacket",
+      "label": "blue-jacket",
+      "vi": "áo khoác",
+      "desc": "blue jacket over the white shirt, red neckerchief still visible"
+    },
+    {
+      "tag": "glasses",
+      "label": "glasses",
+      "vi": "kính",
+      "desc": "round black glasses, holding a yellow notebook"
+    },
+    {
+      "tag": "cap",
+      "label": "cap",
+      "vi": "mũ",
+      "desc": "red cap and blue backpack"
+    }
+  ],
+  "props": [
+    {
+      "tag": "eating-noodles",
+      "label": "eating noodles",
+      "vi": "ăn mì",
+      "desc": "bowl of noodles and chopsticks"
+    },
+    {
+      "tag": "piggy-bank",
+      "label": "piggy bank",
+      "vi": "heo đất",
+      "desc": "pink piggy bank with gold coins"
+    },
+    {
+      "tag": "empty-wallet",
+      "label": "empty wallet",
+      "vi": "ví trống",
+      "desc": "brown wallet, paper money flying away"
+    },
+    {
+      "tag": "lightbulb-idea",
+      "label": "lightbulb idea",
+      "vi": "ý tưởng",
+      "desc": "glowing yellow lightbulb above head"
+    },
+    {
+      "tag": "reading",
+      "label": "reading",
+      "vi": "đọc sách",
+      "desc": "green book"
+    },
+    {
+      "tag": "trophy",
+      "label": "trophy",
+      "vi": "chiến thắng",
+      "desc": "golden trophy held up"
+    },
+    {
+      "tag": "laptop-bulb",
+      "label": "laptop + bulb",
+      "vi": "",
+      "desc": "working on laptop with a lightbulb"
+    }
+  ],
+  "graphics": [
+    {
+      "tag": "speech-bubble",
+      "label": "speech bubble",
+      "vi": "",
+      "desc": ""
+    },
+    {
+      "tag": "thought-cloud",
+      "label": "thought cloud",
+      "vi": "",
+      "desc": ""
+    },
+    {
+      "tag": "burst-starburst",
+      "label": "burst/starburst",
+      "vi": "",
+      "desc": ""
+    },
+    {
+      "tag": "exclamation",
+      "label": "exclamation \"!!\"",
+      "vi": "",
+      "desc": ""
+    },
+    {
+      "tag": "question-mark",
+      "label": "question mark \"?\"",
+      "vi": "",
+      "desc": ""
+    },
+    {
+      "tag": "sparkles",
+      "label": "sparkles",
+      "vi": "",
+      "desc": ""
+    },
+    {
+      "tag": "lightbulb",
+      "label": "lightbulb",
+      "vi": "",
+      "desc": ""
+    },
+    {
+      "tag": "paper-money",
+      "label": "paper money",
+      "vi": "",
+      "desc": ""
+    },
+    {
+      "tag": "gold-coins",
+      "label": "gold coins",
+      "vi": "",
+      "desc": ""
+    }
+  ]
+}
