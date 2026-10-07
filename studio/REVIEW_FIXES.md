@@ -38,3 +38,5 @@ F4: test retry một lần, lọc nhãn cảnh/markdown và phát hiện cụm 5
 G1: parseChapters yêu cầu ít nhất 3 mốc, bắt đầu 0:00 và tăng dần. Metadata dùng chung cho videoDetails, niche và import. Test metadata/chương/state không description; chưa đối chiếu YouTube thật.
 
 G2: hàm thuần titleDNA/tagStats và test nhóm đủ/thiếu mẫu. Lift là chênh lệch tỷ lệ (không suy luận nhân quả), dữ liệu mock; chưa đối chiếu YouTube thật.
+
+G3: test render panel có/không đủ dữ liệu, copy bằng helper clipboard hiện có. Chưa nghiệm thu dữ liệu YouTube thật.

@@ -3,7 +3,7 @@ import { researchContext, scriptPartContext } from './research-context.mjs';
 import { normalizeScriptProjects } from './script-workflow.mjs';
 import { copyWithFallback } from './clipboard.mjs';
 import { mergeState, appendActivity } from '/sync.mjs';
-import { STAGES, GATES, analyzeChannels, videoPool, analyzeGroups, nextHook, HOOK_TYPES, thumbLineCheck, estimateRead, NO_TEXT_IN_IMAGE, DEFAULT_WPM, REFERENCE_RULE, THUMB_LAYOUTS, THUMB_RULES, findLayout, SUB_LINES } from '/rx.mjs';
+import { titleDNA, tagStats, STAGES, GATES, analyzeChannels, videoPool, analyzeGroups, nextHook, HOOK_TYPES, thumbLineCheck, estimateRead, NO_TEXT_IN_IMAGE, DEFAULT_WPM, REFERENCE_RULE, THUMB_LAYOUTS, THUMB_RULES, findLayout, SUB_LINES } from '/rx.mjs';
 import { scriptPlan } from '/production.mjs';
 import { renderNiche } from './niche-ui.mjs';
 import { runNicheSequence, probeQueriesFor, applySurveyFields } from './niche-workflow.mjs';
@@ -267,6 +267,7 @@ case 'niche-analyze':{
 case 'niche-template':await nicheAction('template',templateRequest(s));break;
 case 'niche-choose-angle':{const suggestion=s.nicheFlow?.template?.angleSuggestions?.[Number(el.dataset.index)];if(suggestion){s.angle=suggestion.angle;await save();render();}break;}
 case 'niche-use-template':if(!s.angle?.trim())return toast('Chọn một gợi ý hoặc nhập góc kể trước khi tiếp tục.',true);await nicheAction('template',templateRequest(s,true),[{stage:'shelf',extras:shelfRequest(s)}]);break;
+case 'niche-copy-dna':await copy(JSON.stringify({titleDNA:titleDNA(s.nicheFlow?.shelf?.videos||[],s.nicheFlow?.template?.value),tagStats:tagStats(s.nicheFlow?.shelf?.videos||[],s.nicheFlow?.template?.value)},null,2));break;
 case 'niche-shelf':await nicheAction('shelf',shelfRequest(s));break;
 case 'niche-add-channel':{const input=document.querySelector('[data-bind="survey.extraChannelsText"]');input?.scrollIntoView({behavior:'smooth',block:'center'});input?.focus();break;}
 case 'niche-groups':await nicheAction('groups');break;

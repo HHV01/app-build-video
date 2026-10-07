@@ -1,4 +1,4 @@
-import { RULES, STAGES, carriesTemplate } from '/rx.mjs';
+import { RULES, STAGES, carriesTemplate, titleDNA, tagStats } from '/rx.mjs';
 import { probeQueriesFor } from './niche-workflow.mjs';
 // Bước gõ thử chỉ nhận đúng ba câu. Nếu nhóm được chọn dựng ra ít hơn ba câu thì
 // nói đúng số câu thật, đừng hứa ba rồi để người dùng bấm nút rồi bị chặn.
@@ -34,9 +34,10 @@ export function renderNiche(s, ui) {
   }
   if(stage==='shelf'){
     const shelf=flow.shelf;
+    const dnaVideos=shelf?.videos||[],dna=dnaVideos.length>=5?titleDNA(dnaVideos,flow.template?.value):null,tags=dna?tagStats(dnaVideos,flow.template?.value):null;
     const rows=(channels)=>channels.map(c=>'<tr><td>'+esc(c.channelTitle)+(c.addedByUser?' <span class="tag">do bạn thêm</span>':'')+'</td><td>'+(c.sameTemplate?'✓':'—')+'</td><td>'+c.matureCount+'</td><td>'+(c.median==null?'—':n(c.median))+'</td><td>'+(c.pass?'Đạt':esc(c.reason))+'</td></tr>').join('');
     const table=channels=>'<div class="table-wrap"><table><thead><tr><th>Kênh</th><th>Cùng khuôn</th><th>Video ≥90 ngày</th><th>Trung vị</th><th>Cổng</th></tr></thead><tbody>'+rows(channels)+'</tbody></table></div>';
-    body=source+'<p>Khuôn đã chốt: <strong>'+esc(flow.template?.value||'')+'</strong></p>'+(flow.template?.warning?notice(esc(flow.template.warning),'warning'):'')
+    body=(dna?`<details class="niche-details"><summary>DNA tiêu đề và tag</summary><p>Độ dài ký tự p25 / trung vị / p75: ${dna.characters.p25} / ${dna.characters.median} / ${dna.characters.p75}. Từ: ${dna.words.p25} / ${dna.words.median} / ${dna.words.p75}</p><p>Tỷ lệ đặc điểm: ${esc(JSON.stringify(dna.ratios))}</p><p>Lift: ${esc(JSON.stringify(dna.lift))}</p><p>Từ sau khuôn: ${esc(dna.topWords.map(x=>x.word+' ('+x.count+')').join(', '))}</p><p>Tag thắng: ${esc(tags.winnerTags.map(x=>x.tag+' ('+x.count+')').join(', '))}. Trung bình: ${tags.averageTags.toFixed(1)}</p><p>Tag chứa khuôn: ${esc(tags.templateTags.map(x=>x.tag).join(', '))}. Tag thực thể: ${esc(tags.entityTags.map(x=>x.tag).join(', '))}</p><p class="muted tiny">Tag có vai trò nhỏ với khả năng được gợi ý, dùng để lấy ý tưởng từ khoá.</p>${btn('Copy DNA và tag','niche-copy-dna')}</details>`:'')+source+'<p>Khuôn đã chốt: <strong>'+esc(flow.template?.value||'')+'</strong></p>'+(flow.template?.warning?notice(esc(flow.template.warning),'warning'):'')
       +(shelf?notice(shelf.passed?'Đã đủ '+shelf.count+' kênh đạt. Tiếp theo: chọn nhóm chủ đề.':'Có '+shelf.count+'/'+RULES.minChannels+' kênh đạt. Còn thiếu '+Math.max(0,RULES.minChannels-shelf.count)+' kênh đạt. Kênh không cùng khuôn hoặc chưa đủ video/lượt xem sẽ không được tính.',shelf.passed?'':'warning')+'<div class="actions">'+(shelf.passed?btn('Tiếp tục → Chọn nhóm','niche-step','primary','data-step="3"'):s.nicheMode==='live'?btn('Thêm kênh bạn biết','niche-add-channel','primary'):btn('Bổ sung kho JSON/CSV','import-videos','primary'))+btn('Thử khuôn khác','niche-step','','data-step="1"')+'</div>':'')
       +(s.nicheMode==='live'?field('Thêm kênh bạn biết cùng khuôn (tối đa 5, mỗi dòng một link hoặc @handle)','survey.extraChannelsText',s.extraChannelsText||'','textarea','Kênh thêm tay phải qua cùng cổng, không được dùng để vượt ngưỡng.'):'')
       +btn(shelf?'Kiểm tra lại kho kênh':'Kiểm tra kho kênh','niche-shelf','primary')+rules

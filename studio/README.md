@@ -59,3 +59,5 @@ F4: Mỗi phần lệch mục tiêu hơn 25% được viết lại đúng một 
 G1: Kho giữ tag (15 x 40 ký tự), like/comment, ngôn ngữ, phụ đề và tối đa 20 chương; không lưu mô tả video. Import nhận các cột tùy chọn tags, likes, comments, chapters (mảng JSON hoặc tag phân cách bằng dấu chấm phẩy).
 
 G2: DNA tiêu đề thống kê phân vị độ dài, số/năm/dấu phân cách/viết hoa và từ sau khuôn. Lift là chênh lệch tỷ lệ đặc điểm nhóm bội số >=2 với nhóm còn lại; mỗi nhóm cần >=5 video. Tag chỉ dùng lấy ý tưởng từ khóa.
+
+G3: Bước Kho có ô thu gọn DNA tiêu đề và tag khi có ít nhất 5 video, kèm nút copy. Lift thiếu mẫu được ghi rõ.
