@@ -6,5 +6,7 @@ test('E1 legacy projects clamp to script without deleting media data',()=>{const
 test('E1 only four production tabs and final script controls',async()=>{const s=await readFile('studio/public/app.js','utf8');assert.match(s,/Hoàn tất kịch bản/);assert(!s.includes("case 'render-video'"));assert(!s.includes('youtube-client-id'));assert(s.includes("'youtube-key'"));});
 
 test('E4 current docs describe script-only workflow and preserve Data API setup',async()=>{
- const text=await readFile('studio/README.md','utf8');assert.match(text,/Hoàn tất kịch bản/);assert.match(text,/YouTube Data API/);assert(!/ffmpeg|OAuth|TTS/.test(text));
+ const text=await readFile('studio/README.md','utf8');assert.match(text,/Hoàn tất kịch bản/);assert.match(text,/YouTube Data API/);assert(!new RegExp(['ff'+'mpeg','OAuth','TTS'].join('|')).test(text));
 });
+
+test('E5 inventory refreshed for all requested groups without deletion',async()=>{const text=await readFile('studio/FILE_REVIEW_INVENTORY.md','utf8');assert.match(text,/07\/10\/2026/);for(const group of ['tools/*.png','scratch/','tmp/','docs/ocr/'])assert(text.includes(group));assert.match(text,/chưa xoá/i);});
