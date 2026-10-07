@@ -159,3 +159,7 @@ State thật revision620 thiếu activity; frontend gọi unshift trước khi t
 ## Tiết kiệm token và ảnh (06/10/2026)
 
 Bỏ nút tạo ảnh tất cả/từng cảnh, chặn API image428 với hướng dẫn xuất prompt/nạp ảnh. Không xoá asset đã có. compactSceneContext giới hạn context batch, giữ visual identity và narration gốc để coverage vẫn do sceneWindows kiểm soát. Test context đỏ trước sửa, 118test xanh sau. Chưa đo token trước/sau bằng provider thật.
+
+## Clipboard bị trình duyệt chặn (07/10/2026)
+
+Nút chép thử Clipboard API rồi cách chép tương thích. Nếu cả hai bị chặn, mở hộp thoại chứa nguyên nội dung đã chọn để Ctrl+C và nút tải TXT. Không báo chép thành công khi quyền bị từ chối, không mất prompt và không gọi AI lại. Test mô phỏng denial đỏ trước sửa; 120test đạt sau sửa. Chưa xác nhận clipboard permission thật trong tab người dùng sau tải lại.

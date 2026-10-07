@@ -1,3 +1,4 @@
+import { copyWithFallback } from './clipboard.mjs';
 import { mergeState, appendActivity } from '/sync.mjs';
 import { STICKMAN_PROFILE, STAGES, GATES, HIT_FLOOR_VIEWS, describeGate, analyzeChannels, videoPool, analyzeGroups, nextHook, HOOK_TYPES, thumbLineCheck, batchScenes, suggestClips, sceneFileName, clipFileName, referencePlan, estimateRead, timingCheck, packagingBlockers, MUSIC_PLAN, COST_REFERENCE, QUOTA, FULL_BLEED, NO_TEXT_IN_IMAGE, DEFAULT_WPM, BACKGROUND_REFERENCE_MIN_SCENES, REFERENCE_RULE, THUMB_LAYOUTS, THUMB_RULES, findLayout, SUB_LINES } from '/rx.mjs';
 import { makeZip } from '/zip.mjs';
@@ -116,7 +117,22 @@ function mediaURL(dataUrl) {
   return url;
 }
 function download(name, text, type = 'text/plain;charset=utf-8') { const url = URL.createObjectURL(new Blob([text], { type })); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
-async function copy(text) { await navigator.clipboard.writeText(text); toast('Đã chép vào clipboard.'); }
+async function copy(text) {
+ text=String(text??'');if(!text.trim())return toast('Chưa có nội dung để chép.',true);
+ const copied=await copyWithFallback(text,{writeText:t=>navigator.clipboard.writeText(t),legacyCopy:t=>{
+  const previous=document.activeElement,box=document.createElement('textarea');box.value=t;box.style.cssText='position:fixed;left:-9999px;top:0';document.body.append(box);
+  try{box.focus();box.select();return document.execCommand('copy');}finally{box.remove();previous?.focus();}
+ }});
+ if(copied)return toast('Đã chép vào clipboard.');
+ const dialog=document.createElement('dialog');dialog.style.cssText='width:min(850px,90vw);max-height:90vh;background:var(--panel,#18201b);color:inherit;border:1px solid #53665c;border-radius:12px;padding:24px';
+ const title=document.createElement('h3');title.textContent='Chép prompt thủ công';
+ const help=document.createElement('p');help.textContent='Trình duyệt chặn clipboard. Nội dung đã được chọn: nhấn Ctrl+C, hoặc tải file TXT.';
+ const box=document.createElement('textarea');box.value=text;box.readOnly=true;box.setAttribute('aria-label','Nội dung cần chép');box.style.cssText='width:100%;height:45vh';
+ const actions=document.createElement('div');actions.className='actions';
+ const file=document.createElement('button');file.textContent='Tải prompt TXT';file.onclick=()=>download('prompt.txt',text);
+ const close=document.createElement('button');close.textContent='Đóng';close.onclick=()=>dialog.close();
+ actions.append(file,close);dialog.append(title,help,box,actions);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();box.focus();box.select();
+}
 function heading(title, description, action = '') { return `<div class="page-heading"><div><h1>${title}</h1><p>${description}</p></div>${action}</div>`; }
 function panel(title, content, action = '') { return `<section class="panel"><div class="panel-head"><h2>${title}</h2>${action}</div>${content}</section>`; }
 
