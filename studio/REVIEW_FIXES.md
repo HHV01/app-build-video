@@ -78,3 +78,8 @@ Kiểm tra tay phát hiện thêm hai lỗi: textarea Research hiện object th�
 TXT đã bấm xuất nhưng IAB không trả sự kiện download trong 5 giây; chưa xác nhận file tải trên trình duyệt thật. Test export kiểm tra tên file, nội dung Blob TXT và nội dung Markdown. Không gọi YouTube/provider thật, không đánh giá chất lượng fact, hedge hoặc editorNotes thực tế. G4/G5 chưa làm vì là tuỳ chọn. Không xoá dữ liệu kênh thật, không đổi youtubeKey.
 
 Ảnh nghiệm thu: screenshots/script-improvements-qa.png và screenshots/title-dna-qa.png.
+
+### Hook mở đầu và giải thích CTA — 2026-10-07
+- Bổ sung ô chỉnh hook ở Kịch bản, kế thừa hook của tiêu đề đã chọn. Truyền hook cho dàn ý và phần viết đầu tiên; yêu cầu mở đầu 15–25 giây nằm trong ngân sách từ.
+- CTA có giải thích ngay trên giao diện, context chỉ bật ở phần cuối. Không sửa lời kể cũ tự động.
+- Test thấy đỏ vì thiếu openingHook trước sửa; toàn bộ 132 test qua. Chưa kiểm chứng chất lượng mở đầu bằng lời gọi AI thật.

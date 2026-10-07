@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { researchContext } from './public/research-context.mjs';
+import { researchContext, scriptPartContext } from './public/research-context.mjs';
 import { readFile } from 'node:fs/promises';
 
 test('F1 supported evidence retained, uncertain evidence explicitly marked',()=>{
@@ -39,3 +39,14 @@ test('F1 editable JSON/pipe research fields remain usable after user edits',()=>
 test('QA edits are reflected in memory before buttons execute',async()=>{const app=await readFile('studio/public/app.js','utf8');assert.match(app,/addEventListener\('input'/);assert.match(app,/syncInputBinding/);});
 
 test('QA TXT export carries exact narration and Markdown carries title/source',async()=>{const app=await readFile('studio/public/app.js','utf8'),line=app.split('\n').find(s=>s.startsWith('function download('));let blob,clicked=false,filename;const download=new Function('URL','Blob','document','setTimeout',line+';return download;')({createObjectURL(value){blob=value;return 'blob:test';},revokeObjectURL(){}},Blob,{createElement(){return {set href(v){},set download(v){filename=v;},click(){clicked=true;}};}},()=>{});download('narration.txt','Exact narration');assert(clicked);assert.equal(filename,'narration.txt');assert.equal(await blob.text(),'Exact narration');const markdownLine=app.split('\n').find(s=>s.startsWith('function markdownProject'));const markdown=new Function(markdownLine+';return markdownProject;')()({name:'Channel',angle:'Angle'},{topic:'Title',narration:'Exact narration',sources:[{name:'Source',text:'Evidence'}]});assert.match(markdown,/# Title/);assert.match(markdown,/Exact narration/);assert.match(markdown,/Evidence/);});
+test('selected opening is sent only to first part and CTA only to last',()=>{
+ const c={},p={includeCTA:true,packaging:[{title:'Egypt',hook:'Why did Egypt endure?'}]};
+ const first=scriptPartContext(c,p,{focus:{},targetWords:150},0,3);
+ const middle=scriptPartContext(c,p,{focus:{},targetWords:150},1,3);
+ const last=scriptPartContext(c,p,{focus:{},targetWords:150},2,3);
+ assert.equal(first.openingHook,'Why did Egypt endure?');
+ assert.equal(first.includeCTA,false);
+ assert.equal(middle.openingHook,undefined);
+ assert.equal(last.includeCTA,true);
+ assert.equal(scriptPartContext(c,{...p,openingHook:'Custom opening'},{focus:{}},0,1).openingHook,'Custom opening');
+});

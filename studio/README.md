@@ -68,3 +68,6 @@ G6: Phương án title được gắn cờ độ dài ngoài p25–p75, thiếu 
 H1: Tổng quan có Xoá kênh, xác nhận tên/số dự án/số chủ đề; kênh có dự án bắt buộc tick xoá luôn dự án. Khảo sát giữ nguyên. Hoàn tác trong 10 giây, bản sao trong bộ nhớ đến khi tải lại. Trang chủ gợi ý dọn nhiều kênh nháp cùng lúc.
 
 Các mục G4 (chương thành dàn ý) và G5 (lấy bình luận) chưa bật. Bản hiện tại chỉ lấy chương từ mô tả đã trả sẵn, không gọi lấy bình luận. Các chỉ số và test mock không bảo đảm chất lượng kịch bản hoặc hiệu quả tiêu đề thực tế.
+
+### Mở đầu và CTA
+Ở bước Kịch bản, ô **Mở đầu / Hook** lấy hook của phương án Tiêu đề đã chọn; bạn có thể sửa trước khi dựng dàn ý và viết. AI nhận hook ở phần đầu, tạo tò mò và nối vào thân bài trong tổng số từ. CTA là lời mời bình luận hoặc đăng ký ở cuối; bỏ chọn để không thêm. Kịch bản đã lưu không tự thay đổi: viết lại khi muốn áp dụng hook mới.

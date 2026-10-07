@@ -9,11 +9,12 @@ export function researchContext(p={}) {
  return {researchSummary:p.researchSummary||'',researchFacts:evidence(p.researchFacts),researchTimeline:researchRows(p.researchTimeline,'timeline'),researchCast:researchRows(p.researchCast,'cast'),researchSensory:p.researchSensory||'',claims:evidence(p.claims)};
 }
 const terms=s=>new Set(String(s||'').toLowerCase().match(/[\p{L}\p{N}]{3,}/gu)||[]);
+export function openingHookFor(p={}) { return p.openingHook?.trim()||p.packaging?.[p.selectedPackaging||0]?.hook||''; }
 export function scriptPartContext(c,p,part,index,count,parts=[]) {
  const research=researchContext(p), focus=terms(JSON.stringify(part.focus));
  const related=x=>[...terms(JSON.stringify(x))].some(w=>focus.has(w));
  const select=rows=>rows.filter(related);
- return {nicheLock:c.nicheLock,topic:p.topic,language:c.language,angle:c.angle,audience:c.audience,voice:c.identity?.voice,hookPattern:c.identity?.hook,structure:p.structure,includeCTA:Boolean(p.includeCTA),selectedTitle:p.packaging?.[p.selectedPackaging||0]?.title||p.topic,
+ return {nicheLock:c.nicheLock,topic:p.topic,language:c.language,angle:c.angle,audience:c.audience,voice:c.identity?.voice,hookPattern:c.identity?.hook,structure:p.structure,includeCTA:Boolean(p.includeCTA)&&index===count-1,...(index===0?{openingHook:openingHookFor(p)}:{}),selectedTitle:p.packaging?.[p.selectedPackaging||0]?.title||p.topic,
   researchSummary:research.researchSummary,researchFacts:select(research.researchFacts),claims:select(research.claims),researchTimeline:select(research.researchTimeline),researchCast:select(research.researchCast),researchSensory:research.researchSensory,
   outlineFocus:part.focus,targetWords:part.targetWords,scriptPart:{...part,index:index+1,count},previousSummaries:parts.map(text=>String(text).match(/[^.!?]+[.!?]?/g)?.slice(0,2).join('').slice(0,360)||''),previousEnding:parts.at(-1)?.slice(-700)||''};
 }
