@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { enrichVideos, normalizeImport, validateGroups, parseAIJSON, durationSeconds, median } from './core.mjs';
-import { blindTitles, groupCountGate, RULES, STAGES } from './rx.mjs';
+import { blindTitles, groupCountGate, RULES, STAGES, videoMetadata } from './rx.mjs';
 import { createNicheAPI } from './niche-api.mjs';
 import { createAssetStore } from './assets.mjs';
 import { tokenBudget } from './server-lib.mjs';
@@ -118,7 +118,7 @@ async function videoDetails(ids) {
   for (let i = 0; i < ids.length; i += 50) {
     if (!ids.length) break;
     const data = await youtube('videos', { part: 'snippet,statistics,contentDetails', id: ids.slice(i, i + 50).join(',') });
-    result.push(...data.items.map(v => ({ id: v.id, title: v.snippet.title, channelId: v.snippet.channelId, channelTitle: v.snippet.channelTitle, publishedAt: v.snippet.publishedAt, views: Number(v.statistics.viewCount || 0), duration: durationSeconds(v.contentDetails.duration), format: 'long', formatUnverified: true, thumbnail: v.snippet.thumbnails?.medium?.url || '', url: `https://www.youtube.com/watch?v=${v.id}`, capturedAt: new Date().toISOString(), source: 'youtube' })));
+    result.push(...(data.items||[]).map(v => ({ ...videoMetadata(v), id: v.id, title: v.snippet.title, channelId: v.snippet.channelId, channelTitle: v.snippet.channelTitle, publishedAt: v.snippet.publishedAt, views: Number(v.statistics.viewCount || 0), duration: durationSeconds(v.contentDetails.duration), format: 'long', formatUnverified: true, thumbnail: v.snippet.thumbnails?.medium?.url || '', url: `https://www.youtube.com/watch?v=${v.id}`, capturedAt: new Date().toISOString(), source: 'youtube' })));
   }
   return result;
 }
@@ -244,6 +244,7 @@ const server = http.createServer(async (req, res) => {
             if (!incoming || typeof incoming !== 'object' || typeof incoming.id !== 'string') throw failure('Khảo sát không hợp lệ: thiếu id.');
             if (incoming.videos === undefined) incoming.videos = [];
             if (!Array.isArray(incoming.videos)) throw failure('Khảo sát không hợp lệ: videos phải là mảng.');
+            for(const v of incoming.videos)delete v.description;
           }
           for (const incoming of b.surveys) {
             const old = state.surveys.find(s => s.id === incoming.id);

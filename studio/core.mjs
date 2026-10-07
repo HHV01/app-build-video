@@ -1,3 +1,4 @@
+import { videoMetadata } from './rx.mjs';
 export const median = values => {
   const a = values.filter(Number.isFinite).sort((x, y) => x - y);
   return a.length ? (a[Math.floor((a.length - 1) / 2)] + a[Math.ceil((a.length - 1) / 2)]) / 2 : null;
@@ -21,7 +22,7 @@ export function normalizeImport(rows) {
     if (!r.title || !r.channelId || !Number.isFinite(views) || views < 0 || !Number.isFinite(Date.parse(r.publishedAt))) throw new Error(`Dòng ${i + 1}: cần title, channelId, views không âm và publishedAt hợp lệ.`);
     if (ids.has(id)) throw new Error(`Video ID bị trùng ở dòng ${i + 1}.`);
     ids.add(id);
-    return { id, title: String(r.title).slice(0, 300), channelId: String(r.channelId).slice(0, 100), channelTitle: String(r.channelTitle || r.channelId).slice(0, 150), views, publishedAt: new Date(r.publishedAt).toISOString(), duration: Math.max(0, Number(r.duration) || 0), format: r.format === 'short' ? 'short' : 'long', url: safeYouTube(r.url), thumbnail: '', source: 'import', capturedAt: new Date().toISOString() };
+    return { ...videoMetadata(r), id, title: String(r.title).slice(0, 300), channelId: String(r.channelId).slice(0, 100), channelTitle: String(r.channelTitle || r.channelId).slice(0, 150), views, publishedAt: new Date(r.publishedAt).toISOString(), duration: Math.max(0, Number(r.duration) || 0), format: r.format === 'short' ? 'short' : 'long', url: safeYouTube(r.url), thumbnail: '', source: 'import', capturedAt: new Date().toISOString() };
   });
 }
 export function safeYouTube(raw) {

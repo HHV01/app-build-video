@@ -34,3 +34,5 @@ F3: bỏ nhánh STT và quota upload, context nhân vật và AI templates cũ. 
 F5: lọc trùng theo giao tập từ khoá >=60%, bỏ ghi chú tên nguồn, ưu tiên ghi chú có số; tối đa 5. Test 7x3 ghi chú và directive/UI. Chưa đo chất lượng ghi chú với AI thật.
 
 F4: test retry một lần, lọc nhãn cảnh/markdown và phát hiện cụm 5 từ trùng. Cảnh báo độ dài riêng với ghi chú kiểm chứng. Chưa kiểm chứng chất lượng thực tế với AI.
+
+G1: parseChapters yêu cầu ít nhất 3 mốc, bắt đầu 0:00 và tăng dần. Metadata dùng chung cho videoDetails, niche và import. Test metadata/chương/state không description; chưa đối chiếu YouTube thật.

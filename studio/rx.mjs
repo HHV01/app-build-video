@@ -6,6 +6,18 @@ const median = values => {
   const a = (values || []).filter(Number.isFinite).sort((x, y) => x - y);
   return a.length ? (a[Math.floor((a.length - 1) / 2)] + a[Math.ceil((a.length - 1) / 2)]) / 2 : null;
 };
+export function parseChapters(description='') {
+ const rows=[];
+ for(const line of String(description).split(/\r?\n/)){const m=line.match(/^\s*(\d{1,3}):(\d{2})(?::(\d{2}))?\s*[-–|]?\s*(.+?)\s*$/);if(!m)continue;const a=Number(m[1]),b=Number(m[2]),c=m[3]===undefined?null:Number(m[3]);if(b>=60||(c!==null&&c>=60))return [];rows.push({t:c===null?a*60+b:a*3600+b*60+c,label:m[4].slice(0,120)});}
+ if(rows.length<3||rows[0].t!==0||rows.some((x,i)=>i&&x.t<=rows[i-1].t))return [];return rows.slice(0,20);
+}
+export function videoMetadata(v) {
+ const snippet=v.snippet||v,stats=v.statistics||v,details=v.contentDetails||v;
+ let tags=snippet.tags;if(typeof tags==='string'){try{tags=JSON.parse(tags);}catch{tags=tags.split(/[;,|]/);}}
+ let chapters=v.chapters;if(typeof chapters==='string'){try{chapters=JSON.parse(chapters);}catch{chapters=[];}}
+ const likes=Math.max(0,Number(stats.likeCount??stats.likes)||0),comments=Math.max(0,Number(stats.commentCount??stats.comments)||0),views=Number(stats.viewCount??stats.views)||0;
+ return {tags:(Array.isArray(tags)?tags:[]).slice(0,15).map(x=>String(x).slice(0,40)),likes,comments,categoryId:String(snippet.categoryId||''),language:String(snippet.defaultAudioLanguage||snippet.defaultLanguage||snippet.language||''),hasCaptions:details.caption==='true'||details.hasCaptions===true,chapters:Array.isArray(chapters)?chapters.filter(x=>Number.isFinite(Number(x.t))&&Number(x.t)>=0).slice(0,20).map(x=>({t:Number(x.t),label:String(x.label||'').slice(0,120)})):parseChapters(snippet.description),engagement:views>0?(likes+comments)/views:null};
+}
 
 // Sàn view để tính "video đã ăn". Đây là ngưỡng cấu hình, không phải số liệu thị trường.
 export const HIT_FLOOR_VIEWS = 20000;

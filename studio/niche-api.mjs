@@ -1,5 +1,5 @@
 // Integrates existing rx/core rules; it contains no second set of thresholds.
-import { RULES, STAGES, findTemplate, carriesTemplate, contentVideos, overlapsShelf, suggestedQueries, channelShelf, shelfGate, probeGate, blindTitles, groupCountGate, nextStage, lockedNiche, validateTopics } from './rx.mjs';
+import { videoMetadata, RULES, STAGES, findTemplate, carriesTemplate, contentVideos, overlapsShelf, suggestedQueries, channelShelf, shelfGate, probeGate, blindTitles, groupCountGate, nextStage, lockedNiche, validateTopics } from './rx.mjs';
 import { median, validateGroups } from './core.mjs';
 
 const fault = (message, status = 400) => Object.assign(new Error(message), { status });
@@ -36,7 +36,7 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
       for (const item of page.items || []) if (item.contentDetails?.videoId) ids.add(item.contentDetails.videoId);
       pageToken = page.nextPageToken; pages++;
     } while (pageToken && pages < 20);
-    const videos = newest(await videoDetails([...ids]));
+    const videos = newest((await videoDetails([...ids])).map(v=>{const {description,...rest}=v;return {...rest,...videoMetadata(v)};}));
     return { id: channel.id, name: channel.snippet?.title || channel.id, videos, pages, complete: !pageToken && videos.length === ids.size, provenance: 'youtube', quotaEstimate:{readUnits:1+pages+Math.ceil(ids.size/50)}, warning: pageToken ? 'Đã dừng ở 1.000 video. Chưa đủ toàn bộ kho để kết luận.' : '' };
   }
   function imported(survey, id, confirmed) {
