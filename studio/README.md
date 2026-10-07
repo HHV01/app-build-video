@@ -49,3 +49,5 @@ Xem [REVIEW_FIXES.md](REVIEW_FIXES.md) cho nghiệm thu bản hiện tại, [REV
 `nResearch đã đánh giá (supported/needs_check) được đưa vào dàn ý và kịch bản; dữ kiện needs_check không được khẳng định.
 
 F2: Viết từng phần chỉ gửi tiêu đề đã chọn, ngữ cảnh nghiên cứu liên quan và tóm tắt hai câu mỗi phần trước; nguồn thô vẫn dùng ở Research.
+
+F3: Khuôn tiêu đề được đếm bằng code theo luật hơn 50%; tác vụ AI dò khuôn cũ đã bỏ. Trạng thái viết phần không gắn tên nhà cung cấp.

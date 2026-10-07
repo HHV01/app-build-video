@@ -316,7 +316,7 @@ export function timingCheck(scenes, voiceSeconds) {
 
 // ---------------------------------------------------------------- HẠN MỨC & CHI PHÍ
 // Đơn vị hạn mức theo tài liệu YouTube Data API v3.
-export const QUOTA = { search: 1, channels: 1, playlistItems: 1, videos: 1, freeDaily: 10000, searchDaily:100, uploadDaily:100 };
+export const QUOTA = { search: 1, channels: 1, playlistItems: 1, videos: 1, freeDaily: 10000, searchDaily:100 };
 export function quotaSummary(usage = {}) {
   const unit = (usage.channels || 0) * QUOTA.channels + (usage.playlistItems || 0) * QUOTA.playlistItems + (usage.videos || 0) * QUOTA.videos;
   const perDay = QUOTA.searchDaily;

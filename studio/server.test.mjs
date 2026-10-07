@@ -90,7 +90,7 @@ async function mockGateway() {
   return { seen, url: `http://127.0.0.1:${srv.address().port}/v1`, stop: () => new Promise(r => srv.close(r)) };
 }
 
-const AI_ACTIONS = ['templates', 'groups', 'packaging', 'identity', 'ideas', 'topics', 'research', 'outline', 'script'];
+const AI_ACTIONS = ['groups', 'packaging', 'identity', 'ideas', 'topics', 'research', 'outline', 'script'];
 
 test('A5 · mỗi tác vụ AI gửi max_tokens đủ lớn, không action nào dùng chung mức 700', async () => {
   const gw = await mockGateway();

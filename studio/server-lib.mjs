@@ -1,5 +1,4 @@
 export const AI_TOKEN_BUDGET = {
-  templates: 1800,
   groups: 2500,
   packaging: 3500,
   identity: 1800,

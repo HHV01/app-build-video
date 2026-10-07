@@ -53,11 +53,11 @@ const migratedState=structuredClone(state);
 const migratedRefs=await assets.externalize(migratedState);
 if(migratedRefs.length){await writeFile(path.join(dataRoot,`state-before-assets-${Date.now()}.json`),JSON.stringify(state),{mode:0o600});await atomicSave('state.json',migratedState);state=migratedState;}
 const directGroq = /^https:\/\/api\.groq\.com(?:\/|$)/.test(env.OPENAI_BASE_URL||'');
-if(directGroq){settings.model=(env.OPENAI_MODEL||settings.model).replace(/^groq\//,'');if(settings.sttModel)settings.sttModel=settings.sttModel.replace(/^groq\//,'');}
+if(directGroq){settings.model=(env.OPENAI_MODEL||settings.model).replace(/^groq\//,'');}
 const providerModel=m=>directGroq?m.replace(/^groq\//,''):m;
 const cache = new Map();
 // Đơn vị hạn mức theo tài liệu YouTube Data API v3: search 100, các endpoint khác 1–2.
-const QUOTA_COST = { search: 1, channels: 1, playlistItems: 1, videos: 1, freeDaily: 10000, searchDaily:100, uploadDaily:100, source:'https://developers.google.com/youtube/v3/determine_quota_cost' };
+const QUOTA_COST = { search: 1, channels: 1, playlistItems: 1, videos: 1, freeDaily: 10000, searchDaily:100, source:'https://developers.google.com/youtube/v3/determine_quota_cost' };
 let usage = { searches: 0, otherCalls: 0, cacheHits: 0, units: 0, byEndpoint: {} };
 const jobs = new Set();
 function json(res, code, value) { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(value)); }
@@ -164,7 +164,6 @@ async function discover(b) {
 }
 const schemas = {
   angles: '{"angles":[{"angle":"góc kể","reason":"căn cứ từ tiêu đề nguồn"}]}',
-  templates: '{"channels":[{"name":"tên kênh","subscribers":0,"maxViews":0,"templates":[{"name":"khuôn tiêu đề lặp","matches":3,"ratio":0.6}]}],"note":"giới hạn chỉ trong mẫu đã lấy"}',
   groups: '{"groups":[{"name":"nhóm vấn đề","angle":"câu hỏi xuyên suốt","reason":"lý do từ mẫu","videoIds":["ID có thật"]}]}',
   packaging: '{"variants":[{"title":"tiêu đề","thumbnailVisual":"mô tả cảnh tiếng Anh","overlay":"1–4 tiếng, phải nằm trong title","flavour":"khuôn + kiểu hook","hookType":"id trong 10 kiểu hook","hook":"15 giây mở đầu","promise":"lời hứa video trả lời"}]}',
   identity: '{"voice":"giọng kể","hook":"cách mở đầu","titlePattern":"khuôn tiêu đề","sampleAngle":"angle kênh mẫu, chỉ suy luận","style":"nguyên tắc hình ảnh","names":[{"name":"tên gốc","tagline":"mô tả"}],"limitations":"điểm chưa đủ bằng chứng"}',
@@ -184,7 +183,6 @@ async function generate(b) {
     if (context.length > 65000) throw failure('Dữ liệu quá dài. Giảm số transcript hoặc video trong một lượt.');
     const directives = {
       angles: 'Đề xuất đúng 3 góc kể khác nhau cho kênh mới dựa trên các tiêu đề tham khảo context.titles. Viết góc kể và lý do bằng tiếng Việt. Mỗi góc là câu hỏi hoặc hướng giải thích cụ thể, có thể dùng cho nhiều video. Chỉ suy luận từ tiêu đề được cung cấp, không khẳng định đã xem nội dung hoặc biết giọng nguồn. Không bịa dữ kiện; nêu rõ căn cứ tiêu đề trong reason.',
-      templates: 'Dữ liệu đầu vào là `{"videos":[{"name":"tên kênh","titles":["tiêu đề 1","tiêu đề 2"]}]}`. Với từng kênh, tìm các khuôn tiêu đề lặp lại ở 2 video trở lên. `matches` là số video khớp, `ratio` là matches chia tổng số tiêu đề của kênh đó — đếm từ danh sách được cung cấp, không ước lượng. Kênh không có khuôn lặp thì trả templates rỗng. Giữ nguyên chữ trong tiêu đề.',
       groups: 'Chia video thành 4–7 nhóm vấn đề độc lập, CHỈ dựa trên tiêu đề (không có view, không đoán view). Mỗi ID chỉ ở một nhóm. Không sáng tạo ID. Tên nhóm viết ngắn, viết HOA để làm nhãn bảng.',
       identity: 'Trích nguyên tắc giọng, hook và title từ transcript nếu có. Chỉ có title thì đánh dấu giọng/style chưa xác minh. Đề xuất 5 tên kênh nguyên bản phù hợp niche và angle đã chọn; không thay angle người dùng bằng angle nguồn.',
       ideas: 'Tạo đúng 30 ý tưởng nguyên bản có thể làm series. Không sao chép tiêu đề nguồn; mỗi ý tưởng xử lý vấn đề riêng. Source IDs chỉ dùng nếu dữ liệu có.',
