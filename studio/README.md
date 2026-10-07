@@ -1,122 +1,48 @@
-# Tích Studio
+# Tích Studio · Tìm ngách và kịch bản
 
-Chạy `node studio/server.mjs` hoặc `start_studio.bat`; mở http://localhost:3210.
+Ứng dụng chạy trên máy để tìm ngách có bằng chứng, xây hồ sơ kênh và viết kịch bản hoàn chỉnh. Kết quả cuối là văn bản để copy hoặc xuất sang công cụ ngoài.
 
-## Cấu trúc
+## Chạy
 
-| File | Vai trò |
-|---|---|
-| studio/server.mjs | Server localhost, trạng thái, provider AI, YouTube, FFmpeg |
-| studio/core.mjs | Nhập dữ liệu, median, kiểm tra JSON/nhóm |
-| studio/rx.mjs | Bộ RULES dùng chung cho niche mới; hook, thumbnail, timing, ZIP naming |
-| studio/niche-api.mjs | Khảo sát sáu bước, phân trang và khóa kết quả |
-| studio/production.mjs | Chia script/cảnh và kiểm tra animation |
-| studio/assets.mjs | Media lưu file riêng, URL nội bộ, hash và kiểm tra đường dẫn |
-| studio/public/niche-ui.mjs | Giao diện khảo sát theo RULES |
-| studio/public/app.js | Kênh, xưởng chín bước, lưu tự động |
+Cần Node.js 22 trở lên. Từ thư mục gốc:
+
+```sh
+npm run studio
+npm run studio:test
+```
+
+Mở http://localhost:3210. AI dùng gateway tương thích chat/completions; cấu hình OPENAI_BASE_URL và OPENAI_API_KEY trong .env (tham khảo .env.example). Không đưa khóa, .env hoặc .studio-data lên Git.
 
 ## Tìm ngách
 
-Sau khi **Tìm khuôn tiêu đề**, chọn một radio trong danh sách cụm mở đầu đã lặp ở **hơn 50%** tiêu đề nội dung mới nhất rồi bấm **Dùng khuôn này**. Mặc định là cụm dài nhất; các cụm có cùng số tiêu đề khớp được đánh dấu **rộng nhất** / **chặt nhất** ở hai đầu. Các cụm ở giữa vẫn chọn được. Khuôn kết thúc bằng `the`, `a`, `an` bị loại. Không có ô gõ khuôn tự do: server tính lại danh sách từ kênh chỉ đường và từ chối mọi giá trị ngoài danh sách, tránh vượt cổng bằng cách gõ tay. Chọn lại khuôn xóa kết quả từ bước Kho trở đi.
+1. Nhập kênh tham khảo, chọn thị trường/ngôn ngữ/định dạng rồi Phân tích kênh.
+2. Duyệt khuôn từ danh sách đạt hơn 50% tiêu đề mới nhất. Chọn hoặc chỉnh góc kể được Groq/gateway gợi ý từ tiêu đề.
+3. Kiểm tra kho kênh, thêm tối đa 5 kênh tay khi dùng API, phân nhóm và gõ thử nhu cầu.
+4. Chốt 20 chủ đề rồi dựng kênh từ ngách đã khóa.
 
-Ở bước **Kho**, nguồn **YouTube Data API** có ô **Thêm kênh bạn biết cùng khuôn**: tối đa 5 dòng, mỗi dòng là URL `/@handle`, `/channel/UC…`, ID `UC…` hoặc `@handle`. Mỗi kênh vẫn phải cùng khuôn, chỉ tính video mang khuôn và qua ngưỡng trưởng thành/view. Kênh không đạt vẫn hiện nhãn **do bạn thêm** và lý do; kênh trùng chỉ đếm một lần. Nguồn nhập JSON/CSV bỏ qua danh sách thêm tay và thông báo rõ. Ước tính quota của lần cào có tính cả lượt đọc kênh thêm tay, chưa phải quota thực tế sau cache.
+Không có khuôn gõ tự do để vượt cổng. Khuôn cần ít nhất 10 tiêu đề hợp lệ trong tối đa 20 tiêu đề mới nhất; video dài từ 120 giây. Kho cần 3 kênh cùng khuôn; mỗi kênh có ít nhất 5 video từ 90 ngày trước, trung vị từ 20.000 view. Chỉ bắt trùng theo từ, chủ đề đồng nghĩa cần tự đối chiếu. Kho nhập cần duration và xác nhận đầy đủ.
 
-Sân → khuôn tiêu đề → kho ít nhất 3 kênh → 4–7 nhóm → ba mẫu gõ thử → khóa 20 chủ đề.
+## Khóa YouTube Data API
 
-Khuôn là cụm mở đầu dài nhất lặp **trên** 50% của tối đa 20 tiêu đề nội dung mới nhất (cần ít nhất 10,
-giá trị trong `RULES.minTitlesForTemplate`). Chỉ tính video dài ≥ 120 giây (`RULES.minContentSeconds`) —
-Shorts và video quá ngắn bị loại **trước** khi đếm khuôn, nên `contentVideos()` là nơi duy nhất quyết định
-"video nội dung". Khuôn không bao giờ kết thúc bằng mạo từ (`the`, `a`, `an`): khuôn kiểu `…of the` bắt
-mọi chủ đề mới phải viết `…of the X`, không dùng được.
+Tạo dự án tại Google Cloud Console, bật YouTube Data API v3 và tạo API key ở Credentials. Nhập ở Kết nối API → YouTube API key → Lưu khóa YouTube. Khóa chỉ lưu ở server; API settings chỉ báo đã có cấu hình. Khóa phục vụ tìm/đọc video và kênh, không đăng video. Không cần khóa nếu nhập kho JSON/CSV có đủ dữ liệu và xác nhận.
 
-Mỗi kênh cần ít nhất 5 video từ 90 ngày và trung vị ít nhất 20.000 view, tính **trên các video mang khuôn**
-— video nổi bật nhất của kênh nhưng nói chủ đề khác không được kéo trung vị hay bội số. Khi so khuôn giữa
-các kênh, kênh lặp cụm **dài hơn** khuôn đã chốt vẫn được tính là cùng khuôn (`startsWith`), vì đó vẫn là
-một dòng tiêu đề.
+## Dự án bốn bước
 
-Ở chế độ trực tiếp, Studio tìm kênh bằng `search type=video` với `q="<khuôn>"`, `maxResults=50`, chỉ trong
-năm hiện tại; lấy `snippet.channelId`, gộp trùng và dừng ở 10 kênh. `search type=channel` không dùng vì nó
-chỉ khớp tên kênh.
+1. Chủ đề: chọn câu hỏi và thời lượng dự kiến.
+2. Tiêu đề + Thumbnail: chọn lời hứa, hook, khuôn và bố cục thumbnail.
+3. Research: thêm text nguồn, đối chiếu claim và chọn góc nhìn. URL đơn độc không chứng minh đã đọc nguồn.
+4. Kịch bản: dựng dàn ý, viết từng phần, chỉnh narration rồi Hoàn tất kịch bản.
 
-Gõ thử cần đủ 20 video mỗi mẫu, trung vị số video vượt 20.000 view đạt ít nhất 11/20. Khi chế độ trực tiếp,
-ba câu tìm được điền sẵn từ **nhóm dựng được đủ ba câu** (ưu tiên nhóm nhiều câu, rồi tới bội số trung vị cao nhất); nếu gõ thử trượt thì có nút quay lại bước
-Chia nhóm để thử nhóm khác. Các lựa chọn ngưỡng rộng/vừa/chặt trong helper cũ không áp dụng cho luồng mới.
+Copy toàn bộ kịch bản, Xuất kịch bản TXT hoặc Xuất Markdown (gồm nguồn). Nếu clipboard bị chặn, dùng Ctrl+C trong hộp thoại hoặc tải TXT. Ảnh, giọng và dựng video thực hiện ở app ngoài. Thumbnail giữ công cụ bố cục/canvas, không có API sinh ảnh.
 
-Chủ đề cuối phải theo đúng khuôn và **không trùng thực thể** với kho: thực thể là phần tiêu đề còn lại sau
-khi bỏ khuôn và bỏ mạo từ đầu, và so khớp theo cụm từ liên tiếp — kho có `…of Egypt` thì `…of Ancient Egypt`
-là trùng, còn `…of Egyptian Empire` là thực thể khác. Chủ đề do AI đề xuất được xếp theo mức nhiều người biết
-(`knownBy`: cao > vừa > thấp) trước khi cắt còn 20.
+Dự án cũ ở bước sau kịch bản tự về bước 4; cảnh, audio và các dữ liệu đã lưu vẫn được giữ trong state nhưng không hiển thị. assets.mjs và cơ chế đồng bộ state tiếp tục hoạt động.
 
-Kho nhập JSON/CSV được ghi rõ là do người dùng khai báo. Khảo sát trực tiếp cần YouTube Data API key. Đọc tối đa 1.000 uploads/kênh; vượt giới hạn hoặc thiếu dữ liệu sẽ không chốt cổng. Shorts suy từ thời lượng chưa phải xác nhận tuyệt đối.
+## AI và model dự phòng
 
-Kênh dựng từ niche đã chốt dùng lại khuôn, angle, nhóm và 20 chủ đề. Hồ sơ kênh thủ công chưa có khóa bằng chứng.
+Giữ model chính và tối đa 3 dự phòng tại Kết nối API. App chuyển khi quá tải/hết hạn mức/lỗi dịch vụ/mất kết nối; không chuyển vì khóa sai hay JSON sai. Thử từng model một lần, tối đa 45 giây mỗi lượt khi bật dự phòng. Không thay model chính vĩnh viễn; nhật ký ghi model thực tế. Chỉ dùng model đã nối ở gateway; chi phí phụ thuộc tài khoản dịch vụ. Model của app độc lập với phiên Codex.
 
-## Xưởng chín bước
+## Kiểm thử và dữ liệu
 
-Chủ đề → Tiêu đề + Thumbnail → Research → Kịch bản → Chia cảnh → Nhân vật + Bối cảnh → Cảnh → Giọng → Đóng gói.
+npm run studio:test dùng fixture và gateway giả lập, không gọi provider hoặc YouTube thật. Dữ liệu nằm trong .studio-data, được ignore. Giữ cửa sổ khi chưa lưu thành công; các xung đột cùng trường cần xử lý trước khi ghi.
 
-Script chia nhỏ và lưu từng phần; cảnh chia batch bốn theo lời kể gốc. Hồ sơ visualProfile giữ phong cách kênh. Prompt ảnh tách khỏi prompt animation; animation cần duyệt trước khi xuất. Đây là lập prompt chuyển động, chưa tạo clip video.
-
-Ảnh/audio lưu ở .studio-data/assets; state giữ URL nội bộ. Backup trước chuyển đổi media được giữ trên máy. Không xóa assets tự động.
-
-## Provider và chi phí
-
-Provider lấy từ .env và trang Kết nối API. Cấu hình hiện tại gọi Groq trực tiếp. Khi dùng OmniRoute, model cần đúng định dạng gateway. Cấu hình app không thay provider/model của phiên Codex.
-
-Groq trong cấu hình này dùng cho nội dung chữ và Whisper STT. Tạo ảnh, TTS, nhạc và đăng YouTube cần dịch vụ/cấu hình riêng; không có bảo đảm miễn phí hoặc giá cố định. Luồng xuất prompt và nạp file thủ công vẫn dùng được.
-
-Tạo ảnh mascot cần character sheet. Adapter image edit gửi reference khi provider hỗ trợ; chưa kiểm chứng provider ảnh thật. ComfyUI reference workflow chưa được nối.
-
-## Đóng gói
-
-FFmpeg/ffprobe được tìm ở tools/ffmpeg/bin hoặc PATH. Dựng MP4 ảnh tĩnh + audio, H.264/AAC, mặc định 1280×720. Thiếu ảnh hoặc timeline lệch voice quá 0,5 giây bị chặn; không âm thầm bỏ cảnh/cắt lời. Nhạc tùy chọn hạ còn 1/8 giọng và lặp đủ dài. Bản dựng giữ ở .studio-data/build.
-
-ZIP chứa prompt, ảnh, danh sách clip và tài liệu bàn giao. Chưa xuất project CapCut native hoặc ghép clip animation vào MP4.
-
-Đăng YouTube cần OAuth của bạn, chỉ chạy khi bấm nút đăng, mặc định riêng tư. Upload resumable chia
-khối 8 MB; khối trung gian trả HTTP 308 (Resume Incomplete) được đọc header `Range` rồi gửi tiếp, không
-bị coi là lỗi. `selfDeclaredMadeForKids` chỉ gửi trong `status`, không gửi trong `snippet`.
-**Chưa kiểm chứng tải lên thật trong bản sửa này** — kiểm thử dùng HTTP mock cục bộ.
-
-Hai biến môi trường chỉ dùng cho kiểm thử: `STUDIO_UPLOAD_URL` trỏ endpoint upload sang mock,
-`STUDIO_UPLOAD_CHUNK` ghi đè kích thước khối (mặc định 8 MB).
-
-## Quota YouTube
-
-Theo [tài liệu Google hiện hành](https://developers.google.com/youtube/v3/determine_quota_cost), mặc định 100 search/ngày, 100 upload/ngày trong hai quỹ riêng; endpoint đọc khác dùng chung 10.000 đơn vị/ngày. channels.list, playlistItems.list và videos.list mỗi lượt 1 đơn vị. Bộ đếm app là ước tính trong phiên; xem quota thực tế ở Google Cloud.
-
-## Kiểm tra
-
-`npm run studio:test`
-
-Nghiệm thu ngày 06/10/2026: 109 kiểm thử đạt, không lỗi, không bỏ qua trên máy có FFmpeg. [Chi tiết bản sửa và phần chưa kiểm chứng](REVIEW_FIXES.md).
-
-## Flow tìm ngách rút gọn
-
-Kênh tham khảo → Chọn khuôn → Kiểm tra ngách (kho kênh, nhóm, nhu cầu) → 20 chủ đề → Dựng kênh. Dán link hoặc @handle, nhập góc kể rồi bấm **Phân tích kênh**. Thị trường, ngôn ngữ, định dạng và tên khảo sát nằm trong mục mở rộng. Khảo sát mới mặc định dùng YouTube API; kho JSON/CSV vẫn có trong nguồn dữ liệu.
-
-Khuôn dài nhất được đề xuất; mở **Xem thêm lựa chọn** để chọn khuôn khác đã đạt hơn 50%. **Dùng khuôn này** tự kiểm tra kho. Thiếu kênh thì xem số còn thiếu, thêm kênh hoặc thử khuôn khác. Các cổng ở backend giữ nguyên; không có khuôn gõ tự do.
-
-Chọn nhóm xong, câu tìm gợi ý được lưu và có thể sửa; ô cố ý xoá trống không bị tự điền lại. Các bước liên tiếp dừng khi chưa đạt hoặc API lỗi, giữ kết quả đã hoàn thành. Tạo kênh dùng lại khuôn, góc kể, nhóm, 20 chủ đề và link tham khảo.
-
-## Bổ sung D1–D6 và C1/C4
-
-Kênh khám phá không truy cập được hiện thành dòng không đạt, kèm lý do. Kho nhập có ít nhất 80% video duration=0 chưa đánh dấu Shorts cần bổ sung cột duration; bước Khuôn báo lỗi rõ, bước Kho giữ dòng không đạt.
-
-Gõ thử YouTube lấy 25 kết quả, lọc chi tiết/view hợp lệ rồi dùng 20; thiếu sẽ báo số thực có. Chủ đề mới so trùng với kho và với nhau, có ngoại lệ cho thực thể một từ chung; đồng nghĩa vẫn cần đối chiếu tay. knownBy được xếp lại sau cả hai lượt trước khi lấy 20. titles gửi vào phải là mảng.
-
-Test chạy trên dữ liệu riêng. Thiếu ffmpeg/ffprobe chỉ bỏ qua subtest dựng, vẫn kiểm chứng HTTP. Workflow GitHub Actions kiểm thử Ubuntu/Windows với Node 22; chưa có kết quả chạy CI từ GitHub cho bản sửa này. [Kiểm kê file và lần dọn đã duyệt](FILE_REVIEW_INVENTORY.md). Các thay đổi D1/D5 và chuỗi khảo sát mới chưa được kiểm chứng với YouTube thật; test dùng mock, không tiêu quota thật.
-
-Các nút tìm ngách đọc trực tiếp nội dung ô nhập trước khi chạy, nên không phụ thuộc việc rời ô để lưu. Kiểm chứng UI trên kho giả lập riêng đã đi từ Phân tích kênh → duyệt khuôn/tự chạy kho → chọn nhóm → nhập mẫu nhu cầu → chốt 20 chủ đề → dựng kênh, giữ đúng khuôn và angle. [Ảnh kiểm chứng](screenshots/niche-ux-review.jpg).
-
-## Góc kể sau phân tích kênh
-
-Bước đầu chỉ nhập kênh tham khảo và bấm Phân tích kênh. Khi kênh có khuôn đạt ngưỡng, Groq đề xuất tối đa ba góc kể từ tiêu đề tham khảo. Ở bước Chọn khuôn, chọn một góc rồi chỉnh nếu muốn, hoặc tự nhập; bấm Dùng khuôn này để chốt góc và kiểm tra kho. Gợi ý là suy luận từ tiêu đề, không phải phân tích transcript. Nếu Groq lỗi, kết quả khuôn vẫn giữ; có thể tự nhập hoặc chạy lại Tìm khuôn tiêu đề. Phải chọn góc trước bước Kho; luật khuôn hơn 50% không đổi.
-
-## Model dự phòng tự động
-
-Trong Kết nối API, bật Tự chuyển model và nhập tối đa ba model dự phòng, mỗi dòng một ID có trong gateway. Thứ tự: model chính rồi lần lượt các model dự phòng; mỗi model chỉ thử một lần. Áp dụng cho tác vụ nội dung chữ (góc, research, script, cảnh, prompt...). Chuyển khi HTTP 429/500/502/503/504 hoặc mất kết nối/timeout; không chuyển vì khóa sai, dữ liệu sai, JSON không hợp lệ hay thiếu đầu ra. Bật dự phòng có timeout 45 giây mỗi model, tối đa bốn lượt (180 giây). Model chính không bị đổi vĩnh viễn; thông báo và nhật ký ghi model thực tế. Ảnh, TTS và STT dùng cấu hình riêng. Model cùng provider có thể dùng chung quota nên dự phòng khác provider hữu ích hơn; chi phí tùy tài khoản/provider đã nối.
-
-## Chế độ tiết kiệm ảnh/token
-
-Tạo ảnh qua API đã tắt; dùng Chép prompt hoặc Xuất prompt + ảnh ZIP rồi nạp ảnh từ công cụ ngoài. Giữ ảnh và reference đã nạp. Tác vụ chia cảnh chỉ gửi narration của batch cùng topic/ngôn ngữ/góc kể/visual profile/mascot; không lặp research sources, outline và packaging ở mỗi batch. Mức tiết kiệm phụ thuộc độ dài dữ liệu; chưa đo token provider thật.
+Xem [REVIEW_FIXES.md](REVIEW_FIXES.md) cho nghiệm thu bản hiện tại, [REVIEW_FIXES_HISTORY.md](REVIEW_FIXES_HISTORY.md) cho lịch sử, [FILE_REVIEW_INVENTORY.md](FILE_REVIEW_INVENTORY.md) cho file chờ duyệt. Chưa xóa file trong danh sách này.
