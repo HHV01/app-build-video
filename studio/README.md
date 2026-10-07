@@ -51,3 +51,5 @@ Xem [REVIEW_FIXES.md](REVIEW_FIXES.md) cho nghiệm thu bản hiện tại, [REV
 F2: Viết từng phần chỉ gửi tiêu đề đã chọn, ngữ cảnh nghiên cứu liên quan và tóm tắt hai câu mỗi phần trước; nguồn thô vẫn dùng ở Research.
 
 F3: Khuôn tiêu đề được đếm bằng code theo luật hơn 50%; tác vụ AI dò khuôn cũ đã bỏ. Trạng thái viết phần không gắn tên nhà cung cấp.
+
+F5: Ghi chú biên tập nằm trong một ô thu gọn; công tắc Ẩn ghi chú kiểm chứng lưu theo kênh. Code lọc trùng/gần trùng và giữ tối đa 5 ghi chú; dữ kiện chưa có nguồn phải diễn đạt thận trọng.

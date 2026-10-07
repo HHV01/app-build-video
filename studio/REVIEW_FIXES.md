@@ -30,3 +30,5 @@ Nghiệm thu giao diện thực tế: dự án Greece cũ chuyển từ Cảnh v
 F2: mock 7 phần, nguồn 20.000 ký tự: tổng JSON context cũ 155.197 ký tự, mới 3.522 ký tự. Đây là độ dài ký tự trong fixture, không phải token hay chi phí thực. Chưa đo trên AI thật.
 
 F3: bỏ nhánh STT và quota upload, context nhân vật và AI templates cũ. Giữ videoTable/hookTable và youtubeKey.
+
+F5: lọc trùng theo giao tập từ khoá >=60%, bỏ ghi chú tên nguồn, ưu tiên ghi chú có số; tối đa 5. Test 7x3 ghi chú và directive/UI. Chưa đo chất lượng ghi chú với AI thật.
