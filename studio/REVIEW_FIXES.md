@@ -40,3 +40,5 @@ G1: parseChapters yêu cầu ít nhất 3 mốc, bắt đầu 0:00 và tăng d�
 G2: hàm thuần titleDNA/tagStats và test nhóm đủ/thiếu mẫu. Lift là chênh lệch tỷ lệ (không suy luận nhân quả), dữ liệu mock; chưa đối chiếu YouTube thật.
 
 G3: test render panel có/không đủ dữ liệu, copy bằng helper clipboard hiện có. Chưa nghiệm thu dữ liệu YouTube thật.
+
+G6: test flags/title và giới hạn tag; kiểm tra theo code, không bảo đảm chất lượng/CTR. Chưa đối chiếu tiêu đề AI thật.

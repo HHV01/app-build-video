@@ -61,3 +61,5 @@ G1: Kho giữ tag (15 x 40 ký tự), like/comment, ngôn ngữ, phụ đề và
 G2: DNA tiêu đề thống kê phân vị độ dài, số/năm/dấu phân cách/viết hoa và từ sau khuôn. Lift là chênh lệch tỷ lệ đặc điểm nhóm bội số >=2 với nhóm còn lại; mỗi nhóm cần >=5 video. Tag chỉ dùng lấy ý tưởng từ khóa.
 
 G3: Bước Kho có ô thu gọn DNA tiêu đề và tag khi có ít nhất 5 video, kèm nút copy. Lift thiếu mẫu được ghi rõ.
+
+G6: Phương án title được gắn cờ độ dài ngoài p25–p75, thiếu khuôn hoặc trùng thực thể. Không tự xoá. Tag ưu tiên thống kê kho, AI chỉ bổ sung khi dưới 5 tag; Copy tag giới hạn tổng 500 ký tự. Thumbnail thắng chỉ là liên kết mở tab mới.

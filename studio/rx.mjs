@@ -32,6 +32,12 @@ export function tagStats(videos=[],template='') {
  const ordered=rows=>[...rows.values()].sort((a,b)=>b.count-a.count||a.tag.localeCompare(b.tag));const entities=videos.map(v=>entityOf(v.title,template)).filter(Boolean);
  return {averageTags:videos.length?total/videos.length:0,winnerTags:ordered(count),tags:ordered(all),templateTags:ordered(all).filter(x=>template&&normalize(x.tag).includes(normalize(template))),entityTags:ordered(all).filter(x=>entities.some(e=>normalize(x.tag).includes(normalize(e))||(` ${normalize(e)} `).includes(` ${normalize(x.tag)} `)))};
 }
+export function checkTitle(title,template,dna,shelfTitles=[]) {
+ const reasons=[],length=String(title).length;if(dna?.characters?.p25!=null&&length<dna.characters.p25)reasons.push('Tiêu đề quá ngắn so với p25 của kho.');if(dna?.characters?.p75!=null&&length>dna.characters.p75)reasons.push('Tiêu đề quá dài so với p75 của kho.');if(template&&!carriesTemplate(title,template))reasons.push('Không chứa khuôn đã khoá.');if(template&&overlapsShelf(title,template,shelfTitles))reasons.push('Thực thể trùng với kho.');return reasons;
+}
+export function limitTags(tags=[],limit=500) {
+ const good=[],seen=new Set();for(const raw of tags){const tag=String(raw).trim().slice(0,40),key=tag.toLowerCase();if(!tag||seen.has(key))continue;if([...good,tag].join(', ').length>limit)continue;seen.add(key);good.push(tag);}return good;
+}
 
 // Sàn view để tính "video đã ăn". Đây là ngưỡng cấu hình, không phải số liệu thị trường.
 export const HIT_FLOOR_VIEWS = 20000;
