@@ -12,8 +12,10 @@ await mkdir(tempRoot,{recursive:true});
 
 // Mỗi test dựng server riêng với cổng và thư mục dữ liệu nằm trong workspace.
 let nextPort = 33400;
-async function boot(env = {}) {
+async function boot(env = {},seed={}) {
   const dir = await mkdtemp(path.join(tempRoot, 'srv-test-'));
+  if(seed.settings)await writeFile(path.join(dir,'settings.json'),JSON.stringify(seed.settings));
+  if(seed.state)await writeFile(path.join(dir,'state.json'),JSON.stringify(seed.state));
   const port = nextPort++;
   const child = spawn(process.execPath, ['studio/server.mjs'], {
     cwd: root,
@@ -177,5 +179,16 @@ test('E2 removed routes return 404 and scene AI action is rejected',async()=>{
  assert.equal((await s.req('/api/build/old')).status,404);
  for(const action of ['scenes','animation'])assert.equal((await s.req('/api/generate','POST',{action,context:{}})).status,400);
  assert.equal((await s.req('/api/state')).status,200);
+ }finally{await s.stop();}
+});
+
+test('E3 legacy settings boot; Data API key remains secret; old media data survives',async()=>{
+ const legacyKey=['youtube','ClientId'].join('');const s=await boot({}, {settings:{[legacyKey]:'old',model:'test'},state:{revision:0,channels:[],surveys:[],projects:[{id:'p',step:8,approved:[0,3,8],scenes:[{prompt:'old'}],voiceData:'old',rendered:{id:'old'}}]}});
+ try{
+  const state=(await s.req('/api/state')).body;assert.equal(state.projects[0].step,3);assert.deepEqual(state.projects[0].approved,[0,3]);assert.equal(state.projects[0].scenes[0].prompt,'old');assert.equal(state.projects[0].voiceData,'old');assert.equal(state.projects[0].rendered.id,'old');
+  assert.equal((await s.req('/api/settings','PUT',{youtubeKey:'private-test-key',[legacyKey]:'new'})).status,200);
+  const settings=(await s.req('/api/settings')).body;assert.equal(settings.youtubeConfigured,true);assert(!JSON.stringify(settings).includes('private-test-key'));assert(!Object.hasOwn(settings,legacyKey));
+  const persisted=JSON.parse(await readFile(path.join(s.dir,'settings.json'),'utf8'));assert.equal(persisted.youtubeKey,'private-test-key');assert.equal(persisted[legacyKey],'old');
+  for(const route of ['/','/app.js','/production.mjs','/sync.mjs']){const r=await fetch(s.base+route);assert.equal(r.status,200);assert.match(r.headers.get('cache-control'),/no-store/);}
  }finally{await s.stop();}
 });

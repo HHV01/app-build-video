@@ -9,7 +9,6 @@ import {
   THUMB_LAYOUTS, findLayout, SUB_LINES, BACKGROUND_REFERENCE_MIN_SCENES,
   FULL_BLEED, NO_TEXT_IN_IMAGE, REFERENCE_RULE,
 } from './rx.mjs';
-import { makeZip, crc32, toBytes } from './zip.mjs';
 
 const NOW = Date.parse('2026-10-01T00:00:00Z');
 const days = n => new Date(NOW - n * 86400000).toISOString();
@@ -174,16 +173,6 @@ test('YouTube quota separates 100 daily searches from the general 10,000-unit bu
   assert.equal(s.units, 2 * QUOTA.channels + 1 + 1);
   assert.equal(s.freeSearchesPerDay, 100);
   assert.match(s.note, /100 search/);
-});
-
-test('Gói ZIP hợp lệ: đúng chữ ký, CRC và số tệp', () => {
-  const zip = makeZip([{ name: 'a/one.txt', data: 'một' }, { name: 'two.png', data: new Uint8Array([1, 2, 3]) }]);
-  assert.deepEqual([...zip.slice(0, 4)], [0x50, 0x4b, 0x03, 0x04]);
-  assert.deepEqual([...zip.slice(-22, -18)], [0x50, 0x4b, 0x05, 0x06]);
-  assert.equal(zip[zip.length - 14], 2, 'số tệp trong thư mục trung tâm');
-  assert.match(Buffer.from(zip).toString('latin1'), /one\.txt/);
-  assert.throws(() => makeZip([]));
-  assert.equal(crc32(toBytes('123456789')), 0xcbf43926);
 });
 
 test('Thư viện khung thumbnail: ô chữ luôn trong khung, id cũ vẫn dùng được', () => {

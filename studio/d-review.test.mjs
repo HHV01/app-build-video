@@ -79,7 +79,7 @@ test('D6 knownBy ranks the combined two generations before the final cut to 20',
 
 test('C4 clean checkout documents setup, runs studio tests in CI, and lists review-only files',async()=>{
  const readme=await readFile(new URL('../README.md',import.meta.url),'utf8');
- assert.match(readme,/Node\.js 22/);assert.match(readme,/ffmpeg/i);assert.match(readme,/npm run studio/);assert.match(readme,/studio\/README\.md/);
+ assert.match(readme,/Node\.js 22/);assert.match(readme,/npm run studio/);assert.match(readme,/studio\/README\.md/);
  const workflow=await readFile(new URL('../.github/workflows/studio-test.yml',import.meta.url),'utf8');
  assert.match(workflow,/pull_request/);assert.match(workflow,/node-version: ['"]?22/);assert.match(workflow,/npm run studio:test/);assert.match(workflow,/ubuntu-latest/);assert.match(workflow,/windows-latest/);
  const inventory=await readFile(new URL('./FILE_REVIEW_INVENTORY.md',import.meta.url),'utf8');
