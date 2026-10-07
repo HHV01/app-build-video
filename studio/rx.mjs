@@ -18,6 +18,20 @@ export function videoMetadata(v) {
  const likes=Math.max(0,Number(stats.likeCount??stats.likes)||0),comments=Math.max(0,Number(stats.commentCount??stats.comments)||0),views=Number(stats.viewCount??stats.views)||0;
  return {tags:(Array.isArray(tags)?tags:[]).slice(0,15).map(x=>String(x).slice(0,40)),likes,comments,categoryId:String(snippet.categoryId||''),language:String(snippet.defaultAudioLanguage||snippet.defaultLanguage||snippet.language||''),hasCaptions:details.caption==='true'||details.hasCaptions===true,chapters:Array.isArray(chapters)?chapters.filter(x=>Number.isFinite(Number(x.t))&&Number(x.t)>=0).slice(0,20).map(x=>({t:Number(x.t),label:String(x.label||'').slice(0,120)})):parseChapters(snippet.description),engagement:views>0?(likes+comments)/views:null};
 }
+const quantiles=values=>{const a=[...values].sort((a,b)=>a-b);const q=p=>{if(!a.length)return null;const i=(a.length-1)*p,low=Math.floor(i);return a[low]+(a[Math.ceil(i)]-a[low])*(i-low);};return {p25:q(.25),median:q(.5),p75:q(.75)};};
+const titleFeatures=title=>{const t=String(title||''),letters=t.replace(/[^\p{L}]/gu,'');return {numbers:/\d/.test(t),years:/\b(?:1\d{3}|20\d{2})\b/.test(t),colon:t.includes(':'),pipe:t.includes('|'),uppercase:Boolean(letters)&&letters===letters.toUpperCase(),titleCase:t.split(/\s+/).filter(Boolean).every(w=>/^\p{Lu}/u.test(w))};};
+export function titleDNA(videos=[],template='') {
+ const features=videos.map(v=>titleFeatures(v.title)),keys=Object.keys(titleFeatures('')),winners=videos.filter(v=>Number(v.multiple)>=2),rest=videos.filter(v=>Number(v.multiple)<2&&Number.isFinite(Number(v.multiple))&&v.multiple!=null);
+ const rate=(rows,key)=>rows.length?rows.filter(v=>titleFeatures(v.title)[key]).length/rows.length:0;
+ const counts=new Map();for(const v of videos){const entity=entityOf(v.title,template);for(const word of entity.split(/\s+/).filter(Boolean))counts.set(word,(counts.get(word)||0)+1);}
+ return {count:videos.length,characters:quantiles(videos.map(v=>String(v.title||'').length)),words:quantiles(videos.map(v=>String(v.title||'').trim().split(/\s+/).filter(Boolean).length)),ratios:Object.fromEntries(keys.map(k=>[k,features.length?features.filter(x=>x[k]).length/features.length:0])),topWords:[...counts].sort((a,b)=>b[1]-a[1]).slice(0,15).map(([word,count])=>({word,count})),lift:winners.length>=5&&rest.length>=5?Object.fromEntries(keys.map(k=>[k,rate(winners,k)-rate(rest,k)])):{reason:'chưa đủ mẫu',winners:winners.length,rest:rest.length}};
+}
+export function tagStats(videos=[],template='') {
+ const normalize=t=>String(t).normalize('NFC').toLowerCase().trim(),count=new Map(),all=new Map();let total=0;
+ for(const v of videos){const tags=Array.isArray(v.tags)?v.tags:[];total+=tags.length;for(const tag of new Set(tags)){const key=normalize(tag);if(!key)continue;const row=all.get(key)||{tag,count:0};row.count++;all.set(key,row);if(Number(v.multiple)>=2)count.set(key,{tag,count:(count.get(key)?.count||0)+1});}}
+ const ordered=rows=>[...rows.values()].sort((a,b)=>b.count-a.count||a.tag.localeCompare(b.tag));const entities=videos.map(v=>entityOf(v.title,template)).filter(Boolean);
+ return {averageTags:videos.length?total/videos.length:0,winnerTags:ordered(count),tags:ordered(all),templateTags:ordered(all).filter(x=>template&&normalize(x.tag).includes(normalize(template))),entityTags:ordered(all).filter(x=>entities.some(e=>normalize(x.tag).includes(normalize(e))||(` ${normalize(e)} `).includes(` ${normalize(x.tag)} `)))};
+}
 
 // Sàn view để tính "video đã ăn". Đây là ngưỡng cấu hình, không phải số liệu thị trường.
 export const HIT_FLOOR_VIEWS = 20000;
