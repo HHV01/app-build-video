@@ -50,3 +50,11 @@ test('selected opening is sent only to first part and CTA only to last',()=>{
  assert.equal(last.includeCTA,true);
  assert.equal(scriptPartContext(c,{...p,openingHook:'Custom opening'},{focus:{}},0,1).openingHook,'Custom opening');
 });
+test('opening gets matching supported evidence and ending gets the opening question',()=>{
+ const p={topic:'Sumer',openingHook:'Why did Sumer collect grain?',outline:[{question:'Why collect grain?'}],researchFacts:[{claim:'Sumer collected grain',status:'supported'},{claim:'Sumer had aliens',status:'needs_check'}]};
+ const first=scriptPartContext({},p,{focus:{title:'Introduction'}},0,3);
+ assert.equal(first.openingEvidence.length,1);
+ assert.equal(first.openingEvidence[0].claim,'Sumer collected grain');
+ assert.equal(scriptPartContext({},p,{focus:{}},1,3).openingEvidence,undefined);
+ assert.equal(scriptPartContext({},p,{focus:{}},2,3).closingQuestion,'Why collect grain?');
+});

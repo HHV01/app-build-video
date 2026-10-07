@@ -14,7 +14,10 @@ export function scriptPartContext(c,p,part,index,count,parts=[]) {
  const research=researchContext(p), focus=terms(JSON.stringify(part.focus));
  const related=x=>[...terms(JSON.stringify(x))].some(w=>focus.has(w));
  const select=rows=>rows.filter(related);
+ const openingTerms=terms([openingHookFor(p),p.topic,c.angle].filter(Boolean).join(' '));
+ const openingEvidence=[...research.researchFacts,...research.claims].filter(x=>x.assertable&&[...terms(x.claim)].some(w=>openingTerms.has(w))).filter((x,i,rows)=>rows.findIndex(y=>y.claim===x.claim)===i).slice(0,3);
  return {nicheLock:c.nicheLock,topic:p.topic,language:c.language,angle:c.angle,audience:c.audience,voice:c.identity?.voice,hookPattern:c.identity?.hook,structure:p.structure,includeCTA:Boolean(p.includeCTA)&&index===count-1,...(index===0?{openingHook:openingHookFor(p)}:{}),selectedTitle:p.packaging?.[p.selectedPackaging||0]?.title||p.topic,
   researchSummary:research.researchSummary,researchFacts:select(research.researchFacts),claims:select(research.claims),researchTimeline:select(research.researchTimeline),researchCast:select(research.researchCast),researchSensory:research.researchSensory,
+  ...(index===0?{openingEvidence}:{}),...(index===count-1?{closingQuestion:p.outline?.[0]?.question||openingHookFor(p)}:{}),
   outlineFocus:part.focus,targetWords:part.targetWords,scriptPart:{...part,index:index+1,count},previousSummaries:parts.map(text=>String(text).match(/[^.!?]+[.!?]?/g)?.slice(0,2).join('').slice(0,360)||''),previousEnding:parts.at(-1)?.slice(-700)||''};
 }

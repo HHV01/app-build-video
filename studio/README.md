@@ -71,3 +71,5 @@ Các mục G4 (chương thành dàn ý) và G5 (lấy bình luận) chưa bật.
 
 ### Mở đầu và CTA
 Ở bước Kịch bản, ô **Mở đầu / Hook** lấy hook của phương án Tiêu đề đã chọn; bạn có thể sửa trước khi dựng dàn ý và viết. AI nhận hook ở phần đầu, tạo tò mò và nối vào thân bài trong tổng số từ. CTA là lời mời bình luận hoặc đăng ký ở cuối; bỏ chọn để không thêm. Kịch bản đã lưu không tự thay đổi: viết lại khi muốn áp dụng hook mới.
+
+Mở đầu được diễn đạt theo tiêu đề, góc kể, người xem và giọng kênh; nhận tối đa 3 dữ kiện research supported liên quan. Không có dữ kiện thì dùng câu hỏi thay vì bịa chi tiết. Kết bài trả lời câu hỏi mở đầu; CTA tùy chọn chỉ một câu mời bình luận liên quan nội dung. Không thêm lượt gọi AI.

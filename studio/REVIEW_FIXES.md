@@ -83,3 +83,7 @@ TXT đã bấm xuất nhưng IAB không trả sự kiện download trong 5 giây
 - Bổ sung ô chỉnh hook ở Kịch bản, kế thừa hook của tiêu đề đã chọn. Truyền hook cho dàn ý và phần viết đầu tiên; yêu cầu mở đầu 15–25 giây nằm trong ngân sách từ.
 - CTA có giải thích ngay trên giao diện, context chỉ bật ở phần cuối. Không sửa lời kể cũ tự động.
 - Test thấy đỏ vì thiếu openingHook trước sửa; toàn bộ 132 test qua. Chưa kiểm chứng chất lượng mở đầu bằng lời gọi AI thật.
+
+
+### Mở đầu và kết bài theo nội dung
+Hook được coi là định hướng thay vì lời bắt buộc chép nguyên văn. Phần đầu nhận tối đa 3 dữ kiện supported liên quan; phần cuối nhận câu hỏi mở đầu. Prompt hướng dẫn mở phù hợp lịch sử, giải thích, tài chính; kết luận đầy đủ cả khi tắt CTA. Test đỏ trước sửa và 133 test qua. Chưa kiểm chứng chất lượng đầu ra bằng AI thật; chọn dữ kiện theo từ chỉ là heuristic.
