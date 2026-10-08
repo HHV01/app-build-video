@@ -31,9 +31,9 @@ Tạo dự án tại Google Cloud Console, bật YouTube Data API v3 và tạo A
 1. Chủ đề: chọn câu hỏi và thời lượng dự kiến.
 2. Tiêu đề + Thumbnail: chọn lời hứa, hook, khuôn và bố cục thumbnail.
 3. Research: thêm text nguồn, đối chiếu claim và chọn góc nhìn. URL đơn độc không chứng minh đã đọc nguồn.
-4. Kịch bản: dựng dàn ý, viết từng phần, chỉnh narration rồi Hoàn tất kịch bản.
+4. Kịch bản: dựng dàn ý, viết từng phần, chỉnh narration rồi Duyệt kịch bản → Nhân vật + bối cảnh.
 5. Nhân vật + bối cảnh: nạp bible hợp lệ tại Bản sắc; kiểm tra nhân vật chủ đạo, trích hoặc nhập tối đa 6 nhân vật phụ và 6 bối cảnh. Sửa mô tả tiếng Anh (mỗi mô tả phụ/bối cảnh tối đa 40 từ), tick xác nhận rồi Lưu & tiếp tục.
-6. Cảnh và prompt: hiển thị cảnh đã có, ghép phong cách và roster theo nhân vật/bối cảnh thực sự có mặt; copy hoặc xuất TXT/Markdown/CSV. Luồng sinh lô cảnh trên giao diện sẽ được bổ sung ở mục tiếp theo.
+6. Cảnh và prompt: tạo/tiếp tục lô 4 cảnh; kiểm tra lời kể, thẻ, mô tả hình, prompt đã ghép và cảnh báo. Tạo chuyển động bằng nút riêng nếu cần. Copy cảnh/Copy tất cả hoặc xuất TXT/Markdown/CSV; bấm Hoàn tất tại bước cuối khi đủ cảnh và lời kể.
 
 Copy toàn bộ kịch bản, Xuất kịch bản TXT hoặc Xuất Markdown (gồm nguồn). Nếu clipboard bị chặn, dùng Ctrl+C trong hộp thoại hoặc tải TXT. Ảnh, giọng và dựng video thực hiện ở app ngoài. Thumbnail giữ công cụ bố cục/canvas, không có API sinh ảnh.
 
@@ -85,3 +85,10 @@ Bản sắc → dán bible rồi Nạp bible, hoặc Nạp mẫu Cậu bé học
 Sau khi xác nhận Nhân vật + bối cảnh, bấm **Tạo cảnh và prompt**. Code chia toàn bộ lời kể theo thời lượng (mặc định 150 từ/phút) và nhịp cảnh (mặc định 8 giây). Mỗi lô tối đa 4 cửa sổ: AI chọn 1–3 thẻ trong menu cố định rồi điền mô tả. Lời kể/index do code giữ nguyên. Lô hoàn thành tự lưu; lỗi thì bấm **Tiếp tục tạo cảnh**. Thẻ sai thử lại đúng một lần, vẫn sai hiện đỏ và không tính vào cảnh hoàn thành.
 
 Độ phủ kiểm tra số từ và thứ tự lời kể, cảnh rỗng/trùng/index thiếu; prompt riêng dài hơn 80 từ được cảnh báo. Không thay kịch bản hoặc thời lượng giữa các lô đã lưu; dùng dự án mới nếu muốn chia lại, cảnh cũ được giữ. **Tạo prompt chuyển động** là nút riêng, không tự gọi khi tạo cảnh. Chuyển động cũng theo lô 4, chỉ lưu sau khi đủ prompt/đúng ID. Không tạo ảnh, âm thanh hoặc video.
+
+### Thẻ cảnh và xuất văn bản (K5)
+Mỗi cảnh hiển thị đầy đủ lời kể, thẻ, visual, image_prompt, animation_prompt (nếu có), overlay, SFX, nhân vật và bối cảnh. Ba dropdown chỉ chọn thẻ trong menu, không gõ thẻ tự do. Dấu đỏ chỉ rõ thẻ lỗi, lời kể trùng/rỗng, index thiếu hoặc chưa phủ đủ; prompt riêng >80 từ có cảnh báo vàng và không chặn hoàn tất.
+
+**Copy cảnh** giữ cả prompt ảnh/chuyển động và các trường phụ. **Copy tất cả**, **Xuất TXT**, **Xuất Markdown (.md)** và **Xuất CSV (.csv)** dùng cùng dữ liệu đã ghép lúc xuất. CSV có đúng thứ tự `scene,narration,image_prompt,animation_prompt,overlay,sfx,characters,background,tags,warnings`; nhân vật/thẻ/cờ phân cách bằng dấu phẩy bên trong ô CSV đã quote. Chữ overlay để biên tập riêng, không tự đưa vào prompt ảnh. Đổi visualStyle cập nhật ngay prompt hiển thị/copy/xuất, không sửa scene.prompt hoặc gọi lại AI.
+
+**Hoàn tất** chỉ có ở bước 6 (index 5) và bị khóa khi còn cảnh thiếu hoặc lỗi độ phủ. Dự án cũ step 8 được đưa về 5; scenes, voiceData, rendered, assets, roster và animations giữ nguyên. Có cảnh cũ thì vẫn mở lại bước cuối để xem/copy và tiếp tục từ số cảnh đã lưu. Nếu lời kể/thời lượng cũ không khớp kế hoạch, cảnh báo hiện rõ; không tự xóa/viết lại cảnh cũ. API sinh ảnh, giọng, dựng hoặc đăng video không khả dụng; khóa YouTube Data API giữ nguyên để khảo sát ngách.

@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {scenePromptRows,scenePromptsText} from './public/scene-prompts.mjs';
+import {renderSceneCards} from './public/scene-cards.mjs';
+import {scenePromptRows,scenePromptsText,sceneText} from './public/scene-prompts.mjs';
 const character=JSON.parse(await readFile('studio/public/schoolboy.preset.json','utf8'));
 test('K2 changing style updates presentation copy and export without AI or state mutation',async()=>{
  const c={characterBible:character,visualStyle:''},p={scenes:[{scene:7,narration:'He counts the coins.',prompt:'A boy counts coins at a desk.',expression:'thinking',pose:'laptop'}]};
@@ -11,10 +12,10 @@ test('K2 changing style updates presentation copy and export without AI or state
  c.visualStyle='Ink drawing on beige paper.';
  const after=scenePromptRows(c,p)[0].prompt;
  assert.notEqual(before,after);assert(after.startsWith(c.visualStyle));assert(after.includes(character.identity));assert(after.includes(p.scenes[0].prompt));
- assert.equal(scenePromptsText(c,p),`Scene 7\n${after}`);
+ assert(scenePromptsText(c,p).includes(after));assert(scenePromptsText(c,p).includes('He counts the coins.'));
  assert.equal(JSON.stringify(p),original);
  const app=await readFile('studio/public/app.js','utf8'),line=app.split('\n').find(s=>s.startsWith('function scenePromptPanel('));
- const render=new Function('scenePromptRows','panel','esc','btn','field',line+';return scenePromptPanel;')(scenePromptRows,(_title,body)=>body,s=>String(s),label=>label,()=>'' );
+ const render=new Function('scenePromptRows','panel','esc','btn','field','renderSceneCards',line+';return scenePromptPanel;')(scenePromptRows,(_title,body)=>body,s=>String(s),label=>label,()=>'',renderSceneCards );
  assert(render(c,p).includes(after));
  c.visualStyle='Flat blue ink.';assert(render(c,p).includes('Flat blue ink.'));assert(!render(c,p).includes('Ink drawing on beige paper.'));
  assert.equal(JSON.stringify(p),original);
@@ -40,10 +41,9 @@ test('K2 real input/copy/export handlers use current style and never call AI',as
  let copied,downloaded;
  for(const action of ['copy-scene-prompt','copy-scene-prompts','export-scene-prompts']){
   const line=appSource.split('\n').find(line=>line.startsWith(`case '${action}':`));
-  const body=line.slice(line.indexOf(':')+1).replace(/break;\s*$/, '');
-  const handler=new Function('c','p','el','scenePromptRows','scenePromptsText','copy','download','generate',`return (async()=>{${body}})();`);
-  await handler(c,p,{dataset:{index:'0'}},scenePromptRows,scenePromptsText,text=>{copied=text;},(name,text)=>{downloaded={name,text};},()=>{aiCalls++;throw Error('No AI allowed');});
-  if(action==='copy-scene-prompt')assert.equal(copied,expected);
+  const handler=new Function('c','p','el','scenePromptRows','scenePromptsText','copy','download','generate','sceneText',`return (async()=>{switch('${action}'){${line}}}) ();`);
+  await handler(c,p,{dataset:{index:'0'}},scenePromptRows,scenePromptsText,text=>{copied=text;},(name,text)=>{downloaded={name,text};},()=>{aiCalls++;throw Error('No AI allowed');},sceneText);
+  if(action==='copy-scene-prompt')assert.equal(copied,sceneText(scenePromptRows(c,p)[0]));
   if(action==='copy-scene-prompts')assert.equal(copied,scenePromptsText(c,p));
  }
  assert.deepEqual(downloaded,{name:'scene-prompts.txt',text:scenePromptsText(c,p)});

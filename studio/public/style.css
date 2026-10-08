@@ -12,3 +12,6 @@
 .niche-details[open]>summary{margin-bottom:18px}
 .template-candidates details{margin-top:14px}.template-candidates details[open]>summary{margin-bottom:12px}
 .niche-substeps{margin-top:-12px}.niche-substeps button{font-size:11px;padding:7px 12px}
+.scene-text{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65}
+.scene-entry{margin:18px 0}.scene-entry p{margin:8px 0}.scene-card .tag{margin:0 5px 6px 0}
+.scene-prompt-preview{padding:16px;border:1px solid var(--line);border-radius:10px;font-family:inherit;background:var(--bg)}

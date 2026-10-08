@@ -175,7 +175,7 @@ test('AI HTTP 503 switches model through gateway and retains primary setting',as
 
 test('E2 removed media routes return 404',async()=>{
  const s=await boot();try{
- for(const route of ['tts','image','transcribe','render','probe','youtube/connect','youtube/callback','youtube/publish'])assert.equal((await s.req('/api/'+route,'POST',{})).status,404,route);
+ for(const method of ['GET','POST'])for(const route of ['tts','image','image/generate','image/batch','transcribe','render','render/status','probe','youtube/connect','youtube/callback','youtube/publish'])assert.equal((await s.req('/api/'+route,method,method==='POST'?{}:undefined)).status,404,route+' '+method);
  assert.equal((await s.req('/api/build/old')).status,404);
  assert.equal((await s.req('/api/state')).status,200);
  }finally{await s.stop();}
