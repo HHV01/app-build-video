@@ -129,3 +129,5 @@ Nghiệm thu bằng gateway giả trên giao diện: nạp cả hai mẫu, scrip
 Cổng Kho được cập nhật theo yêu cầu: đếm kênh cùng khuôn, loại trùng channelId; dữ liệu đã lưu được cập nhật khi khởi động. Muốn lấy thêm video tham khảo của các kênh trước đây bị loại, bấm kiểm tra lại kho. Không thay đổi ngưỡng tìm khuôn hay cổng Gõ thử.
 
 Viết script từ dàn ý lưu từng phần. Nếu model lỗi giữa chừng, mở Lời kể nháp để đọc/copy và bấm Tiếp tục viết script; không gọi lại các phần đã hoàn thành khi dàn ý và cấu hình không đổi. Duyệt kịch bản chỉ sau khi hoàn tất nháp.
+
+Nếu model báo `Failed to validate JSON` (HTTP 400), Studio thử lại đúng một lần ở phần đang viết với chỉ dẫn JSON nhưng bỏ chế độ ép JSON của dịch vụ. Nếu vẫn thất bại, chuyển sang model dự phòng khi đã bật tự động chuyển model. JSON đầu ra vẫn được kiểm tra trước khi nhận; lỗi tham số/quyền truy cập không dùng cơ chế này.

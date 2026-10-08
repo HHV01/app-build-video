@@ -345,3 +345,40 @@ test('niche angle HTTP uses niche context and strips unrelated private research'
  try{const r=await server.req('/api/generate','POST',{action:'angles',context:{basis:'niche',niche:'Personal finance',titles:['Why save'],research:'PRIVATE_RESEARCH',sources:['PRIVATE_SOURCES'],identity:'PRIVATE_IDENTITY'}});assert.equal(r.status,200);assert.equal(r.body.output.angles[0].angle,'Why small money choices matter');const prompt=gw.seen[0].messages[1].content,ctx=JSON.parse(prompt.split('Dữ liệu dự án:\n')[1]);assert.equal(ctx.niche,'Personal finance');assert.equal(ctx.basis,'niche');assert.doesNotMatch(prompt,/PRIVATE_RESEARCH|PRIVATE_SOURCES|PRIVATE_IDENTITY/);const before=gw.seen.length;assert.equal((await server.req('/api/generate','POST',{action:'angles',context:{basis:'niche',niche:''}})).status,400);assert.equal(gw.seen.length,before);
  }finally{await server.stop();await gw.stop();await rm(envFile,{force:true});}
 });
+
+async function jsonFailureHarness(reply,settings={}){
+ const seen=[];const gateway=http.createServer(async(req,res)=>{let raw='';for await(const chunk of req)raw+=chunk;const sent=JSON.parse(raw);seen.push(sent);const value=reply(sent,seen.length);res.writeHead(value.status||200,{'Content-Type':'application/json'});res.end(JSON.stringify(value.body));});
+ await new Promise(r=>gateway.listen(0,'127.0.0.1',r));const envFile=path.join(tempRoot,`env-json-${Date.now()}-${Math.random()}.env`);
+ await writeFile(envFile,`OPENAI_BASE_URL=http://127.0.0.1:${gateway.address().port}/v1\nOPENAI_API_KEY=test-key\n`);
+ const server=await boot({STUDIO_ENV_FILE:envFile},{settings:{model:'primary',...settings}});
+ return {seen,server,async stop(){await server.stop();await new Promise(r=>gateway.close(r));await rm(envFile,{force:true});}};
+}
+const badJsonReply={status:400,body:{error:{code:'json_validate_failed',message:"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details."}}};
+const goodScriptReply={body:{choices:[{message:{content:'{"narration":"A valid next part.","editorNotes":[]}'},finish_reason:'stop'}]}};
+test('HTTP JSON validation 400 retries once without response_format while retaining JSON instructions and state',async()=>{
+ const h=await jsonFailureHarness((sent,n)=>n===1?badJsonReply:goodScriptReply);
+ try{const before=(await h.server.req('/api/state')).body;const r=await h.server.req('/api/generate','POST',{action:'script',context:{targetWords:20,outlineFocus:{title:'A next section'}}});
+ assert.equal(r.status,200,r.body.error);assert.equal(r.body.output.narration,'A valid next part.');assert.equal(h.seen.length,2);
+ assert.equal(h.seen[0].response_format.type,'json_object');assert.equal(h.seen[1].response_format,undefined);assert.match(h.seen[1].messages[0].content,/JSON/);assert.deepEqual(h.seen[0].messages,h.seen[1].messages);
+ assert.deepEqual((await h.server.req('/api/state')).body,before);
+ }finally{await h.stop();}
+});
+test('persistent JSON validation failure switches model after exactly one retry',async()=>{
+ const h=await jsonFailureHarness(sent=>sent.model==='primary'?badJsonReply:goodScriptReply,{autoFallback:true,fallbackModels:['backup']});
+ try{const r=await h.server.req('/api/generate','POST',{action:'script',context:{}});assert.equal(r.status,200,r.body.error);assert.equal(r.body.fallback.used,true);assert.deepEqual(h.seen.map(x=>x.model),['primary','primary','backup']);assert.equal(h.seen[2].response_format.type,'json_object');}
+ finally{await h.stop();}
+});
+test('unrelated HTTP 400 never retries or switches models',async()=>{
+ const h=await jsonFailureHarness(()=>({status:400,body:{error:{code:'invalid_request_error',message:'Invalid model parameter'}}}),{autoFallback:true,fallbackModels:['backup']});
+ try{const r=await h.server.req('/api/generate','POST',{action:'script',context:{}});assert.notEqual(r.status,200);assert.equal(h.seen.length,1);assert.match(r.body.error,/Invalid model parameter/);}
+ finally{await h.stop();}
+});
+
+test('malformed JSON in successful HTTP response is retried and parsed before returning',async()=>{
+ const h=await jsonFailureHarness((sent,n)=>n===1?{body:{choices:[{message:{content:'{"narration": unfinished'},finish_reason:'stop'}]}}:goodScriptReply);
+ try{const r=await h.server.req('/api/generate','POST',{action:'script',context:{}});assert.equal(r.status,200,r.body.error);assert.equal(h.seen.length,2);assert.equal(r.body.output.narration,'A valid next part.');}finally{await h.stop();}
+});
+test('all models failing JSON stop after bounded retries with an understandable error',async()=>{
+ const h=await jsonFailureHarness(()=>badJsonReply,{autoFallback:true,fallbackModels:['backup']});
+ try{const r=await h.server.req('/api/generate','POST',{action:'script',context:{}});assert.equal(r.status,503);assert.equal(h.seen.length,4);assert.match(r.body.error,/JSON hợp lệ/);assert.match(r.body.error,/đã lưu được giữ/);}finally{await h.stop();}
+});

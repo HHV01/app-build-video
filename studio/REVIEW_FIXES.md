@@ -154,3 +154,8 @@ Hook được coi là định hướng thay vì lời bắt buộc chép nguyên
 - Tái hiện dự án 30 phút có 5 phần scriptDraft nhưng narration trống: giao diện trước đây chỉ hiện lời kể sau toàn bộ vòng viết.
 - Hiện số phần/độ dài và nháp có thể copy; giữ nguyên kịch bản cũ khi viết lại, lưu nguyên nhân lỗi và tiếp tục phần còn thiếu; chặn duyệt khi còn nháp.
 - Test hành vi: mock lỗi giữa chừng, kiểm lưu nháp/tiếp tục không viết lại, bảo toàn lời kể cũ. Chưa chạy sinh toàn bộ script với AI thật.
+
+## Khôi phục khi model không tạo được JSON
+- Tái hiện HTTP 400 `json_validate_failed`: trước đây bị dừng vì chỉ fallback cho lỗi mạng/quota/quá tải.
+- Thử lại tối đa một lần/model, bỏ response_format ở lượt thử lại nhưng giữ nguyên schema và chỉ dẫn JSON; vẫn parse đầu ra. Sau hai lần lỗi JSON, fallback theo cấu hình.
+- Test đỏ trước, mock HTTP kiểm retry, fallback, giới hạn lượt gọi, lỗi 400 khác không retry, JSON sai ở HTTP 200 và state không đổi. Chưa kiểm chứng sinh script với model thật sau sửa; không thay cấu hình model hoặc youtubeKey.
