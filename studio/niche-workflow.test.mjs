@@ -29,3 +29,9 @@ test('pending survey input is captured before actions; unchecked radios cannot o
  workflow.applySurveyFields(s,[{binding:'survey.angle',value:'new',type:'textarea'},{binding:'survey.groupDraft',value:'[]',type:'textarea'},{binding:'survey.templateChoice',value:'long',type:'radio',checked:false},{binding:'survey.templateChoice',value:'short',type:'radio',checked:true},{binding:'survey.completeImport',type:'checkbox',checked:true},{binding:'channel.name',value:'ignore'}]);
  assert.deepEqual(s,{angle:'new',groupDraft:'[]',templateChoice:'short',completeImport:true});
 });
+
+test('niche angle suggestions use niche as primary context, preserve selected angle and gates on error',async()=>{
+ const {suggestNicheAngles,angleOptionsFor}=await import('./public/niche-workflow.mjs');const s={angleNiche:'Tài chính cá nhân',language:'vi',angle:'Góc đang dùng',nicheFlow:{template:{passed:true,value:'Why',examples:['Why save money'],angleSuggestions:[{angle:'Old',reason:'Titles'}]},shelf:{passed:true}}};let sent,saves=0;
+ await suggestNicheAngles(s,async(action,context)=>{sent={action,context};return {angles:[{angle:'Vì sao quyết định nhỏ ảnh hưởng tiền bạc?',reason:'Hợp ngách tài chính'}]};},async()=>{saves++;});assert.equal(sent.action,'angles');assert.equal(sent.context.basis,'niche');assert.equal(sent.context.niche,'Tài chính cá nhân');assert.deepEqual(sent.context.titles,['Why save money']);assert.equal(s.angle,'Góc đang dùng');assert(s.nicheFlow.shelf.passed);assert.equal(angleOptionsFor(s)[0].angle,'Vì sao quyết định nhỏ ảnh hưởng tiền bạc?');assert.equal(saves,1);
+ await suggestNicheAngles(s,async()=>{throw Error('Gateway offline');},async()=>{});assert.match(s.nicheAngleError,/Gateway offline/);assert.equal(angleOptionsFor(s).length,1);assert.equal(s.angle,'Góc đang dùng');s.angleNiche='Lịch sử';assert.deepEqual(angleOptionsFor(s),[]);
+});

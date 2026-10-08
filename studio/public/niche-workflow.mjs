@@ -19,3 +19,16 @@ export function applySurveyFields(survey, fields) {
     survey[input.binding.slice(7)]=input.type==='checkbox'?Boolean(input.checked):input.value;
   }
 }
+export function angleOptionsFor(survey){
+ if(survey.angleSource==='niche')return survey.nicheAngleFor===String(survey.angleNiche||'').trim()?(survey.nicheAngleSuggestions||[]):[];
+ return survey.nicheFlow?.template?.angleSuggestions||[];
+}
+export async function suggestNicheAngles(survey,generate,save){
+ const niche=String(survey.angleNiche||'').trim();if(!niche||niche.length>300)throw Error('Nhập ngách muốn làm (tối đa 300 ký tự).');
+ survey.angleSource='niche';delete survey.nicheAngleError;
+ try{const output=await generate('angles',{basis:'niche',niche,language:survey.language||'vi',market:survey.market||'VN',format:survey.format||'long',titles:(survey.nicheFlow?.template?.examples||[]).filter(t=>typeof t==='string').slice(0,20).map(t=>t.slice(0,300))});
+ const suggestions=(output.angles||[]).filter(x=>typeof x.angle==='string'&&x.angle.trim()).slice(0,3).map(x=>({angle:x.angle.trim(),reason:String(x.reason||'')}));if(!suggestions.length)throw Error('AI chưa trả gợi ý góc kể.');
+ survey.nicheAngleSuggestions=suggestions;survey.nicheAngleFor=niche;
+ }catch(error){survey.nicheAngleError='Chưa lấy được gợi ý theo ngách: '+error.message+' Góc đã chọn và kết quả kiểm tra vẫn được giữ.';}
+ await save();
+}

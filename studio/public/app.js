@@ -1,3 +1,4 @@
+import {suggestNicheAngles,angleOptionsFor} from './niche-workflow.mjs';
 import {hasChannelPlans,loadTichChannelSample,writeChannelScript,renderChannelPlans,movePlan} from './channel-plans.mjs';
 import {updateSceneCharacters} from './scene-character.mjs';
 import {updateBibleTags} from './bible-scene-tags.mjs';
@@ -287,7 +288,9 @@ case 'niche-analyze':{
  await nicheAction('field',{market:s.market,language:s.language,format:s.format},[{stage:'template',extras:templateRequest(s)}]);break;
 }
 case 'niche-template':await nicheAction('template',templateRequest(s));break;
-case 'niche-choose-angle':{const suggestion=s.nicheFlow?.template?.angleSuggestions?.[Number(el.dataset.index)];if(suggestion){s.angle=suggestion.angle;await save();render();}break;}
+case 'niche-suggest-angles':await run('Đang đề xuất góc kể theo ngách…',()=>suggestNicheAngles(s,generate,save));break;
+case 'niche-reference-angles':s.angleSource='reference';await save();render();break;
+case 'niche-choose-angle':{const suggestion=angleOptionsFor(s)[Number(el.dataset.index)];if(suggestion){s.angle=suggestion.angle;await save();render();}break;}
 case 'niche-use-template':if(!s.angle?.trim())return toast('Chọn một gợi ý hoặc nhập góc kể trước khi tiếp tục.',true);await nicheAction('template',templateRequest(s,true),[{stage:'shelf',extras:shelfRequest(s)}]);break;
 case 'niche-copy-dna':await copy(JSON.stringify({titleDNA:titleDNA(s.nicheFlow?.shelf?.videos||[],s.nicheFlow?.template?.value),tagStats:tagStats(s.nicheFlow?.shelf?.videos||[],s.nicheFlow?.template?.value)},null,2));break;
 case 'niche-shelf':await nicheAction('shelf',shelfRequest(s));break;

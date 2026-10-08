@@ -122,3 +122,6 @@ Viết script từ dàn ý sẽ viết từng đoạn theo kế hoạch rồi th
 Sau khi gom, code lắp lại các đoạn theo bản nguồn, giữ đúng thứ tự và câu ở đầu/cuối. SFX được lưu bằng vị trí từ, xuất vào cột `sfx` của cảnh chứa từ cuối đoạn fixed; với mẫu này là cảnh cuối. SFX không tính số từ và không gửi AI. Nếu sửa lời kể sau khi viết khiến vị trí không còn khớp, SFX cũ không tự gắn sang cảnh sai; viết lại theo kế hoạch để cập nhật vị trí.
 
 Nghiệm thu bằng gateway giả trên giao diện: nạp cả hai mẫu, script 900/900 từ, hook rồi câu chào, kết bằng câu cố định, cảnh cuối có Yeah riêng. CSV từ dự án QA có Yeah ở cột sfx cuối và narration không chứa Yeah. Chưa kiểm chất lượng sáng tác với AI thật. Ảnh: `screenshots/tich-plan-qa.png`.
+
+### Đề xuất góc kể theo ngách
+Ở bước Chọn khuôn, nhập **Ngách bạn muốn làm** (ví dụ “tài chính cá nhân”, “kinh doanh dễ hiểu”), rồi bấm **Đề xuất góc kể theo ngách**. Chọn một gợi ý và chỉnh trong ô Góc kể nếu cần. Nút **Xem gợi ý từ kênh tham khảo** mở lại nhóm gợi ý dựa trên tiêu đề đã phân tích. Đổi ngách sẽ ẩn gợi ý của ngách cũ cho tới khi chạy lại; không tự ghi đè góc đã chọn. Góc này được dùng khi chốt khuôn và dựng kênh, còn các cổng kiểm chứng không đổi.

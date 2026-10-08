@@ -140,3 +140,7 @@ Hook được coi là định hướng thay vì lời bắt buộc chép nguyên
 - Test đỏ trước do thiếu module; sau sửa 189/189 test xanh. Test hành vi mock workflow/HTTP kiểm literals, khung template, độ dài/chặn slot, restore fixed, context lọc, số từ và SFX CSV, budget phần đầu/cuối, resume và legacy no-plan. Bốn file gốc không đổi; youtubeKey không đụng.
 - Chạy tay IAB với Studio/gateway giả riêng: nạp hai mẫu, xác nhận roster Tích, tạo 900 từ và 45 cảnh; lời kể không chứa Yeah, CSV và scene card cuối có SFX Yeah. Mock lặp từ/biểu cảm có cảnh báo của workflow như dự kiến; không dùng mock này để đánh giá nội dung. Ảnh screenshots/tich-plan-qa.png.
 - Chưa gọi AI/YouTube thật; chưa đánh giá chất lượng hook, kết luận hoặc độ phù hợp dữ kiện do model thật viết. Các file/dữ liệu QA nằm trong tmp, không đổi dữ liệu người dùng.
+
+### Đề xuất góc kể theo ngách (08/10/2026)
+- Bổ sung ô ngách và nút đề xuất riêng ở bước Chọn khuôn; dùng action angles với niche làm căn cứ chính, chỉ lấy tối đa 20 tiêu đề tham khảo. Server lọc context, không gửi research/sources/identity dư. Người dùng chủ động chọn/sửa góc kể; giữ cách xem gợi ý theo kênh.
+- Gợi ý không tự đổi angle hoặc kết quả cổng. Đổi ngách ẩn đề xuất cũ, lỗi AI giữ góc/kết quả đã chọn. Test đỏ trước do thiếu helper; sau sửa 192/192 test xanh (mock workflow, renderer và HTTP). Chưa kiểm chất lượng đề xuất bằng AI thật.

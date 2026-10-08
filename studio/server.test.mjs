@@ -339,3 +339,9 @@ test('channel plan segment HTTP whitelists context, excludes fixed/SFX/research 
  const tooLong=await server.req('/api/generate','POST',{action:'planSegment',context:{kind:'template',slots:{subject:2},topic:'Money'}});assert.equal(tooLong.status,422);assert.match(tooLong.body.error,/2/);
  }finally{await server.stop();await gw.stop();await rm(envFile,{force:true});}
 });
+
+test('niche angle HTTP uses niche context and strips unrelated private research',async()=>{
+ const gw=await promptGateway({angles:[{angle:'Why small money choices matter',reason:'Personal finance'}]}),envFile=path.join(tempRoot,`env-niche-angle-${Date.now()}.env`);await writeFile(envFile,`OPENAI_BASE_URL=${gw.url}\nOPENAI_API_KEY=test-key\n`);const server=await boot({STUDIO_ENV_FILE:envFile});
+ try{const r=await server.req('/api/generate','POST',{action:'angles',context:{basis:'niche',niche:'Personal finance',titles:['Why save'],research:'PRIVATE_RESEARCH',sources:['PRIVATE_SOURCES'],identity:'PRIVATE_IDENTITY'}});assert.equal(r.status,200);assert.equal(r.body.output.angles[0].angle,'Why small money choices matter');const prompt=gw.seen[0].messages[1].content,ctx=JSON.parse(prompt.split('Dữ liệu dự án:\n')[1]);assert.equal(ctx.niche,'Personal finance');assert.equal(ctx.basis,'niche');assert.doesNotMatch(prompt,/PRIVATE_RESEARCH|PRIVATE_SOURCES|PRIVATE_IDENTITY/);const before=gw.seen.length;assert.equal((await server.req('/api/generate','POST',{action:'angles',context:{basis:'niche',niche:''}})).status,400);assert.equal(gw.seen.length,before);
+ }finally{await server.stop();await gw.stop();await rm(envFile,{force:true});}
+});
