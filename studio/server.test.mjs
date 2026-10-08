@@ -276,8 +276,8 @@ test('K2 identity renders an empty multiline visualStyle and persists edits per 
  const app=await readFile('studio/public/app.js','utf8');
  const viewLine=app.split('\n').find(line=>line.startsWith('function identityView('));
  const fields=[];
- const {renderBibleBlock}=await import('./public/roster.mjs');
- const render=new Function('panel','field','select','THUMB_LAYOUTS','renderBibleBlock','esc','btn',viewLine+';return identityView;')((name,content)=>content,(label,binding,value,type)=>{fields.push({binding,value,type});return `<${binding}>${value??''}</${binding}>`;},()=>'',[],renderBibleBlock,s=>String(s??''),()=>'' );
+ const {renderBibleBlock}=await import('./public/roster.mjs');const {renderChannelPlans}=await import('./public/channel-plans.mjs');
+ const render=new Function('panel','field','select','THUMB_LAYOUTS','renderBibleBlock','renderChannelPlans','esc','btn',viewLine+';return identityView;')((name,content)=>content,(label,binding,value,type)=>{fields.push({binding,value,type});return `<${binding}>${value??''}</${binding}>`;},()=>'',[],renderBibleBlock,renderChannelPlans,s=>String(s??''),()=>'' );
  const first=render({id:'a',identity:{}});
  assert.deepEqual(fields.find(f=>f.binding==='channel.visualStyle'),{binding:'channel.visualStyle',value:'',type:'textarea'});
  const style='Flat ink drawings.\nKeep backgrounds sparse.';
@@ -330,5 +330,12 @@ test('P2 HTTP uses bible menu without identity and validates unknown tags',async
   for(const sent of gw.seen){assert(!JSON.stringify(sent).includes(bible.identity));assert.doesNotMatch(JSON.stringify(sent),/PRIVATE_RESEARCH|PRIVATE_SOURCE|PRIVATE_PACKAGING/);}
   const image=scenePromptRows(channel,p)[0].image_prompt;assert(image.includes(bible.identity));assert(image.includes('Expression:'));assert(image.includes('Pose:'));
   tags[0].expression='invented';const bad=await server.req('/api/generate','POST',{action:'sceneTags',context:{windows:[{index:1,narration:p.script}],tagMenu:tagMenu(bible)}});assert.equal(bad.status,422);assert.equal(bad.body.invalidTags,true);
+ }finally{await server.stop();await gw.stop();await rm(envFile,{force:true});}
+});
+
+test('channel plan segment HTTP whitelists context, excludes fixed/SFX/research and blocks oversized slot',async()=>{
+ const fills={subject:'one two three'},gw=await promptGateway({text:'A useful hook.',fills}),envFile=path.join(tempRoot,`env-plans-${Date.now()}.env`);await writeFile(envFile,`OPENAI_BASE_URL=${gw.url}\nOPENAI_API_KEY=test-key\n`);const server=await boot({STUDIO_ENV_FILE:envFile});
+ try{const result=await server.req('/api/generate','POST',{action:'planSegment',context:{kind:'ai',instruction:'Tell a daily story.',maxWords:20,topic:'Money',fixed:'PRIVATE_FIXED',sfx:'PRIVATE_SFX',research:'PRIVATE_RESEARCH',sources:['PRIVATE_SOURCE']}});assert.equal(result.status,200);assert.equal(result.body.output.text,'A useful hook.');assert.doesNotMatch(JSON.stringify(gw.seen),/PRIVATE_FIXED|PRIVATE_SFX|PRIVATE_RESEARCH|PRIVATE_SOURCE/);
+ const tooLong=await server.req('/api/generate','POST',{action:'planSegment',context:{kind:'template',slots:{subject:2},topic:'Money'}});assert.equal(tooLong.status,422);assert.match(tooLong.body.error,/2/);
  }finally{await server.stop();await gw.stop();await rm(envFile,{force:true});}
 });

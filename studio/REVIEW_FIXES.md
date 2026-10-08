@@ -131,3 +131,12 @@ Hook được coi là định hướng thay vì lời bắt buộc chép nguyên
 ### Tích Thông Thái — Phần 1: mẫu Tích
 - Tạo hai bản sao chỉ đổi tên; giữ nguyên bốn file gốc. Nút chính nạp mẫu Tích, bản Schoolboy có nút riêng. Context sceneTags/scenes thêm chỉ tên roster theo yêu cầu mới.
 - Test đỏ vì thiếu loadTichSample; sau sửa 183/183 test xanh. Kiểm bản sao nguyên ký tự ngoài tên, 8/8/4/7/9 thẻ, roster Tích, prompt ghép identity nguyên văn và context mock AI không lộ identity/research/sources. Chưa chạy AI thật.
+
+### Tích Thông Thái — Phần 2: kế hoạch mở đầu/kết thúc
+- Thêm editor hai danh sách theo kênh: fixed/template/ai, giới hạn từ, SFX, thêm/xoá/sắp xếp và preview. Mẫu giữ nguyên văn toàn bộ câu/instruction/voice-hook-cấu trúc đã yêu cầu; không thêm media APIs.
+- fixed do code chèn; template chỉ gửi tên chỗ trống/giới hạn và chủ đề/cảnh mở cho AI, giữ nguyên khung câu bằng code. Action planSegment lọc context qua whitelist, kiểm giới hạn trả về. AI segment chỉ nhận instruction/voice/cảnh mở và tối đa ba claim supported; không gửi fixed/SFX/sources/research thừa.
+- Trừ chi phí từ ở phần đầu/cuối, cân lại thân bài khi kế hoạch vượt tỷ trọng ban đầu; tổng ±5%, lỗi độ dài retry một lần, lỗi mạng giữ draft và resume các đoạn đã hoàn tất. Kết thúc theo plan thay CTA, kênh không plan giữ luồng cũ. Chốt script bằng bản nguồn fixed/template, không tin bản viết lại của AI.
+- SFX lưu ngoài narration, theo vị trí từ cuối đoạn; composer/export ghép vào sfx cảnh tương ứng, không gửi AI và không tính targetWords. Vị trí chỉ áp dụng khi lời kể khớp basis đã chốt để tránh gắn nhầm sau chỉnh tay.
+- Test đỏ trước do thiếu module; sau sửa 189/189 test xanh. Test hành vi mock workflow/HTTP kiểm literals, khung template, độ dài/chặn slot, restore fixed, context lọc, số từ và SFX CSV, budget phần đầu/cuối, resume và legacy no-plan. Bốn file gốc không đổi; youtubeKey không đụng.
+- Chạy tay IAB với Studio/gateway giả riêng: nạp hai mẫu, xác nhận roster Tích, tạo 900 từ và 45 cảnh; lời kể không chứa Yeah, CSV và scene card cuối có SFX Yeah. Mock lặp từ/biểu cảm có cảnh báo của workflow như dự kiến; không dùng mock này để đánh giá nội dung. Ảnh screenshots/tich-plan-qa.png.
+- Chưa gọi AI/YouTube thật; chưa đánh giá chất lượng hook, kết luận hoặc độ phù hợp dữ kiện do model thật viết. Các file/dữ liệu QA nằm trong tmp, không đổi dữ liệu người dùng.

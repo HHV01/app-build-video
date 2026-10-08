@@ -1,7 +1,7 @@
 import {sceneBible,bibleSceneCheck,BIBLE_FIELDS} from './bible-scene-tags.mjs';
 import {sceneCharacterRoster,rosterNames,characterIssue} from './scene-character.mjs';
 import {composeImagePrompt} from './character-bible.mjs';
-import {animationFor,validateSceneCoverage,validateSceneTags} from './scene-workflow.mjs';
+import {animationFor,validateSceneCoverage,validateSceneTags,sceneNarration} from './scene-workflow.mjs';
 
 export const SCENE_COLUMNS=['scene','narration','image_prompt','animation_prompt','overlay','sfx','characters','background','tags','warnings'];
 export const WARNING_MESSAGES={bibleWarnings:'Lưu ý từ bible:',invalidCharacters:'Tên nhân vật ngoài roster; prompt ảnh bị khóa để tránh mất nhân vật.',invalidTags:'Thẻ ngoài menu hoặc thẻ chưa hợp lệ.',duplicateNarration:'Lời kể trùng với cảnh trước.',promptLong:'Prompt riêng dài hơn 80 từ.',coverageWarning:'Lời kể chưa phủ đủ hoặc sai thứ tự kịch bản.',emptyNarration:'Lời kể cảnh rỗng.',indexWarning:'Index cảnh không liên tục.'};
@@ -15,7 +15,9 @@ export function scenePromptRows(channel,project) {
  const base={identity:channel.characterDescription||'',expressions:[],poses:[],outfits:[],props:[],graphics:[],...bible};
  const characters=[...main,...(project.extraCharacters||[])],backgrounds=project.backgrounds||[];
  const lookup=(rows,name)=>rows.find(c=>[c.name,c.id].some(v=>v&&String(v).normalize('NFC').toLowerCase()===String(name).normalize('NFC').toLowerCase()));
+ let wordCursor=0;const sfxValid=project.scriptSfxBasis===String(sceneNarration(project)).trim().split(/\s+/).filter(Boolean).join(' ');
  return (project.scenes||[]).map((scene,index)=>{
+  const end=wordCursor+String(scene.narration||'').trim().split(/\s+/).filter(Boolean).length;const fixedSfx=sfxValid?(project.scriptSfx||[]).filter(item=>item.word>=wordCursor&&item.word<end).map(item=>item.text):[];wordCursor=end;const sfx=[...new Set([scene.sfx||'',...fixedSfx].filter(Boolean))].join(' | ');
   const hasRoster=Boolean(project.roster||channel.characters||project.mainCharacters);
   const supplied=Array.isArray(scene.characters)?scene.characters:[];
   const present=supplied.length?supplied:main.map(row=>row.name);
@@ -35,7 +37,7 @@ export function scenePromptRows(channel,project) {
   const bible=sceneBible(channel,project);if(bible){const validation=bibleSceneCheck(scene,bible,project.scenes.slice(0,index));checked.invalidTags=checked.invalidTags||validation.errors.length>0;checked.tagWarnings=validation.warnings;checked.bibleWarnings=validation.warnings.length>0;checked.tagErrors=validation.errors;}
   if(!bible&&Array.isArray(scene.tags)&&scene.tags.length){try{validateSceneTags([{index:number,tags:scene.tags,summary:''}],[{index:number}]);}catch{checked.invalidTags=true;}}
   const warnings=Object.keys(WARNING_MESSAGES).filter(key=>key==='coverageWarning'?Boolean(inspected.coverageWarning):Boolean(checked[key]));
-  return {scene:number,narration:scene.narration||'',image_prompt:prompt,animation_prompt:animationFor(project,number),overlay:scene.overlay||'',sfx:scene.sfx||'',characters:scene.noCharacter===true?supplied.join(', '):present.join(', '),background:scene.background||'',tags:bible?BIBLE_FIELDS.flatMap(key=>Array.isArray(scene[key])?scene[key].map(tag=>`${key}:${tag}`):scene[key]?[`${key}:${scene[key]}`]:[]).join(', '):Array.isArray(scene.tags)?scene.tags.join(', '):'',warnings:warnings.join(', '),visual:scene.visual||'',characterError:issue||scene.characterError||'',tagErrors:checked.tagErrors||[],tagWarnings:checked.tagWarnings||[],prompt};
+  return {scene:number,narration:scene.narration||'',image_prompt:prompt,animation_prompt:animationFor(project,number),overlay:scene.overlay||'',sfx,characters:scene.noCharacter===true?supplied.join(', '):present.join(', '),background:scene.background||'',tags:bible?BIBLE_FIELDS.flatMap(key=>Array.isArray(scene[key])?scene[key].map(tag=>`${key}:${tag}`):scene[key]?[`${key}:${scene[key]}`]:[]).join(', '):Array.isArray(scene.tags)?scene.tags.join(', '):'',warnings:warnings.join(', '),visual:scene.visual||'',characterError:issue||scene.characterError||'',tagErrors:checked.tagErrors||[],tagWarnings:checked.tagWarnings||[],prompt};
  });
 }
 export function sceneText(row,format='txt'){

@@ -110,3 +110,15 @@ Trong mỗi thẻ cảnh, chọn các tên ở **Nhân vật trong cảnh** (ch�
 
 ### Mẫu nhân vật Tích
 Nút Nạp mẫu Tích ở Nhân vật chủ đạo tải tich-bible.txt và tich.preset.json. Hai bản chỉ đổi tên thành Tích, giữ nguyên identity/style và 8/8/4/7/9 thẻ. Bản Cậu bé học sinh vẫn dùng được bằng nút riêng. sceneTags và scenes gửi chỉ tên roster Tích, không gửi mô tả nhân vật, research hoặc sources.
+
+### Mở đầu/Kết thúc cố định — Tích Thông Thái
+Bản sắc → **Nạp mẫu Tích Thông Thái** để nạp đúng các câu mẫu và giọng/hook/cấu trúc. Đây là nút riêng với **Nạp mẫu Tích** (nhân vật). Hai danh sách Mở đầu/Kết thúc có Thêm đoạn, Xoá đoạn, ↑/↓ và xem trước:
+- `fixed`: code chèn câu nguyên văn; SFX tuỳ chọn không đọc vào narration.
+- `template`: câu giữ nguyên có `{tên_chỗ_trống}`; nhập JSON giới hạn như `{"chủ_đề":12,"cảnh_mở_đầu":15}`. AI chỉ điền giá trị, quá giới hạn bị chặn.
+- `ai`: instruction và maxWords, code kiểm giới hạn trước lưu.
+
+Viết script từ dàn ý sẽ viết từng đoạn theo kế hoạch rồi thân bài. Câu fixed không gửi AI viết lại; khung chữ của template do code ghép. Chi phí từ của mở đầu/kết thúc trừ vào mục tiêu phần đầu/cuối; khi vượt phần chia ban đầu, ngân sách thân bài còn lại được cân lại. Quá ngắn thì yêu cầu tăng thời lượng/rút kế hoạch. Thân bài lệch quá 5% được sửa đúng một lần, vẫn lệch thì dừng và giữ phần đã lưu để tiếp tục. Kế hoạch Kết thúc thay checkbox CTA; kênh không có kế hoạch vẫn dùng luồng cũ.
+
+Sau khi gom, code lắp lại các đoạn theo bản nguồn, giữ đúng thứ tự và câu ở đầu/cuối. SFX được lưu bằng vị trí từ, xuất vào cột `sfx` của cảnh chứa từ cuối đoạn fixed; với mẫu này là cảnh cuối. SFX không tính số từ và không gửi AI. Nếu sửa lời kể sau khi viết khiến vị trí không còn khớp, SFX cũ không tự gắn sang cảnh sai; viết lại theo kế hoạch để cập nhật vị trí.
+
+Nghiệm thu bằng gateway giả trên giao diện: nạp cả hai mẫu, script 900/900 từ, hook rồi câu chào, kết bằng câu cố định, cảnh cuối có Yeah riêng. CSV từ dự án QA có Yeah ở cột sfx cuối và narration không chứa Yeah. Chưa kiểm chất lượng sáng tác với AI thật. Ảnh: `screenshots/tich-plan-qa.png`.
