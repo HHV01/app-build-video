@@ -131,3 +131,5 @@ Cổng Kho được cập nhật theo yêu cầu: đếm kênh cùng khuôn, lo�
 Viết script từ dàn ý lưu từng phần. Nếu model lỗi giữa chừng, mở Lời kể nháp để đọc/copy và bấm Tiếp tục viết script; không gọi lại các phần đã hoàn thành khi dàn ý và cấu hình không đổi. Duyệt kịch bản chỉ sau khi hoàn tất nháp.
 
 Nếu model báo `Failed to validate JSON` (HTTP 400), Studio thử lại đúng một lần ở phần đang viết với chỉ dẫn JSON nhưng bỏ chế độ ép JSON của dịch vụ. Nếu vẫn thất bại, chuyển sang model dự phòng khi đã bật tự động chuyển model. JSON đầu ra vẫn được kiểm tra trước khi nhận; lỗi tham số/quyền truy cập không dùng cơ chế này.
+
+Giới hạn đầu ra là giới hạn của một lượt gọi, không phải thông báo hết hạn mức tài khoản. Khi model báo finish_reason=length, Studio không nhận lời kể bị cắt: thử lại tối đa một lần với ngân sách đầu ra tăng có giới hạn (script 2.000 → 4.000), rồi chuyển model theo cấu hình dự phòng. Các lượt bình thường giữ ngân sách cũ.

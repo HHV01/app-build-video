@@ -10,9 +10,9 @@ export async function withModelFallback(primary, backups, execute) {
  for(const model of models){
   try {const result=await execute(model);return {...result,model:result.model||model,fallback:{used:model!==primary,requestedModel:primary,selectedModel:model,attempts}};}
   catch(e){
-   if(![0,429,500,502,503,504].includes(e.upstreamStatus)&&!isJSONGenerationFailure(e))throw e;
+   if(![0,429,500,502,503,504].includes(e.upstreamStatus)&&!isJSONGenerationFailure(e)&&e.outputTruncated!==true)throw e;
    attempts.push({model,status:e.upstreamStatus});
-   if(model===models.at(-1))throw Object.assign(Error((isJSONGenerationFailure(e)?'AI chưa tạo được JSON hợp lệ sau khi thử lại và chuyển model: ':'Các model tạm thời chưa phản hồi: ')+attempts.map(x=>x.model+' ('+x.status+')').join(' → ')+'. Cảnh/nội dung đã lưu được giữ. Thử lại sau.'),{status:503});
+   if(model===models.at(-1))throw Object.assign(Error((e.outputTruncated===true?'Model vẫn cắt dở đầu ra sau khi thử lại: ':isJSONGenerationFailure(e)?'AI chưa tạo được JSON hợp lệ sau khi thử lại và chuyển model: ':'Các model tạm thời chưa phản hồi: ')+attempts.map(x=>x.model+' ('+x.status+')').join(' → ')+'. Cảnh/nội dung đã lưu được giữ. Thử lại sau.'),{status:503});
   }
  }
 }

@@ -382,3 +382,15 @@ test('all models failing JSON stop after bounded retries with an understandable 
  const h=await jsonFailureHarness(()=>badJsonReply,{autoFallback:true,fallbackModels:['backup']});
  try{const r=await h.server.req('/api/generate','POST',{action:'script',context:{}});assert.equal(r.status,503);assert.equal(h.seen.length,4);assert.match(r.body.error,/JSON hợp lệ/);assert.match(r.body.error,/đã lưu được giữ/);}finally{await h.stop();}
 });
+
+const truncatedScriptReply={body:{choices:[{message:{content:'{"narration":"unfinished'},finish_reason:'length'}]}};
+test('output length limit retries the same part with bounded extra output budget',async()=>{
+ const h=await jsonFailureHarness((sent,n)=>n===1?truncatedScriptReply:goodScriptReply);
+ try{const before=(await h.server.req('/api/state')).body;const r=await h.server.req('/api/generate','POST',{action:'script',context:{targetWords:200}});assert.equal(r.status,200,r.body.error);assert.equal(h.seen.length,2);assert.equal(h.seen[0].max_tokens,2000);assert.equal(h.seen[1].max_tokens,4000);assert.deepEqual(h.seen[0].messages,h.seen[1].messages);assert.equal(h.seen[1].response_format.type,'json_object');assert.deepEqual((await h.server.req('/api/state')).body,before);}
+ finally{await h.stop();}
+});
+test('persistent output truncation switches model without accepting partial narration',async()=>{
+ const h=await jsonFailureHarness(sent=>sent.model==='primary'?truncatedScriptReply:goodScriptReply,{autoFallback:true,fallbackModels:['backup']});
+ try{const r=await h.server.req('/api/generate','POST',{action:'script',context:{}});assert.equal(r.status,200,r.body.error);assert.equal(r.body.output.narration,'A valid next part.');assert.deepEqual(h.seen.map(x=>x.model),['primary','primary','backup']);assert.equal(h.seen[2].max_tokens,2000);assert.equal(r.body.fallback.used,true);}
+ finally{await h.stop();}
+});

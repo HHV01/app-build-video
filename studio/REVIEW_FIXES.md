@@ -159,3 +159,8 @@ Hook được coi là định hướng thay vì lời bắt buộc chép nguyên
 - Tái hiện HTTP 400 `json_validate_failed`: trước đây bị dừng vì chỉ fallback cho lỗi mạng/quota/quá tải.
 - Thử lại tối đa một lần/model, bỏ response_format ở lượt thử lại nhưng giữ nguyên schema và chỉ dẫn JSON; vẫn parse đầu ra. Sau hai lần lỗi JSON, fallback theo cấu hình.
 - Test đỏ trước, mock HTTP kiểm retry, fallback, giới hạn lượt gọi, lỗi 400 khác không retry, JSON sai ở HTTP 200 và state không đổi. Chưa kiểm chứng sinh script với model thật sau sửa; không thay cấu hình model hoặc youtubeKey.
+
+## Tiếp tục khi model cắt dở đầu ra
+- Tái hiện finish_reason=length: trước đây luôn dừng 422 dù đã chia script khoảng 220 từ/phần.
+- Retry một lần với ngân sách đầu ra tăng có giới hạn, giữ JSON mode; nếu vẫn bị cắt, fallback. Chung giới hạn tối đa hai lượt/model với retry JSON, không gọi vô hạn hoặc nhận narration bị cắt.
+- Test hành vi HTTP/mock kiểm ngân sách, prompt giữ nguyên, fallback và state không đổi. Chưa xác nhận sinh script với AI thật sau sửa.
