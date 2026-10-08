@@ -144,3 +144,8 @@ Hook được coi là định hướng thay vì lời bắt buộc chép nguyên
 ### Đề xuất góc kể theo ngách (08/10/2026)
 - Bổ sung ô ngách và nút đề xuất riêng ở bước Chọn khuôn; dùng action angles với niche làm căn cứ chính, chỉ lấy tối đa 20 tiêu đề tham khảo. Server lọc context, không gửi research/sources/identity dư. Người dùng chủ động chọn/sửa góc kể; giữ cách xem gợi ý theo kênh.
 - Gợi ý không tự đổi angle hoặc kết quả cổng. Đổi ngách ẩn đề xuất cũ, lỗi AI giữ góc/kết quả đã chọn. Test đỏ trước do thiếu helper; sau sửa 192/192 test xanh (mock workflow, renderer và HTTP). Chưa kiểm chất lượng đề xuất bằng AI thật.
+
+## Cổng Kho: ba kênh cùng khuôn (theo yêu cầu mới)
+- Ba channelId khác nhau cùng khuôn đủ để tiếp tục; tuổi video và trung vị view chỉ còn cảnh báo tham khảo. Giữ luật tìm khuôn >50%.
+- Cập nhật kết quả Kho đã lưu, không tự cào lại YouTube. Lần kiểm tra mới giữ video mang khuôn của cả kênh ít view hoặc video mới.
+- Kiểm bằng fixture/mock; chưa cào lại YouTube thật để kiểm chứng dữ liệu mới.

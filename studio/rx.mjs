@@ -468,9 +468,9 @@ export function channelShelf(videos, now = Date.now(), rules = RULES) {
   });
 }
 
-// Cổng 3: cần ít nhất 3 kênh cùng khuôn đạt thước.
+// Cổng kho: ba kênh riêng biệt cùng khuôn; tuổi/view là thông tin tham khảo.
 export function shelfGate(channels, rules = RULES) {
-  const passed = channels.filter(c => c.pass).length;
+  const passed = new Set(channels.filter(c => c.sameTemplate === true).map((c,i)=>c.channelId||c.id||'row:'+i)).size;
   return { passed: passed >= rules.minChannels, count: passed, need: rules.minChannels };
 }
 

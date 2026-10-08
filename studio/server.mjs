@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { enrichVideos, normalizeImport, validateGroups, parseAIJSON, durationSeconds, median } from './core.mjs';
 import { blindTitles, groupCountGate, RULES, STAGES, videoMetadata } from './rx.mjs';
-import { createNicheAPI } from './niche-api.mjs';
+import { createNicheAPI,normalizeShelfChecks } from './niche-api.mjs';
 import { createAssetStore } from './assets.mjs';
 import { tokenBudget } from './server-lib.mjs';
 import { normalizeScriptProjects } from './public/script-workflow.mjs';
@@ -52,6 +52,7 @@ function atomicSave(name, value) {
   storageQueue = task.catch(() => {}); return task;
 }
 normalizeScriptProjects(state);
+const previousShelfState=JSON.stringify(state);normalizeShelfChecks(state);if(JSON.stringify(state)!==previousShelfState){state.revision++;await atomicSave('state.json',state);}
 const assets = createAssetStore(path.join(dataRoot,'assets'));
 // Migrate existing embedded media once, retaining the original state for recovery.
 const migratedState=structuredClone(state);
@@ -309,7 +310,7 @@ const server = http.createServer(async (req, res) => {
             const channel = b.channels.find(c => c.id === project.channelId);
             if (channel?.nicheLock) project.nicheLock = structuredClone(channel.nicheLock); else delete project.nicheLock;
           }
-          normalizeScriptProjects(b);
+          normalizeScriptProjects(b);normalizeShelfChecks(b);
           const mediaRefs=await assets.externalize(b);
           const previous = state; state = { ...b, revision: state.revision + 1 };
           try { await atomicSave('state.json', state); } catch (e) { state = previous; throw e; }

@@ -201,8 +201,8 @@ test('B3 · carriesTemplate nhận tiêu đề mang khuôn, từ chối phần c
 });
 test('cổng kho: cần 3 kênh', () => {
   const ch = channelShelf([...mk('a', 6, 100, 30000), ...mk('b', 6, 100, 30000)], now);
-  assert.equal(shelfGate(ch).passed, false);
-  assert.equal(shelfGate(channelShelf([...mk('a', 6, 100, 3e4), ...mk('b', 6, 100, 3e4), ...mk('c', 6, 100, 3e4)], now)).passed, true);
+  assert.equal(shelfGate(ch.map(c=>({...c,sameTemplate:true}))).passed, false);
+  assert.equal(shelfGate(channelShelf([...mk('a', 6, 100, 3e4), ...mk('b', 6, 100, 3e4), ...mk('c', 6, 100, 3e4)], now).map(c=>({...c,sameTemplate:true}))).passed, true);
 });
 test('gõ thử: 11/20 qua, 10/20 trượt, thiếu video báo lỗi', () => {
   const v = n => Array.from({ length: 20 }, (_, i) => i < n ? 20001 : 100);
@@ -215,4 +215,11 @@ test('nhóm 4–7 và máy trạng thái', () => {
   const p = { niche: Object.fromEntries(['field', 'template', 'shelf', 'groups', 'probe', 'topics'].map(s => [s, { passed: true }])) };
   p.niche.template.value = 'x'; p.niche.groups.chosen = 'g'; p.niche.topics.chosen = ['a'];
   assert.equal(lockedNiche(p).template, 'x'); assert.equal(lockedNiche({}), null);
+});
+
+test('shelf counts distinct matching channels regardless of metric pass',()=>{
+ const channels=['a','b','b'].map(channelId=>({channelId,sameTemplate:true,pass:false}));
+ assert.equal(shelfGate(channels).count,2);
+ assert.equal(shelfGate(channels).passed,false);
+ assert.equal(shelfGate([...channels,{channelId:'c',sameTemplate:true,pass:false}]).passed,true);
 });

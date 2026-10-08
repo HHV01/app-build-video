@@ -69,7 +69,7 @@ test('Recommended template keeps alternatives collapsed and explains the next ac
 });
 test('Failed shelf states the missing channel count and offers recovery actions',()=>{
  const html=renderNiche(survey({nicheStep:2,nicheFlow:{...flow,shelf:{...flow.shelf,passed:false,count:2}}}),ui);
- assert.match(html,/Còn thiếu 1 kênh đạt/);assert.match(html,/data-action="niche-add-channel"/);
+ assert.match(html,/Còn thiếu 1 kênh cùng khuôn/);assert.match(html,/data-action="niche-add-channel"/);
  assert.match(html,/Thử khuôn khác/);
 });
 test('D3 topic review always explains the limits of word-based duplicate checks',()=>{

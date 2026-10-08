@@ -58,9 +58,11 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
     // Hai kênh cùng khuôn khi khuôn của kênh này CHỨA khuôn đã chốt. So sánh
     // bằng nhau là quá chặt: kênh lặp cụm dài hơn vẫn là cùng một dòng khuôn.
     const sameTemplate = Boolean(result.template) && `${result.template} `.startsWith(`${template} `);
-    const pass = !cat.durationWarning && cat.complete && result.complete === true && sameTemplate && shelf.pass;
+    const pass = sameTemplate;
+    const baseline=median(carrying.filter(v=>Number.isFinite(v.views)).map(v=>v.views));
+    const references=carrying.filter(v=>Number.isFinite(v.views)).map(v=>({...v,multiple:baseline>0?v.views/baseline:0}));
     const otherReason = result.template ? `Lặp khuôn khác: "${result.template}"` : result.reason || 'Không lặp cùng khuôn';
-    return { ...shelf, channelId: cat.id, channelTitle: cat.name, complete: cat.complete, template: result, sameTemplate, pass, videos: pass ? shelf.videos : [], provenance: cat.provenance, reason: pass ? '' : cat.durationWarning || [!cat.complete && 'Kho chưa đầy đủ', !sameTemplate && otherReason, !shelf.pass && (shelf.reason || 'Chưa qua cổng view')].filter(Boolean).join(' · ') };
+    return { ...shelf, channelId: cat.id, channelTitle: cat.name, complete: cat.complete, template: result, sameTemplate, pass, metricsPassed:shelf.pass, videos: pass ? references : [], provenance: cat.provenance, reason: cat.durationWarning || [!cat.complete && 'Kho chưa đầy đủ', !sameTemplate && otherReason, !shelf.pass && (shelf.reason || 'Chưa qua cổng view')].filter(Boolean).join(' · ') };
   }
   async function act(stage, body) {
     const snapshot = getState(), revision = snapshot.revision;
@@ -123,7 +125,7 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
       const channels = catalogs.map(cat => ({...evaluateChannel(cat,flow.template.value,flow.field.format),addedByUser:Boolean(cat.addedByUser),...(cat.lookupError?{reason:cat.lookupError}:{} )}));
       const gate = shelfGate(channels);
       const readUnits=catalogs.filter(c=>c.discovered).reduce((n,c)=>n+(c.quotaEstimate?.readUnits||0),0)+extraReadUnits;
-      value = { ...gate, channels, notice, quotaEstimate:body.mode==='live'?{searchCalls:1,readUnits,extraReadUnits,note:'Ước tính theo số trang và lô chi tiết; cache có thể giảm số lượt thực tế.'}:undefined, videos: channels.filter(c => c.pass).flatMap(c => c.videos), provenance: body.mode, formatWarning: 'Phân loại video dài/Shorts theo dữ liệu nhập hoặc thời lượng là gần đúng.' };
+      value = { ...gate, channels, notice, quotaEstimate:body.mode==='live'?{searchCalls:1,readUnits,extraReadUnits,note:'Ước tính theo số trang và lô chi tiết; cache có thể giảm số lượt thực tế.'}:undefined, videos: channels.filter(c => c.pass).flatMap(c => c.videos), provenance: body.mode, criteria:'same-template', formatWarning: 'Phân loại video dài/Shorts theo dữ liệu nhập hoặc thời lượng là gần đúng.' };
     } else if (stage === 'groups') {
       if (body.groupId) {
         if (!flow.groups?.passed || !flow.groups.groups.some(g => g.id === body.groupId)) throw fault('Chọn một nhóm trong kết quả đã đạt.', 409);
@@ -204,4 +206,11 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
     });
   }
   return { act, catalog, requireStage, rules: RULES };
+}
+
+export function normalizeShelfChecks(state){
+ for(const survey of state.surveys||[]){const shelf=survey.nicheFlow?.shelf;if(!Array.isArray(shelf?.channels))continue;
+ for(const channel of shelf.channels){channel.metricsPassed??=channel.pass===true;channel.pass=channel.sameTemplate===true;}
+ Object.assign(shelf,shelfGate(shelf.channels),{criteria:'same-template'});
+ }return state;
 }

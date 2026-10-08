@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createNicheAPI } from './niche-api.mjs';
+import { createNicheAPI, normalizeShelfChecks } from './niche-api.mjs';
 import { findTemplate, validateTopics, lockedNiche } from './rx.mjs';
 const now=Date.now(), id='survey-test';
 const fixture=()=>['a','b','c'].flatMap(ch=>Array.from({length:30},(_,i)=>({id:ch+i,channelId:ch,channelTitle:ch,title:`Entire history of ${i} ${ch}`,views:30000+i*100,publishedAt:new Date(now-(100+i)*86400000).toISOString(),duration:300,format:'long'})));
@@ -273,4 +273,18 @@ test('angle proposals use only analyzed titles and provider failure preserves te
  const failed=harness();await failed.act('field',{market:'US',language:'en',format:'long'});
  const fallback=(await failed.act('template',{channel:'a',suggestAngles:true})).survey.nicheFlow.template;
  assert.equal(fallback.passed,true);assert.match(fallback.angleSuggestionError,/tự nhập/);
+});
+
+test('shelf accepts three matching templates despite low views and young videos, retaining metric warnings',async()=>{
+ const h=harness(fixture().map(v=>v.channelId==='b'?{...v,views:1254}:v.channelId==='c'?{...v,publishedAt:new Date(now-10*86400000).toISOString()}:v));const result=(await prepare(h)).survey.nicheFlow.shelf;assert.equal(result.count,3);assert.equal(result.passed,true);assert(result.channels.every(c=>c.pass));assert.equal(result.channels.find(c=>c.channelId==='b').metricsPassed,false);assert.match(result.channels.find(c=>c.channelId==='b').reason,/20000/);assert.equal(result.channels.find(c=>c.channelId==='c').matureCount,0);assert(result.videos.some(v=>v.channelId==='b'));assert(result.videos.some(v=>v.channelId==='c'));assert.equal(h.state().surveys[0].nicheFlow.shelf.passed,true);
+});
+
+test('saved shelf migration unlocks matching channels and preserves downstream data',()=>{
+ const state={surveys:[{nicheFlow:{shelf:{channels:['a','b','c'].map(channelId=>({channelId,sameTemplate:true,pass:channelId==='a'})),videos:[{id:'retained'}],passed:false,count:1},groups:{chosen:'history'}}}]};
+ normalizeShelfChecks(state);
+ const flow=state.surveys[0].nicheFlow;
+ assert.equal(flow.shelf.passed,true);assert.equal(flow.shelf.count,3);
+ assert.equal(flow.shelf.channels[1].metricsPassed,false);
+ assert.deepEqual(flow.shelf.videos,[{id:'retained'}]);assert.equal(flow.groups.chosen,'history');
+ const snapshot=JSON.stringify(state);normalizeShelfChecks(state);assert.equal(JSON.stringify(state),snapshot);
 });
