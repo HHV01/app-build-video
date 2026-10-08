@@ -1,6 +1,7 @@
+import {updateSceneCharacters} from './scene-character.mjs';
 import {updateBibleTags} from './bible-scene-tags.mjs';
 import {renderSceneCards,updateSceneTags,finishSceneProject,sceneCompletionError} from './scene-cards.mjs';
-import {scenePlan,runSceneBatches,runAnimationBatches,validateSceneCoverage} from './scene-workflow.mjs';
+import {scenePlan,runSceneBatches,regenerateScene,runAnimationBatches,validateSceneCoverage} from './scene-workflow.mjs';
 import {loadChannelBible,loadSchoolboySample,initializeProjectRoster,ensureRosterDraft,projectMainCharacters,confirmProjectRoster,rosterExtrasContext,validateRosterExtras,renderBibleBlock,renderRosterStep} from './roster.mjs';
 import {scenePromptRows,scenePromptsText,sceneText} from './scene-prompts.mjs';
 import { deleteChannels, undoChannels, draftChannels } from './channel-management.mjs';
@@ -351,6 +352,7 @@ case 'roster-add':{const kind=el.dataset.kind;if(!['extraCharacters','background
 case 'roster-remove':{const kind=el.dataset.kind,index=Number(el.dataset.index);if(!['extraCharacters','backgrounds'].includes(kind)||!Number.isInteger(index)||index<0)return;ensureRosterDraft(p)[kind]?.splice(index,1);p.rosterReviewed=false;p.rosterConfirmed=false;p.approved=p.approved.filter(x=>x<4);await save();render();break;}
 case 'roster-continue':confirmProjectRoster(c,p);if(!p.approved.includes(4))p.approved.push(4);p.step=5;await save();render();break;
 case 'finish-scenes':finishSceneProject(p,c);activity('Hoàn tất kịch bản và prompt '+p.topic);await save();render();break;
+case 'regenerate-scene':await run('Đang tạo lại cảnh…',()=>regenerateScene(p,Number(el.dataset.index),{generate,save,channel:c,onProgress:text=>{document.querySelector('#busy-label').textContent=text;}}));break;
 case 'generate-scenes':await run('Đang chia cảnh…',()=>runSceneBatches(p,{generate,save,channel:c,onProgress:text=>{document.querySelector('#busy-label').textContent=text;}}));break;
 case 'generate-animation':await run('Đang tạo prompt chuyển động…',()=>runAnimationBatches(p,{generate,save,onProgress:text=>{document.querySelector('#busy-label').textContent=text;}}));break;
 case 'copy-scene-prompt':{const row=scenePromptRows(c,p)[Number(el.dataset.index)];await copy(row?sceneText(row):'');break;}
@@ -375,6 +377,7 @@ app.addEventListener('input',e=>{syncInputBinding(e.target);if(e.target.dataset.
 app.addEventListener('change',async e=>{
   const el=e.target;
   if(el.dataset.deleteProjects!==undefined){app.querySelector('[data-action="confirm-delete-channel"]').disabled=!el.checked;return;}
+  if(el.dataset.sceneCharacter!==undefined||el.dataset.sceneNoCharacter!==undefined){try{const position=Number(el.dataset.sceneCharacter??el.dataset.sceneNoCharacter),noCharacter=app.querySelector('[data-scene-no-character="'+position+'"]')?.checked===true,characters=noCharacter?[]:[...app.querySelectorAll('[data-scene-character="'+position+'"]')].filter(input=>input.checked).map(input=>input.value);updateSceneCharacters(currentChannel(),currentProject(),position,{characters,noCharacter});await save();render();}catch(error){toast(error.message,true);render();}return;}
   if(el.dataset.bibleTag!==undefined){try{const field=el.dataset.bibleField,value=field==='graphics'?[...el.selectedOptions].map(o=>o.value):el.value;updateBibleTags(currentChannel(),currentProject(),Number(el.dataset.bibleTag),{[field]:value});await save();render();}catch(error){toast(error.message,true);render();}return;}
   if(el.dataset.sceneTag!==undefined){try{const position=Number(el.dataset.sceneTag),tags=[...app.querySelectorAll('[data-scene-tag="'+position+'"]')].map(input=>input.value).filter(Boolean);updateSceneTags(currentProject(),position,tags);await save();render();}catch(error){toast(error.message,true);render();}return;}
   if(el.dataset.bind){if(el.dataset.bind==='project.narration'){const p=currentProject();p.previousNarration=p.narration;p.approved=p.approved.filter(x=>x<3);}setBinding(el.dataset.bind,el.type==='checkbox'?el.checked:el.value);if(el.dataset.bind.startsWith('project.thumbnail'))drawThumbnail();if(['survey.nicheMode','survey.probeMode','channel.type','channel.hideVerificationNotes','project.rosterReviewed'].includes(el.dataset.bind)){await saveQueue;render();}if(el.dataset.bind==='project.narration'){const p=currentProject();p.approved=p.approved.filter(x=>x<3);document.querySelector('#word-count').textContent=`${words(el.value)} đơn vị cách nhau bởi khoảng trắng`;}}

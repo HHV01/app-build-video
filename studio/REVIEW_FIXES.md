@@ -121,3 +121,9 @@ Hook được coi là định hướng thay vì lời bắt buộc chép nguyên
 - Lưu expression/pose/prop/outfit/graphics/camera riêng trên cảnh; dropdown dùng danh sách bible. composeImagePrompt duy nhất nhận các trường này để ghép Expression/Pose và identity nguyên văn lúc hiển thị/copy/xuất, không sửa scene.prompt. Cảnh legacy thiếu thẻ được báo lỗi để người dùng chọn lại, không tự đoán.
 - Test đỏ trước do thiếu adapter bible; sau sửa 179/179 test xanh. Mock workflow và HTTP gateway kiểm menu, schema, retry, cảnh báo lặp biểu cảm, dropdown, khối nhân vật nguyên văn, Expression/Pose và context không chứa identity/research/sources/packaging. Bốn file bible/preset không đổi nội dung.
 - Chưa gọi model hoặc YouTube thật; chưa đánh giá chất lượng chọn biểu cảm/dáng của model thật. Không sửa dữ liệu dự án hoặc khóa API hiện có.
+
+### Sửa cảnh lỗi tên nhân vật (08/10/2026)
+- Thẻ cảnh thêm checkbox từ roster và công tắc không nhân vật; lưu characters/noCharacter, kiểm tên trước ghi, xoá invalidCharacters/characterError khi hợp lệ và bỏ duyệt bước cuối. Handler lưu/cập nhật prompt ngay; không sửa composer hoặc bible.
+- Tạo lại riêng một cửa sổ bằng workflow chọn thẻ/scenes chung, giữ lời kể/index từ code và các cảnh khác. Giữ retry tên sai/thẻ sai đúng một lần; lỗi mạng không thay cảnh cũ. Xoá riêng animation của cảnh thay thế, không xoá animation khác.
+- Hai test đỏ trước vì chưa có hàm sửa/tạo lại. Sau sửa 182/182 test xanh: khối nhân vật nguyên văn, cờ biến mất và Hoàn tất được mở, noCharacter bỏ identity, lựa chọn sai không đổi state, renderer/handler checkbox, regenerate một cửa sổ không đổi cảnh khác, lỗi mạng giữ state.
+- Chưa chạy model thật hoặc xác nhận tương tác trên trình duyệt người dùng. Giữ ngưỡng cảnh báo prompt >80 từ, không thay media/YouTube/API keys; bốn file bible/preset không đổi.

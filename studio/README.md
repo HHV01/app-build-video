@@ -102,3 +102,8 @@ characters rỗng dùng nhân vật chủ đạo của dự án/kênh. Muốn c�
 Kênh có bible dùng đúng menu `tagMenu(character)` của bible: expression, pose/prop, outfit, graphics và camera. Chọn thẻ trước khi tạo cảnh, kiểm bằng bộ `validateSceneTags` gốc; lỗi thử lại một lần rồi hiện đỏ, cảnh báo hiện vàng. Kênh chưa có bible tiếp tục dùng menu thẻ chung.
 
 Các dropdown trên thẻ cảnh lấy lựa chọn từ bible. Expression/Pose và khối nhân vật nguyên văn được ghép khi hiển thị/copy/xuất; không lưu chuỗi ghép vào scene.prompt. Cảnh cũ thiếu thẻ bible được báo rõ và có thể chọn lại bằng dropdown. Bước chọn thẻ chỉ gửi lời kể của lô, menu và tóm tắt cảnh trước; không gửi identity/mô tả nhân vật, research hoặc sources.
+
+### Sửa nhân vật hoặc tạo lại một cảnh
+Trong mỗi thẻ cảnh, chọn các tên ở **Nhân vật trong cảnh** (chỉ từ roster đã chốt). Tên hợp lệ gỡ lỗi invalidCharacters; không chọn tên nào dùng nhân vật chủ đạo. Bật **Cảnh không có nhân vật** cho đồ vật/biểu đồ để bỏ khối nhân vật khỏi prompt. Các thay đổi cần Hoàn tất lại.
+
+**Tạo lại cảnh này** chọn thẻ và sinh mô tả cho đúng một cửa sổ lời kể, giữ nguyên các cảnh khác. Lời kể/index do code gắn. Lỗi mạng giữ cảnh cũ; tên sai vẫn thử lại đúng một lần rồi báo đỏ để bạn sửa bằng checkbox. Prompt chuyển động cũ của riêng cảnh được tạo lại bị xoá để bạn tạo lại khi cần. Nếu kịch bản/thời lượng không khớp cửa sổ đã lưu, giao diện báo lỗi thay vì thay lời kể âm thầm.
