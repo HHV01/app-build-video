@@ -127,3 +127,5 @@ Nghiệm thu bằng gateway giả trên giao diện: nạp cả hai mẫu, scrip
 Ở bước Chọn khuôn, nhập **Ngách bạn muốn làm** (ví dụ “tài chính cá nhân”, “kinh doanh dễ hiểu”), rồi bấm **Đề xuất góc kể theo ngách**. Chọn một gợi ý và chỉnh trong ô Góc kể nếu cần. Nút **Xem gợi ý từ kênh tham khảo** mở lại nhóm gợi ý dựa trên tiêu đề đã phân tích. Đổi ngách sẽ ẩn gợi ý của ngách cũ cho tới khi chạy lại; không tự ghi đè góc đã chọn. Góc này được dùng khi chốt khuôn và dựng kênh, còn các cổng kiểm chứng không đổi.
 
 Cổng Kho được cập nhật theo yêu cầu: đếm kênh cùng khuôn, loại trùng channelId; dữ liệu đã lưu được cập nhật khi khởi động. Muốn lấy thêm video tham khảo của các kênh trước đây bị loại, bấm kiểm tra lại kho. Không thay đổi ngưỡng tìm khuôn hay cổng Gõ thử.
+
+Viết script từ dàn ý lưu từng phần. Nếu model lỗi giữa chừng, mở Lời kể nháp để đọc/copy và bấm Tiếp tục viết script; không gọi lại các phần đã hoàn thành khi dàn ý và cấu hình không đổi. Duyệt kịch bản chỉ sau khi hoàn tất nháp.

@@ -149,3 +149,8 @@ Hook được coi là định hướng thay vì lời bắt buộc chép nguyên
 - Ba channelId khác nhau cùng khuôn đủ để tiếp tục; tuổi video và trung vị view chỉ còn cảnh báo tham khảo. Giữ luật tìm khuôn >50%.
 - Cập nhật kết quả Kho đã lưu, không tự cào lại YouTube. Lần kiểm tra mới giữ video mang khuôn của cả kênh ít view hoặc video mới.
 - Kiểm bằng fixture/mock; chưa cào lại YouTube thật để kiểm chứng dữ liệu mới.
+
+## Lời kể nháp và tiếp tục script
+- Tái hiện dự án 30 phút có 5 phần scriptDraft nhưng narration trống: giao diện trước đây chỉ hiện lời kể sau toàn bộ vòng viết.
+- Hiện số phần/độ dài và nháp có thể copy; giữ nguyên kịch bản cũ khi viết lại, lưu nguyên nhân lỗi và tiếp tục phần còn thiếu; chặn duyệt khi còn nháp.
+- Test hành vi: mock lỗi giữa chừng, kiểm lưu nháp/tiếp tục không viết lại, bảo toàn lời kể cũ. Chưa chạy sinh toàn bộ script với AI thật.
