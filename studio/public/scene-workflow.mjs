@@ -1,5 +1,6 @@
 import {sceneWindows,compactSceneContext,validateAnimations} from '../production.mjs';
 import {rosterNames,characterIssue} from './scene-character.mjs';
+import {sceneBible,bibleMenu,validateBibleBatch,BIBLE_FIELDS} from './bible-scene-tags.mjs';
 
 // Scene planning vocabulary, separate from the protected character bible vocabulary.
 export const tagMenu=Object.freeze(Object.fromEntries(Object.entries({
@@ -50,17 +51,17 @@ export async function runSceneBatches(project,{generate,save,channel={},onProgre
  for(let start=project.scenes.length;start<plan.count;start=project.scenes.length){
   const {windows}=sceneWindows(plan.narration,plan.seconds,plan.ceiling,start,4);
   onProgress(`Đang tạo cảnh ${start+1}–${start+windows.length}/${plan.count}`);
-  let tags;
+  let tags;const bible=sceneBible(channel,project);
   for(let attempt=0;attempt<2;attempt++){
    try{
-    const reply=await generate('sceneTags',{windows:windows.map(({index,narration})=>({index,narration})),tagMenu,summaryPrev:project.scenes.at(-1)?.summary||''});
-    tags=validateSceneTags(reply.tagsByIndex,windows);break;
+    const reply=await generate('sceneTags',{windows:windows.map(({index,narration})=>({index,narration})),tagMenu:bible?bibleMenu(bible):tagMenu,summaryPrev:project.scenes.at(-1)?.summary||''});
+    tags=bible?validateBibleBatch(reply.tagsByIndex,windows,bible,project.scenes):validateSceneTags(reply.tagsByIndex,windows);break;
    }catch(error){
     if(!error.invalidTags)throw error;
     if(attempt===1){project.sceneIssues=windows.map(w=>({index:w.index,invalidTags:true,reason:error.message}));await save();throw tagError('Thẻ cảnh vẫn sai sau một lần thử lại. Lô trước được giữ; bấm Tiếp tục để thử lô này.');}
    }
   }
-  const names=rosterNames(channel,project),context={...compactSceneContext({tagsByIndex:tags},windows),rosterNames:names};
+  const names=rosterNames(channel,project),context={...compactSceneContext({tagsByIndex:tags},windows),rosterNames:names,...(bible?{tagMenu:bibleMenu(bible)}:{})};
   let reply;
   for(let attempt=0;attempt<2;attempt++){
    reply=await generate('scenes',context);
@@ -71,7 +72,7 @@ export async function runSceneBatches(project,{generate,save,channel={},onProgre
   const batch=reply.scenes.map((row,i)=>{
    if(!row||['visual','prompt','overlay','sfx','background'].some(key=>typeof row[key]!=='string')||!row.prompt.trim()||!Array.isArray(row.characters)||row.characters.some(c=>typeof c!=='string'))throw Error('AI trả cảnh thiếu trường; lô chưa được lưu.');
    const issue=characterIssue(row,names);
-   return {...Object.fromEntries(['visual','prompt','overlay','sfx','characters','background'].map(key=>[key,row[key]])),noCharacter:row.noCharacter===true,...windows[i],tags:tags[i].tags,summary:tags[i].summary,...(issue?{invalidCharacters:true,characterError:issue}:{})};
+   return {...Object.fromEntries(['visual','prompt','overlay','sfx','characters','background'].map(key=>[key,row[key]])),noCharacter:row.noCharacter===true,...windows[i],...(bible?Object.fromEntries([...BIBLE_FIELDS,'tagWarnings'].map(key=>[key,tags[i][key]])):{tags:tags[i].tags}),summary:tags[i].summary,...(issue?{invalidCharacters:true,characterError:issue}:{})};
   });
   project.scenes.push(...batch);delete project.sceneIssues;validateSceneCoverage(project);await save();
  }

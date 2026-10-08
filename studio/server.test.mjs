@@ -316,3 +316,19 @@ test('K3 rosterExtras strips unrelated context and bounds output through real HT
   const calls=gw.seen.length;assert.equal((await s.req('/api/generate','POST',{action:'rosterExtras',context:{scriptText:''}})).status,400);assert.equal(gw.seen.length,calls);
  }finally{await s.stop();await gw.stop();await rm(envFile,{force:true});}
 });
+
+test('P2 HTTP uses bible menu without identity and validates unknown tags',async()=>{
+ const {tagMenu}=await import('./public/character-bible.mjs');const {runSceneBatches}=await import('./public/scene-workflow.mjs');const {scenePromptRows}=await import('./public/scene-prompts.mjs');
+ const bible=JSON.parse(await readFile('studio/public/schoolboy.preset.json','utf8'));
+ const tags=[{index:1,expression:bible.expressions[0].tag,pose:bible.poses[0].tag,graphics:[],camera:'wide',summary:'He waits.'}];
+ const gw=await promptGateway({tagsByIndex:tags,scenes:[{visual:'A boy waits.',prompt:'A boy waits.',characters:[],noCharacter:false,overlay:'',sfx:'',background:''}]}),envFile=path.join(tempRoot,`env-p2-${Date.now()}.env`);await writeFile(envFile,`OPENAI_BASE_URL=${gw.url}\nOPENAI_API_KEY=test-key\n`);const server=await boot({STUDIO_ENV_FILE:envFile});
+ try{
+  const channel={characters:[{name:bible.name,description:bible.identity,bible}]},p={script:'A boy waits.',voiceSeconds:4,clipSeconds:4,scenes:[]};
+  await runSceneBatches(p,{channel,save:async()=>{},generate:async(action,context)=>{const r=await server.req('/api/generate','POST',{action,context:{...context,identity:bible.identity,research:'PRIVATE_RESEARCH',sources:['PRIVATE_SOURCE'],packaging:'PRIVATE_PACKAGING'}});assert.equal(r.status,200,r.body.error);return r.body.output;}});
+  assert.equal(gw.seen.length,2);
+  const contexts=gw.seen.map(call=>JSON.parse(call.messages[1].content.split('Batch narration:\n')[1]));assert.equal(contexts[0].tagMenu,tagMenu(bible));assert.deepEqual(Object.keys(contexts[0]).sort(),['summaryPrev','tagMenu','windows']);assert.equal(contexts[1].tagMenu,undefined);assert.equal(contexts[1].tagsByIndex[0].tagWarnings,undefined);
+  for(const sent of gw.seen){assert(!JSON.stringify(sent).includes(bible.identity));assert.doesNotMatch(JSON.stringify(sent),/PRIVATE_RESEARCH|PRIVATE_SOURCE|PRIVATE_PACKAGING/);}
+  const image=scenePromptRows(channel,p)[0].image_prompt;assert(image.includes(bible.identity));assert(image.includes('Expression:'));assert(image.includes('Pose:'));
+  tags[0].expression='invented';const bad=await server.req('/api/generate','POST',{action:'sceneTags',context:{windows:[{index:1,narration:p.script}],tagMenu:tagMenu(bible)}});assert.equal(bad.status,422);assert.equal(bad.body.invalidTags,true);
+ }finally{await server.stop();await gw.stop();await rm(envFile,{force:true});}
+});

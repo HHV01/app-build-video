@@ -1,9 +1,10 @@
+import {sceneBible,bibleSceneCheck,BIBLE_FIELDS} from './bible-scene-tags.mjs';
 import {sceneCharacterRoster,rosterNames,characterIssue} from './scene-character.mjs';
 import {composeImagePrompt} from './character-bible.mjs';
 import {animationFor,validateSceneCoverage,validateSceneTags} from './scene-workflow.mjs';
 
 export const SCENE_COLUMNS=['scene','narration','image_prompt','animation_prompt','overlay','sfx','characters','background','tags','warnings'];
-export const WARNING_MESSAGES={invalidCharacters:'Tên nhân vật ngoài roster; prompt ảnh bị khóa để tránh mất nhân vật.',invalidTags:'Thẻ ngoài menu hoặc thẻ chưa hợp lệ.',duplicateNarration:'Lời kể trùng với cảnh trước.',promptLong:'Prompt riêng dài hơn 80 từ.',coverageWarning:'Lời kể chưa phủ đủ hoặc sai thứ tự kịch bản.',emptyNarration:'Lời kể cảnh rỗng.',indexWarning:'Index cảnh không liên tục.'};
+export const WARNING_MESSAGES={bibleWarnings:'Lưu ý từ bible:',invalidCharacters:'Tên nhân vật ngoài roster; prompt ảnh bị khóa để tránh mất nhân vật.',invalidTags:'Thẻ ngoài menu hoặc thẻ chưa hợp lệ.',duplicateNarration:'Lời kể trùng với cảnh trước.',promptLong:'Prompt riêng dài hơn 80 từ.',coverageWarning:'Lời kể chưa phủ đủ hoặc sai thứ tự kịch bản.',emptyNarration:'Lời kể cảnh rỗng.',indexWarning:'Index cảnh không liên tục.'};
 
 // Presentation only: the sole composer is the supplied character-bible function.
 export function scenePromptRows(channel,project) {
@@ -31,9 +32,10 @@ export function scenePromptRows(channel,project) {
    subject:noCharacter?(scene.prompt||scene.subject||''):'',setting:noCharacter?(background||(scene.prompt?'':scene.setting||scene.background||'')):setting,overlay:'',
   },character,channel.visualStyle||'');
   const checked=inspected.scenes[index];if(issue)checked.invalidCharacters=true;
-  if(Array.isArray(scene.tags)&&scene.tags.length){try{validateSceneTags([{index:number,tags:scene.tags,summary:''}],[{index:number}]);}catch{checked.invalidTags=true;}}
+  const bible=sceneBible(channel,project);if(bible){const validation=bibleSceneCheck(scene,bible,project.scenes.slice(0,index));checked.invalidTags=checked.invalidTags||validation.errors.length>0;checked.tagWarnings=validation.warnings;checked.bibleWarnings=validation.warnings.length>0;checked.tagErrors=validation.errors;}
+  if(!bible&&Array.isArray(scene.tags)&&scene.tags.length){try{validateSceneTags([{index:number,tags:scene.tags,summary:''}],[{index:number}]);}catch{checked.invalidTags=true;}}
   const warnings=Object.keys(WARNING_MESSAGES).filter(key=>key==='coverageWarning'?Boolean(inspected.coverageWarning):Boolean(checked[key]));
-  return {scene:number,narration:scene.narration||'',image_prompt:prompt,animation_prompt:animationFor(project,number),overlay:scene.overlay||'',sfx:scene.sfx||'',characters:scene.noCharacter===true?supplied.join(', '):present.join(', '),background:scene.background||'',tags:Array.isArray(scene.tags)?scene.tags.join(', '):'',warnings:warnings.join(', '),visual:scene.visual||'',characterError:issue||scene.characterError||'',prompt};
+  return {scene:number,narration:scene.narration||'',image_prompt:prompt,animation_prompt:animationFor(project,number),overlay:scene.overlay||'',sfx:scene.sfx||'',characters:scene.noCharacter===true?supplied.join(', '):present.join(', '),background:scene.background||'',tags:bible?BIBLE_FIELDS.flatMap(key=>Array.isArray(scene[key])?scene[key].map(tag=>`${key}:${tag}`):scene[key]?[`${key}:${scene[key]}`]:[]).join(', '):Array.isArray(scene.tags)?scene.tags.join(', '):'',warnings:warnings.join(', '),visual:scene.visual||'',characterError:issue||scene.characterError||'',tagErrors:checked.tagErrors||[],tagWarnings:checked.tagWarnings||[],prompt};
  });
 }
 export function sceneText(row,format='txt'){

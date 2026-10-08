@@ -115,3 +115,9 @@ Hook được coi là định hướng thay vì lời bắt buộc chép nguyên
 - Sau retry vẫn tên lạ: giữ tên gốc, invalidCharacters/characterError trên cảnh; UI/copy/xuất có cờ đỏ, image_prompt để trống và chặn Hoàn tất, không đoán hoặc âm thầm xuất cảnh thiếu nhân vật. characters=[] dùng nhân vật chủ đạo; noCharacter===true mới bỏ khối nhân vật. Cảnh cũ được kiểm khi hiển thị.
 - Test đỏ tái hiện trước sửa: [] làm mất identity, Nam chỉ gọi một lần. Sau sửa 175/175 test xanh. Mock AI và mock gateway qua HTTP kiểm tên đúng/[]/noCharacter, retry sai hai lần và retry thành công, khối nguyên văn, schema boolean, context chỉ thêm tên không lộ mô tả/identity/research/sources. Chưa gọi model thật để kiểm chất lượng tuân thủ tên.
 - Không sửa bốn file bible/preset, không làm Prompt 2 hoặc .gitattributes trong commit này.
+
+### Prompt 2 — Chọn và dùng thẻ bible (08/10/2026)
+- Dùng tagMenu và validateSceneTags từ character-bible.mjs gốc cho kênh có bible; kênh không bible giữ menu chung. Server chỉ nhận menu tên thẻ, không nhận identity. Lỗi chọn thẻ thử lại đúng một lần ở workflow, vẫn sai lưu cờ đỏ; cảnh báo của bộ kiểm gốc hiển thị vàng.
+- Lưu expression/pose/prop/outfit/graphics/camera riêng trên cảnh; dropdown dùng danh sách bible. composeImagePrompt duy nhất nhận các trường này để ghép Expression/Pose và identity nguyên văn lúc hiển thị/copy/xuất, không sửa scene.prompt. Cảnh legacy thiếu thẻ được báo lỗi để người dùng chọn lại, không tự đoán.
+- Test đỏ trước do thiếu adapter bible; sau sửa 179/179 test xanh. Mock workflow và HTTP gateway kiểm menu, schema, retry, cảnh báo lặp biểu cảm, dropdown, khối nhân vật nguyên văn, Expression/Pose và context không chứa identity/research/sources/packaging. Bốn file bible/preset không đổi nội dung.
+- Chưa gọi model hoặc YouTube thật; chưa đánh giá chất lượng chọn biểu cảm/dáng của model thật. Không sửa dữ liệu dự án hoặc khóa API hiện có.

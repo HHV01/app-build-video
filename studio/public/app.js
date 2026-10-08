@@ -1,3 +1,4 @@
+import {updateBibleTags} from './bible-scene-tags.mjs';
 import {renderSceneCards,updateSceneTags,finishSceneProject,sceneCompletionError} from './scene-cards.mjs';
 import {scenePlan,runSceneBatches,runAnimationBatches,validateSceneCoverage} from './scene-workflow.mjs';
 import {loadChannelBible,loadSchoolboySample,initializeProjectRoster,ensureRosterDraft,projectMainCharacters,confirmProjectRoster,rosterExtrasContext,validateRosterExtras,renderBibleBlock,renderRosterStep} from './roster.mjs';
@@ -374,6 +375,7 @@ app.addEventListener('input',e=>{syncInputBinding(e.target);if(e.target.dataset.
 app.addEventListener('change',async e=>{
   const el=e.target;
   if(el.dataset.deleteProjects!==undefined){app.querySelector('[data-action="confirm-delete-channel"]').disabled=!el.checked;return;}
+  if(el.dataset.bibleTag!==undefined){try{const field=el.dataset.bibleField,value=field==='graphics'?[...el.selectedOptions].map(o=>o.value):el.value;updateBibleTags(currentChannel(),currentProject(),Number(el.dataset.bibleTag),{[field]:value});await save();render();}catch(error){toast(error.message,true);render();}return;}
   if(el.dataset.sceneTag!==undefined){try{const position=Number(el.dataset.sceneTag),tags=[...app.querySelectorAll('[data-scene-tag="'+position+'"]')].map(input=>input.value).filter(Boolean);updateSceneTags(currentProject(),position,tags);await save();render();}catch(error){toast(error.message,true);render();}return;}
   if(el.dataset.bind){if(el.dataset.bind==='project.narration'){const p=currentProject();p.previousNarration=p.narration;p.approved=p.approved.filter(x=>x<3);}setBinding(el.dataset.bind,el.type==='checkbox'?el.checked:el.value);if(el.dataset.bind.startsWith('project.thumbnail'))drawThumbnail();if(['survey.nicheMode','survey.probeMode','channel.type','channel.hideVerificationNotes','project.rosterReviewed'].includes(el.dataset.bind)){await saveQueue;render();}if(el.dataset.bind==='project.narration'){const p=currentProject();p.approved=p.approved.filter(x=>x<3);document.querySelector('#word-count').textContent=`${words(el.value)} đơn vị cách nhau bởi khoảng trắng`;}}
   if(el.dataset.channelSelect){const s=currentSurvey();s.selectedChannels=el.checked?[...new Set([...s.selectedChannels,el.dataset.channelSelect])]:s.selectedChannels.filter(id=>id!==el.dataset.channelSelect);await save();}

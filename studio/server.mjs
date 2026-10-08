@@ -1,3 +1,4 @@
+import {bibleFromMenu,bibleMenu,validateBibleBatch} from './public/bible-scene-tags.mjs';
 import {tagMenu,validateSceneTags} from './public/scene-workflow.mjs';
 import {compactSceneContext,validateAnimations} from './production.mjs';
 import {rosterExtrasContext,validateRosterExtras} from './public/roster.mjs';
@@ -186,14 +187,16 @@ async function generate(b) {
   jobs.add(key);
   try {
     const sceneAction = ['scenes','animation','sceneTags'].includes(b.action);
+    let bible; if(['sceneTags','scenes'].includes(b.action)&&typeof b.context?.tagMenu==='string'){try{bible=bibleFromMenu(b.context.tagMenu);}catch(e){throw failure(e.message);}}
     const windows=(Array.isArray(b.context?.windows)?b.context.windows:[]).map(({index,narration})=>({index,narration}));
     if(['scenes','sceneTags'].includes(b.action)&&windows.length&&(windows.length>4||windows.some(w=>!Number.isInteger(w.index)||w.index<1||typeof w.narration!=='string'||!w.narration.trim())||new Set(windows.map(w=>w.index)).size!==windows.length))throw failure('Cần 1–4 cửa sổ lời kể với index duy nhất.');
-    const ctxObj = b.action === 'rosterExtras' ? rosterExtrasContext({characters:Array.isArray(b.context?.mainCharacters)?b.context.mainCharacters:[]},{narration:b.context?.scriptText}) : b.action === 'sceneTags' ? {windows,tagMenu,summaryPrev:typeof b.context?.summaryPrev==='string'?b.context.summaryPrev.split(/\s+/).slice(0,20).join(' '):''} : b.action === 'scenes' ? (windows.length?compactSceneContext(b.context||{},windows):{narration:b.context?.narration}) : b.action === 'animation' ? {scenes:(Array.isArray(b.context?.scenes)?b.context.scenes:[]).map(s=>({scene:s.scene??s.id,narration:s.narration}))} : b.action === 'groups' ? { ...b.context, videos: blindTitles(b.context?.videos || []) } : (b.context || {});
+    const ctxObj = b.action === 'rosterExtras' ? rosterExtrasContext({characters:Array.isArray(b.context?.mainCharacters)?b.context.mainCharacters:[]},{narration:b.context?.scriptText}) : b.action === 'sceneTags' ? {windows,tagMenu:bible?bibleMenu(bible):tagMenu,summaryPrev:typeof b.context?.summaryPrev==='string'?b.context.summaryPrev.split(/\s+/).slice(0,20).join(' '):''} : b.action === 'scenes' ? (windows.length?compactSceneContext(b.context||{},windows):{narration:b.context?.narration}) : b.action === 'animation' ? {scenes:(Array.isArray(b.context?.scenes)?b.context.scenes:[]).map(s=>({scene:s.scene??s.id,narration:s.narration}))} : b.action === 'groups' ? { ...b.context, videos: blindTitles(b.context?.videos || []) } : (b.context || {});
     if (b.action==='rosterExtras' && (typeof ctxObj.scriptText!=='string'||!ctxObj.scriptText.trim())) throw failure('Cần kịch bản trước khi trích danh sách.');
     if(b.action==='sceneTags'&&!windows.length)throw failure('Cần cửa sổ lời kể để chọn thẻ.');
     if (b.action==='scenes' && !windows.length && (typeof ctxObj.narration!=='string'||!ctxObj.narration.trim())) throw failure('Cần lời kể của lô cảnh.');
     if (b.action==='animation' && (ctxObj.scenes.length>4||!ctxObj.scenes.length||ctxObj.scenes.some(s=>!Number.isInteger(s.scene)||typeof s.narration!=='string'||!s.narration.trim())||new Set(ctxObj.scenes.map(s=>s.scene)).size!==ctxObj.scenes.length)) throw failure('Cần ID cảnh duy nhất và lời kể của từng cảnh.');
-    if(b.action==='scenes'&&windows.length){try{ctxObj.tagsByIndex=validateSceneTags(ctxObj.tagsByIndex,windows);}catch(e){throw Object.assign(failure(e.message,400),{invalidTags:true});}}
+    if(b.action==='scenes'&&windows.length){try{ctxObj.tagsByIndex=bible?validateBibleBatch(ctxObj.tagsByIndex,windows,bible):validateSceneTags(ctxObj.tagsByIndex,windows);}catch(e){throw Object.assign(failure(e.message,400),{invalidTags:true});}}
+    if(b.action==='scenes'&&windows.length)ctxObj.tagsByIndex=compactSceneContext(ctxObj,windows).tagsByIndex;
     if(b.action==='scenes'){const names=b.context?.rosterNames??[];if(!Array.isArray(names)||names.some(name=>typeof name!=='string'||!name.trim()))throw failure('Danh sách tên roster không hợp lệ.');ctxObj.rosterNames=[...new Set(names)];}
     const context = JSON.stringify(ctxObj);
     if (context.length > 65000) throw failure('Dữ liệu quá dài. Giảm số transcript hoặc video trong một lượt.');
@@ -216,10 +219,12 @@ async function generate(b) {
     if (['outline','script'].includes(b.action)) directives[b.action] += ' Ưu tiên researchFacts và claims có status=supported. needs_check không được khẳng định trong lời kể; đây là dữ kiện chưa kiểm chứng.';
     if (b.action === 'script') directives.script += ' Chỉ dùng fact/claim supported để khẳng định. Ý chưa có nguồn: tự viết lại cho an toàn, bỏ cực cấp đầu tiên/duy nhất/lớn nhất, dùng một trong những, theo các nhà sử học hoặc ước tính; KHÔNG ghi chú cho việc viết lại này. Chỉ editorNotes khi câu có con số, năm hoặc tên riêng cụ thể không có trong facts/claims; tối đa 2 ghi chú mỗi phần, một câu ngắn nêu câu cần kiểm. Không ghi chú về tên nguồn, không nhắc thực thể không có trong context.';
     if (b.context?.lengthCorrection && b.action==='script') directives.script += ' '+b.context.lengthCorrection;
+    if(b.action==='sceneTags'&&bible)directives.sceneTags='Choose only from the supplied bible tagMenu. Return one entry per window index, with expression, pose or prop, optional outfit and graphics, camera, and summary of at most 20 words. Never invent tags. Do not write image or motion prompts. Use only window narration and summaryPrev.';
+    const actionSchema=b.action==='sceneTags'&&bible?'{"tagsByIndex":[{"index":1,"expression":"tag","pose":"tag or empty","prop":"tag or empty","outfit":"tag or empty","graphics":[],"camera":"wide","summary":"at most 20 words"}]}':schemas[b.action];
     const budget = tokenBudget(b.action);
-    const response = await ai(`${directives[b.action]}\n${(sceneAction||b.action==='rosterExtras')?'Batch narration:':'Dữ liệu dự án:'}\n${context}`, schemas[b.action], budget);
+    const response = await ai(`${directives[b.action]}\n${(sceneAction||b.action==='rosterExtras')?'Batch narration:':'Dữ liệu dự án:'}\n${context}`, actionSchema, budget);
     if (b.action==='rosterExtras') { try { validateRosterExtras(response.output,ctxObj.mainCharacters); } catch(e) { throw failure(e.message,422); } }
-    if(b.action==='sceneTags'){try{response.output={tagsByIndex:validateSceneTags(response.output.tagsByIndex,windows)};}catch(e){throw Object.assign(failure(e.message,422),{invalidTags:true});}}
+    if(b.action==='sceneTags'){try{response.output={tagsByIndex:bible?validateBibleBatch(response.output.tagsByIndex,windows,bible):validateSceneTags(response.output.tagsByIndex,windows)};}catch(e){throw Object.assign(failure(e.message,422),{invalidTags:true});}}
     if (['scenes','animation'].includes(b.action)) {
       const rows=response.output?.[b.action==='scenes'?'scenes':'animations'];
       if(!Array.isArray(rows)||!rows.length||rows.some(s=>typeof s.prompt!=='string'||!s.prompt.trim()||(b.action==='animation'&&s.prompt.trim().split(/\s+/).length>60)||/\b(?:cinematic|realistic|matte\s+painting|4k|photorealistic|lighting)\b/i.test(s.prompt))) throw failure('AI trả prompt cảnh không hợp lệ: chỉ mô tả riêng cảnh, tối đa 60 từ.',422);

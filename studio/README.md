@@ -97,3 +97,8 @@ Mỗi cảnh hiển thị đầy đủ lời kể, thẻ, visual, image_prompt, 
 Action scenes gửi thêm rosterNames: chỉ tên nhân vật chủ đạo/phụ đã chốt, không gửi mô tả hoặc identity. Tên ngoài danh sách khiến lô scenes được gọi lại đúng một lần; nếu còn sai, lưu cảnh với invalidCharacters và lý do. Không đoán tên thay thế, không xuất một prompt ảnh thiếu nhân vật như thể hợp lệ; cảnh đỏ chặn Hoàn tất.
 
 characters rỗng dùng nhân vật chủ đạo của dự án/kênh. Muốn cảnh chỉ có đồ vật/biểu đồ phải có noCharacter=true. Tên hợp lệ vẫn ghép khối nhân vật nguyên văn. Phần prompt riêng giữ nguyên trong state; kiểm cảnh cũ cũng báo tên ngoài roster.
+
+### Thẻ bible theo cảnh — Prompt 2
+Kênh có bible dùng đúng menu `tagMenu(character)` của bible: expression, pose/prop, outfit, graphics và camera. Chọn thẻ trước khi tạo cảnh, kiểm bằng bộ `validateSceneTags` gốc; lỗi thử lại một lần rồi hiện đỏ, cảnh báo hiện vàng. Kênh chưa có bible tiếp tục dùng menu thẻ chung.
+
+Các dropdown trên thẻ cảnh lấy lựa chọn từ bible. Expression/Pose và khối nhân vật nguyên văn được ghép khi hiển thị/copy/xuất; không lưu chuỗi ghép vào scene.prompt. Cảnh cũ thiếu thẻ bible được báo rõ và có thể chọn lại bằng dropdown. Bước chọn thẻ chỉ gửi lời kể của lô, menu và tóm tắt cảnh trước; không gửi identity/mô tả nhân vật, research hoặc sources.

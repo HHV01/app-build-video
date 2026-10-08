@@ -24,5 +24,6 @@ export function validateAnimations(items, scenes) {
 }
 
 export function compactSceneContext(context, windows) {
-  return {windows:windows.map(({index,narration})=>({index,narration})),tagsByIndex:(context.tagsByIndex||[]).map(({index,tags,summary})=>({index,tags,summary}))};
+  const fields=['index','tags','summary','expression','pose','prop','outfit','graphics','camera'];
+  return {windows:windows.map(({index,narration})=>({index,narration})),tagsByIndex:(context.tagsByIndex||[]).map(row=>Object.fromEntries(fields.filter(key=>row[key]!==undefined).map(key=>[key,row[key]])))};
 }
