@@ -8,15 +8,16 @@ export function updateSceneTags(project,position,tags){
  const [valid]=validateSceneTags([{index,tags,summary:scene.summary||''}],[{index}]);
  scene.tags=valid.tags;scene.invalidTags=false;project.done=false;project.approved=(project.approved||[]).filter(n=>n!==LAST_STEP);
 }
-export function sceneCompletionError(project){
+export function sceneCompletionError(project,channel={}){
  if(project.step!==LAST_STEP)return 'Chỉ hoàn tất ở bước Cảnh và prompt.';
  try{const inspected=structuredClone(project),result=validateSceneCoverage(inspected),plan=scenePlan(inspected);
+ if(scenePromptRows(channel,inspected).some(row=>row.warnings.split(', ').includes('invalidCharacters')))return 'Có tên nhân vật ngoài roster. Kiểm tra cảnh đỏ trước khi hoàn tất.';
  for(const [i,scene] of (inspected.scenes||[]).entries())if(scene.tags?.length){const index=scene.index??scene.scene??scene.id??i+1;validateSceneTags([{index,tags:scene.tags,summary:''}],[{index}]);}
- if(!result.complete||inspected.scenes.length!==plan.count||inspected.sceneIssues?.length||inspected.scenes.some(s=>s.invalidTags))return inspected.coverageWarning||'Còn cảnh thiếu hoặc thẻ lỗi. Kiểm tra trước khi hoàn tất.';
+ if(!result.complete||inspected.scenes.length!==plan.count||inspected.sceneIssues?.length||inspected.scenes.some(s=>s.invalidTags||s.invalidCharacters))return inspected.coverageWarning||'Còn cảnh thiếu hoặc thẻ lỗi. Kiểm tra trước khi hoàn tất.';
  }catch(error){return error.message;}return '';
 }
-export function finishSceneProject(project){
- const error=sceneCompletionError(project);if(error)throw Error(error);
+export function finishSceneProject(project,channel={}){
+ const error=sceneCompletionError(project,channel);if(error)throw Error(error);
  validateSceneCoverage(project);
  project.done=true;project.approved||=[];if(!project.approved.includes(LAST_STEP))project.approved.push(LAST_STEP);
 }
@@ -30,6 +31,6 @@ export function renderSceneCards(channel,project,{esc,btn}){
    return `<div class="field"><label for="${id}">Thẻ ${slot+1}${slot===0?' · bắt buộc':''}</label><select id="${id}" data-scene-tag="${i}" data-tag-slot="${slot}"><option value="" ${value?'':'selected'}>${slot===0?'Chọn thẻ':'Không thêm thẻ'}</option>${selected}</select></div>`;
   }).join('');
   const entry=(label,value)=>`<div class="scene-entry"><strong>${label}</strong><p class="scene-text">${esc(value||'—')}</p></div>`;
-  return `<article class="panel scene-card" data-scene-card="${i}"><div class="panel-head"><h2>Cảnh ${esc(row.scene)}${scene.duration?` · ${esc(scene.duration)}s`:''}</h2>${btn('Copy cảnh','copy-scene-prompt','small',`data-index="${i}"`)}</div>${warnings.map(key=>`<div class="notice ${key==='promptLong'?'warning':'error'}"><strong>${esc(key)}</strong>: ${esc(WARNING_MESSAGES[key])}${key==='coverageWarning'&&project.coverageWarning?` ${esc(project.coverageWarning)}`:''}</div>`).join('')}${entry('Lời kể',row.narration)}<div class="actions">${tags.map(tag=>`<span class="tag">${esc(tag)}</span>`).join('')}</div><div class="grid3">${selectors}</div>${entry('Mô tả hình',row.visual)}<div class="scene-entry"><strong>Prompt ảnh · image_prompt</strong><pre class="scene-prompt-preview scene-text" data-scene-preview="${i}">${esc(row.image_prompt)}</pre></div>${entry('Prompt chuyển động · animation_prompt',row.animation_prompt)}<div class="grid2">${entry('Chữ chèn · overlay',row.overlay)}${entry('SFX',row.sfx)}${entry('Nhân vật',row.characters)}${entry('Bối cảnh',row.background)}</div></article>`;
+  return `<article class="panel scene-card" data-scene-card="${i}"><div class="panel-head"><h2>Cảnh ${esc(row.scene)}${scene.duration?` · ${esc(scene.duration)}s`:''}</h2>${btn('Copy cảnh','copy-scene-prompt','small',`data-index="${i}"`)}</div>${warnings.map(key=>`<div class="notice ${key==='promptLong'?'warning':'error'}"><strong>${esc(key)}</strong>: ${esc(WARNING_MESSAGES[key])}${key==='invalidCharacters'?` ${esc(row.characterError)}`:''}${key==='coverageWarning'&&project.coverageWarning?` ${esc(project.coverageWarning)}`:''}</div>`).join('')}${entry('Lời kể',row.narration)}<div class="actions">${tags.map(tag=>`<span class="tag">${esc(tag)}</span>`).join('')}</div><div class="grid3">${selectors}</div>${entry('Mô tả hình',row.visual)}<div class="scene-entry"><strong>Prompt ảnh · image_prompt</strong><pre class="scene-prompt-preview scene-text" data-scene-preview="${i}">${esc(row.image_prompt)}</pre></div>${entry('Prompt chuyển động · animation_prompt',row.animation_prompt)}<div class="grid2">${entry('Chữ chèn · overlay',row.overlay)}${entry('SFX',row.sfx)}${entry('Nhân vật',row.characters)}${entry('Bối cảnh',row.background)}</div></article>`;
  }).join('');
 }

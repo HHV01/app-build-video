@@ -1,4 +1,5 @@
 import {sceneWindows,compactSceneContext,validateAnimations} from '../production.mjs';
+import {rosterNames,characterIssue} from './scene-character.mjs';
 
 // Scene planning vocabulary, separate from the protected character bible vocabulary.
 export const tagMenu=Object.freeze(Object.fromEntries(Object.entries({
@@ -40,7 +41,7 @@ export function validateSceneCoverage(project){
  project.coverageWarning=coverageWarning?`Chưa phủ đủ kịch bản: ${(coverage*100).toFixed(1)}%${ordered?'':' — lời kể thiếu, trùng hoặc sai thứ tự.'}`:'';
  return {coverage,coverageWarning,complete:scenes.length>0&&!coverageWarning};
 }
-export async function runSceneBatches(project,{generate,save,onProgress=()=>{}}){
+export async function runSceneBatches(project,{generate,save,channel={},onProgress=()=>{}}){
  const plan=scenePlan(project);project.scenes||=[];
  const basis=JSON.stringify([plan.narration,plan.seconds,plan.ceiling]);
  if(project.scenes.length&&project.sceneBasis&&project.sceneBasis!==basis)throw Error('Kịch bản hoặc thời lượng đã đổi. Giữ cảnh cũ; hãy dùng một bản dự án mới để chia lại.');
@@ -59,11 +60,18 @@ export async function runSceneBatches(project,{generate,save,onProgress=()=>{}})
     if(attempt===1){project.sceneIssues=windows.map(w=>({index:w.index,invalidTags:true,reason:error.message}));await save();throw tagError('Thẻ cảnh vẫn sai sau một lần thử lại. Lô trước được giữ; bấm Tiếp tục để thử lô này.');}
    }
   }
-  const reply=await generate('scenes',compactSceneContext({tagsByIndex:tags},windows));
+  const names=rosterNames(channel,project),context={...compactSceneContext({tagsByIndex:tags},windows),rosterNames:names};
+  let reply;
+  for(let attempt=0;attempt<2;attempt++){
+   reply=await generate('scenes',context);
+   if(!Array.isArray(reply.scenes)||reply.scenes.length!==windows.length)throw Error('AI trả sai số cảnh; lô chưa được lưu, có thể tiếp tục.');
+   if(!reply.scenes.some(row=>characterIssue(row,names)))break;
+  }
   if(!Array.isArray(reply.scenes)||reply.scenes.length!==windows.length)throw Error('AI trả sai số cảnh; lô chưa được lưu, có thể tiếp tục.');
   const batch=reply.scenes.map((row,i)=>{
    if(!row||['visual','prompt','overlay','sfx','background'].some(key=>typeof row[key]!=='string')||!row.prompt.trim()||!Array.isArray(row.characters)||row.characters.some(c=>typeof c!=='string'))throw Error('AI trả cảnh thiếu trường; lô chưa được lưu.');
-   return {...Object.fromEntries(['visual','prompt','overlay','sfx','characters','background'].map(key=>[key,row[key]])),...windows[i],tags:tags[i].tags,summary:tags[i].summary};
+   const issue=characterIssue(row,names);
+   return {...Object.fromEntries(['visual','prompt','overlay','sfx','characters','background'].map(key=>[key,row[key]])),noCharacter:row.noCharacter===true,...windows[i],tags:tags[i].tags,summary:tags[i].summary,...(issue?{invalidCharacters:true,characterError:issue}:{})};
   });
   project.scenes.push(...batch);delete project.sceneIssues;validateSceneCoverage(project);await save();
  }

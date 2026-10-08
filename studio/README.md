@@ -92,3 +92,8 @@ Mỗi cảnh hiển thị đầy đủ lời kể, thẻ, visual, image_prompt, 
 **Copy cảnh** giữ cả prompt ảnh/chuyển động và các trường phụ. **Copy tất cả**, **Xuất TXT**, **Xuất Markdown (.md)** và **Xuất CSV (.csv)** dùng cùng dữ liệu đã ghép lúc xuất. CSV có đúng thứ tự `scene,narration,image_prompt,animation_prompt,overlay,sfx,characters,background,tags,warnings`; nhân vật/thẻ/cờ phân cách bằng dấu phẩy bên trong ô CSV đã quote. Chữ overlay để biên tập riêng, không tự đưa vào prompt ảnh. Đổi visualStyle cập nhật ngay prompt hiển thị/copy/xuất, không sửa scene.prompt hoặc gọi lại AI.
 
 **Hoàn tất** chỉ có ở bước 6 (index 5) và bị khóa khi còn cảnh thiếu hoặc lỗi độ phủ. Dự án cũ step 8 được đưa về 5; scenes, voiceData, rendered, assets, roster và animations giữ nguyên. Có cảnh cũ thì vẫn mở lại bước cuối để xem/copy và tiếp tục từ số cảnh đã lưu. Nếu lời kể/thời lượng cũ không khớp kế hoạch, cảnh báo hiện rõ; không tự xóa/viết lại cảnh cũ. API sinh ảnh, giọng, dựng hoặc đăng video không khả dụng; khóa YouTube Data API giữ nguyên để khảo sát ngách.
+
+### Giữ nhân vật trong cảnh — Prompt 1
+Action scenes gửi thêm rosterNames: chỉ tên nhân vật chủ đạo/phụ đã chốt, không gửi mô tả hoặc identity. Tên ngoài danh sách khiến lô scenes được gọi lại đúng một lần; nếu còn sai, lưu cảnh với invalidCharacters và lý do. Không đoán tên thay thế, không xuất một prompt ảnh thiếu nhân vật như thể hợp lệ; cảnh đỏ chặn Hoàn tất.
+
+characters rỗng dùng nhân vật chủ đạo của dự án/kênh. Muốn cảnh chỉ có đồ vật/biểu đồ phải có noCharacter=true. Tên hợp lệ vẫn ghép khối nhân vật nguyên văn. Phần prompt riêng giữ nguyên trong state; kiểm cảnh cũ cũng báo tên ngoài roster.

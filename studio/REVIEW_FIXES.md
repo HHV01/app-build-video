@@ -109,3 +109,9 @@ Hook được coi là định hướng thay vì lời bắt buộc chép nguyên
 - Test đỏ trước: thiếu thẻ cảnh/xuất đầy đủ, và completion vẫn cho thẻ legacy ngoài menu; sau sửa toàn bộ 171 test xanh. Test hành vi kiểm CSV, state không lưu prompt ghép, legacy/display/resume, six-tab renderer, finish, clipboard bị chặn (textarea tạm + hộp chọn thủ công có hướng dẫn Ctrl+C/TXT) và 404 GET/POST.
 - Browser QA dùng dự án/gateway riêng: lỗi 503 sau lô đầu vẫn lưu 4/6; tiếp tục chỉ gửi windows index 5, hoàn thành 6/6 và coverage 100%. Hai lượt chuyển động (4+2) chỉ phát sinh khi bấm nút. Đổi style/thẻ và copy không gọi AI; tải lại vẫn có cảnh/thẻ/motion; Hoàn tất chỉ ở bước cuối. Ảnh: screenshots/k45-scenes-qa.png.
 - Chưa gọi provider hoặc YouTube thật, chưa đánh giá chất lượng mô tả/chọn thẻ bởi model thật. Nội dung xuất và các nút tải được kiểm bằng test; chưa xác nhận file tải trên trình duyệt người dùng.
+
+### Prompt 1 — Không mất nhân vật âm thầm (08/10/2026)
+- Thêm rosterNames vào context scenes (chỉ tên nhân vật, không lấy bối cảnh làm nhân vật); schema thêm noCharacter boolean và directive giới hạn đúng tên. Browser orchestration kiểm tên và gọi lại cùng lô đúng một lần; không retry vô hạn hoặc retry lỗi mạng.
+- Sau retry vẫn tên lạ: giữ tên gốc, invalidCharacters/characterError trên cảnh; UI/copy/xuất có cờ đỏ, image_prompt để trống và chặn Hoàn tất, không đoán hoặc âm thầm xuất cảnh thiếu nhân vật. characters=[] dùng nhân vật chủ đạo; noCharacter===true mới bỏ khối nhân vật. Cảnh cũ được kiểm khi hiển thị.
+- Test đỏ tái hiện trước sửa: [] làm mất identity, Nam chỉ gọi một lần. Sau sửa 175/175 test xanh. Mock AI và mock gateway qua HTTP kiểm tên đúng/[]/noCharacter, retry sai hai lần và retry thành công, khối nguyên văn, schema boolean, context chỉ thêm tên không lộ mô tả/identity/research/sources. Chưa gọi model thật để kiểm chất lượng tuân thủ tên.
+- Không sửa bốn file bible/preset, không làm Prompt 2 hoặc .gitattributes trong commit này.

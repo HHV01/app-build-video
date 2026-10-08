@@ -212,7 +212,7 @@ test('K1b scene actions send only batch narration and return requested schemas',
  const gateway=http.createServer(async(req,res)=>{
   let raw='';for await(const chunk of req)raw+=chunk;const sent=JSON.parse(raw);seen.push(sent);
   const schema=JSON.parse(sent.messages[0].content.split('Cấu trúc JSON cần trả: ')[1]);
-  const output=schema.scenes?{scenes:[{narration:'A farmer delivers grain.',visual:'A farmer delivers grain.',prompt:'A farmer carries a grain basket into a storehouse. Wide shot.',overlay:'',sfx:'',characters:['Farmer'],background:'Storehouse'}]}:{animations:[{scene:7,prompt:'The farmer lifts the basket. The camera stays still.'}]};
+  const output=schema.scenes?{scenes:[{narration:'A farmer delivers grain.',visual:'A farmer delivers grain.',prompt:'A farmer carries a grain basket into a storehouse. Wide shot.',overlay:'',sfx:'',characters:['Farmer'],noCharacter:false,background:'Storehouse'}]}:{animations:[{scene:7,prompt:'The farmer lifts the basket. The camera stays still.'}]};
   if(forcedPrompt!==undefined)(output.scenes||output.animations)[0].prompt=forcedPrompt;
   res.setHeader('Content-Type','application/json');res.end(JSON.stringify({choices:[{message:{content:JSON.stringify(output)},finish_reason:'stop'}]}));
  });
@@ -228,9 +228,9 @@ test('K1b scene actions send only batch narration and return requested schemas',
    const messages=seen.at(-1).messages,text=JSON.stringify(messages);
    assert.doesNotMatch(text,/research|sources|packaging|SENTINEL|cinematic|realistic|matte painting|4K|photorealistic|lighting/i);
    const data=JSON.parse(messages[1].content.split('Batch narration:\n')[1]);
-   assert.deepEqual(data,action==='scenes'?{narration:context.narration}:{scenes:[{scene:7,narration:context.narration}]});
+   assert.deepEqual(data,action==='scenes'?{narration:context.narration,rosterNames:[]}:{scenes:[{scene:7,narration:context.narration}]});
    const schema=JSON.parse(messages[0].content.split('Cấu trúc JSON cần trả: ')[1]);
-   const key=action==='scenes'?'scenes':'animations',fields=action==='scenes'?['background','characters','narration','overlay','prompt','sfx','visual']:['prompt','scene'];
+   const key=action==='scenes'?'scenes':'animations',fields=action==='scenes'?['background','characters','narration','noCharacter','overlay','prompt','sfx','visual']:['prompt','scene'];
    assert.deepEqual(Object.keys(schema[key][0]).sort(),fields);
    assert.deepEqual(Object.keys(result.body.output[key][0]).sort(),fields);
    assert(messages[1].content.includes('60 words'));
@@ -254,9 +254,21 @@ test('K4 HTTP sceneTags and scenes whitelist context, validate fixed tags and bo
   const r=await s.req('/api/generate','POST',{action:'sceneTags',context:{windows,summaryPrev:'Before.',tagMenu:{fake:['invented']},...forbidden}});assert.equal(r.status,200,r.body.error);assert.deepEqual(r.body.output.tagsByIndex[0].tags,['wide','day']);
   const sent=gw.seen.at(-1),ctx=JSON.parse(sent.messages[1].content.split('Batch narration:\n')[1]);assert.deepEqual(Object.keys(ctx).sort(),['summaryPrev','tagMenu','windows']);assert(ctx.tagMenu.camera.includes('wide'));assert.doesNotMatch(JSON.stringify(sent),/SECRET_/);assert(sent.max_tokens<=700);
   tags[0].tags=['invented'];const bad=await s.req('/api/generate','POST',{action:'sceneTags',context:{windows}});assert.equal(bad.status,422);assert.equal(bad.body.invalidTags,true);tags[0].tags=['wide'];
-  const scenes=await s.req('/api/generate','POST',{action:'scenes',context:{windows,tagsByIndex:tags,...forbidden}});assert.equal(scenes.status,200,scenes.body.error);const sceneContext=JSON.parse(gw.seen.at(-1).messages[1].content.split('Batch narration:\n')[1]);assert.deepEqual(Object.keys(sceneContext).sort(),['tagsByIndex','windows']);assert.doesNotMatch(JSON.stringify(gw.seen.at(-1)),/SECRET_/);assert.equal(scenes.body.output.scenes[0].prompt.split(' ').length,81,'long raw prompts are warnings, not a blocked batch');
+  const scenes=await s.req('/api/generate','POST',{action:'scenes',context:{windows,tagsByIndex:tags,...forbidden}});assert.equal(scenes.status,200,scenes.body.error);const sceneContext=JSON.parse(gw.seen.at(-1).messages[1].content.split('Batch narration:\n')[1]);assert.deepEqual(Object.keys(sceneContext).sort(),['rosterNames','tagsByIndex','windows']);assert.doesNotMatch(JSON.stringify(gw.seen.at(-1)),/SECRET_/);assert.equal(scenes.body.output.scenes[0].prompt.split(' ').length,81,'long raw prompts are warnings, not a blocked batch');
   const before=gw.seen.length;assert.equal((await s.req('/api/generate','POST',{action:'sceneTags',context:{windows:Array.from({length:5},(_,i)=>({index:i+1,narration:'text'}))}})).status,400);assert.equal(gw.seen.length,before);
  }finally{await s.stop();await gw.stop();await rm(envFile,{force:true});}
+});
+
+test('P1 HTTP scene generation sends roster names only and actual workflow retries unknown names once',async()=>{
+ const {runSceneBatches}=await import('./public/scene-workflow.mjs');
+ const gw=await promptGateway({tagsByIndex:[{index:1,tags:['wide'],summary:''}],scenes:[{narration:'AI rewrite',visual:'A boy waits.',prompt:'A boy waits.',characters:['Nam'],noCharacter:false,overlay:'',sfx:'',background:''}]}),envFile=path.join(tempRoot,`env-p1-${Date.now()}.env`);await writeFile(envFile,`OPENAI_BASE_URL=${gw.url}\nOPENAI_API_KEY=test-key\n`);const server=await boot({STUDIO_ENV_FILE:envFile});
+ try{
+  const p={script:'A boy waits.',voiceSeconds:4,clipSeconds:4,mainCharacters:[{name:'Cậu bé học sinh',description:'IDENTITY_PRIVATE_SENTINEL'}],rosterConfirmed:true,scenes:[]};
+  await runSceneBatches(p,{save:async()=>{},generate:async(action,context)=>{const result=await server.req('/api/generate','POST',{action,context:{...context,identity:'IDENTITY_PRIVATE_SENTINEL',research:'RESEARCH_SENTINEL',sources:['SOURCE_SENTINEL']}});assert.equal(result.status,200,result.body.error);return result.body.output;}});
+  const sceneCalls=gw.seen.filter(call=>JSON.parse(call.messages[0].content.split('Cấu trúc JSON cần trả: ')[1]).scenes);assert.equal(sceneCalls.length,2);assert(p.scenes[0].invalidCharacters);
+  for(const call of sceneCalls){const context=JSON.parse(call.messages[1].content.split('Batch narration:\n')[1]);assert.deepEqual(context.rosterNames,['Cậu bé học sinh']);assert.doesNotMatch(JSON.stringify(call),/PRIVATE_SENTINEL|RESEARCH_SENTINEL|SOURCE_SENTINEL/);const schema=JSON.parse(call.messages[0].content.split('Cấu trúc JSON cần trả: ')[1]);assert.equal(typeof schema.scenes[0].noCharacter,'boolean');assert(call.messages[1].content.includes('only exact names from rosterNames'));}
+  const count=gw.seen.length;assert.equal((await server.req('/api/generate','POST',{action:'scenes',context:{narration:'text',rosterNames:[{name:'A',description:'secret'}]}})).status,400);assert.equal(gw.seen.length,count);
+ }finally{await server.stop();await gw.stop();await rm(envFile,{force:true});}
 });
 
 
