@@ -127,3 +127,7 @@ Hook được coi là định hướng thay vì lời bắt buộc chép nguyên
 - Tạo lại riêng một cửa sổ bằng workflow chọn thẻ/scenes chung, giữ lời kể/index từ code và các cảnh khác. Giữ retry tên sai/thẻ sai đúng một lần; lỗi mạng không thay cảnh cũ. Xoá riêng animation của cảnh thay thế, không xoá animation khác.
 - Hai test đỏ trước vì chưa có hàm sửa/tạo lại. Sau sửa 182/182 test xanh: khối nhân vật nguyên văn, cờ biến mất và Hoàn tất được mở, noCharacter bỏ identity, lựa chọn sai không đổi state, renderer/handler checkbox, regenerate một cửa sổ không đổi cảnh khác, lỗi mạng giữ state.
 - Chưa chạy model thật hoặc xác nhận tương tác trên trình duyệt người dùng. Giữ ngưỡng cảnh báo prompt >80 từ, không thay media/YouTube/API keys; bốn file bible/preset không đổi.
+
+### Tích Thông Thái — Phần 1: mẫu Tích
+- Tạo hai bản sao chỉ đổi tên; giữ nguyên bốn file gốc. Nút chính nạp mẫu Tích, bản Schoolboy có nút riêng. Context sceneTags/scenes thêm chỉ tên roster theo yêu cầu mới.
+- Test đỏ vì thiếu loadTichSample; sau sửa 183/183 test xanh. Kiểm bản sao nguyên ký tự ngoài tên, 8/8/4/7/9 thẻ, roster Tích, prompt ghép identity nguyên văn và context mock AI không lộ identity/research/sources. Chưa chạy AI thật.

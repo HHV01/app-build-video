@@ -5,7 +5,7 @@ import {runSceneBatches} from './public/scene-workflow.mjs';
 import {scenePromptRows} from './public/scene-prompts.mjs';
 import {sceneCompletionError,renderSceneCards} from './public/scene-cards.mjs';
 const bible=JSON.parse(await readFile('studio/public/schoolboy.preset.json','utf8'));
-const main={name:'Cậu bé học sinh',description:bible.identity,bible};
+const main={name:'Tích',description:bible.identity,bible};
 const channel={type:'mascot',characters:[main],visualStyle:'Ink.'};
 const project=()=>({step:5,script:'A boy holds an empty wallet.',voiceSeconds:4,clipSeconds:4,mainCharacters:[main],rosterConfirmed:true,roster:{[main.name]:main.description},scenes:[]});
 const row=(characters,noCharacter=false)=>({visual:'A boy holds a wallet.',prompt:'A boy holds an empty wallet.',overlay:'',sfx:'',characters,background:'',noCharacter});
@@ -32,4 +32,10 @@ test('repair UI change handler saves selected roster names and no-character togg
  const app={addEventListener:(type,callback)=>{handler=callback;},querySelector:()=>({checked:noCharacter}),querySelectorAll:()=>[{checked:true,value:main.name}]};
  new Function('app','updateSceneCharacters','currentChannel','currentProject','save','render','toast',source.slice(begin,end))(app,updateSceneCharacters,()=>channel,()=>p,async()=>{saves++;},()=>{renders++;},message=>{throw Error(message);});
  await handler({target:{dataset:{sceneCharacter:'0'}}});assert.deepEqual(p.scenes[0].characters,[main.name]);assert(!p.scenes[0].invalidCharacters);noCharacter=true;await handler({target:{dataset:{sceneNoCharacter:'0'}}});assert.deepEqual(p.scenes[0].characters,[]);assert(p.scenes[0].noCharacter);assert.equal(saves,2);assert.equal(renders,2);
+});
+
+test('Tich sample preserves all original content except name and sends only roster names to AI',async()=>{
+ const {loadTichSample,loadSchoolboySample,initializeProjectRoster,confirmProjectRoster}=await import('./public/roster.mjs');const c={type:'mascot'};const fetcher=async url=>({ok:true,json:async()=>JSON.parse(await readFile('studio/public'+url,'utf8')),text:async()=>readFile('studio/public'+url,'utf8')});
+ await loadTichSample(c,fetcher);const t=c.characters[0].bible;assert.equal(t.name,'Tích');assert.deepEqual(['expressions','poses','outfits','props','graphics'].map(key=>t[key].length),[8,8,4,7,9]);const preset=JSON.parse(await readFile('studio/public/tich.preset.json','utf8'));assert.deepEqual({...preset,name:bible.name},bible);const original=await readFile('studio/public/schoolboy-bible.txt','utf8');assert.equal(await readFile('studio/public/tich-bible.txt','utf8'),original.replace('"Cậu bé học sinh"','"Tích"'));
+ const p=project();delete p.mainCharacters;delete p.rosterConfirmed;initializeProjectRoster(c,p);p.rosterReviewed=true;confirmProjectRoster(c,p);assert.deepEqual(Object.keys(p.roster),['Tích']);const calls=[];await runSceneBatches(p,{channel:c,save:async()=>{},generate:async(action,context)=>{calls.push({action,context});return action==='sceneTags'?{tagsByIndex:[{index:1,expression:t.expressions[0].tag,pose:t.poses[0].tag,camera:'wide',summary:''}]}:{scenes:[row(['Tích'])]};}});for(const call of calls){assert.deepEqual(call.context.rosterNames,['Tích']);assert(!JSON.stringify(call).includes(t.identity));assert(!('research' in call.context));assert(!('sources' in call.context));}assert(scenePromptRows(c,p)[0].image_prompt.includes(t.identity));await loadSchoolboySample(c,fetcher);assert.equal(c.characters[0].name,'Cậu bé học sinh');
 });

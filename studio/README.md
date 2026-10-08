@@ -77,7 +77,7 @@ Các mục G4 (chương thành dàn ý) và G5 (lấy bình luận) chưa bật.
 Mở đầu được diễn đạt theo tiêu đề, góc kể, người xem và giọng kênh; nhận tối đa 3 dữ kiện research supported liên quan. Không có dữ kiện thì dùng câu hỏi thay vì bịa chi tiết. Kết bài trả lời câu hỏi mở đầu; CTA tùy chọn chỉ một câu mời bình luận liên quan nội dung. Không thêm lượt gọi AI.
 
 ### Bible và roster (K3)
-Bản sắc → dán bible rồi Nạp bible, hoặc Nạp mẫu Cậu bé học sinh. Parse lỗi hiển thị rõ và giữ nguyên nhân vật hợp lệ cũ. Khối nhân vật chủ đạo chỉ đọc ở dự án; sửa bible tại kênh trước khi xác nhận. Gợi ý AI chỉ lưu bản nháp, roster đã xác nhận được chụp vào dự án khi Lưu & tiếp tục. Thay đổi mô tả hoặc kịch bản yêu cầu xác nhận lại.
+Bản sắc → dán bible rồi Nạp bible, hoặc Nạp mẫu Tích (mẫu Cậu bé học sinh vẫn có nút riêng). Parse lỗi hiển thị rõ và giữ nguyên nhân vật hợp lệ cũ. Khối nhân vật chủ đạo chỉ đọc ở dự án; sửa bible tại kênh trước khi xác nhận. Gợi ý AI chỉ lưu bản nháp, roster đã xác nhận được chụp vào dự án khi Lưu & tiếp tục. Thay đổi mô tả hoặc kịch bản yêu cầu xác nhận lại.
 
 `rosterExtras` chỉ gửi kịch bản và bản tóm tắt nhân vật chủ đạo (tối đa 40 từ/mô tả), ngân sách đầu ra 1.200 token. Không gửi nguồn nghiên cứu, packaging hoặc visualStyle. Chỉ `composeImagePrompt` ghép prompt để hiển thị/copy/xuất; `scene.prompt` vẫn là phần riêng của cảnh. Hàm có sẵn nhận `(scene, character, styleOverride)` nên roster được chuyển thành dữ liệu nhân vật/bối cảnh đầu vào, không sửa bốn file bible/preset.
 
@@ -101,9 +101,12 @@ characters rỗng dùng nhân vật chủ đạo của dự án/kênh. Muốn c�
 ### Thẻ bible theo cảnh — Prompt 2
 Kênh có bible dùng đúng menu `tagMenu(character)` của bible: expression, pose/prop, outfit, graphics và camera. Chọn thẻ trước khi tạo cảnh, kiểm bằng bộ `validateSceneTags` gốc; lỗi thử lại một lần rồi hiện đỏ, cảnh báo hiện vàng. Kênh chưa có bible tiếp tục dùng menu thẻ chung.
 
-Các dropdown trên thẻ cảnh lấy lựa chọn từ bible. Expression/Pose và khối nhân vật nguyên văn được ghép khi hiển thị/copy/xuất; không lưu chuỗi ghép vào scene.prompt. Cảnh cũ thiếu thẻ bible được báo rõ và có thể chọn lại bằng dropdown. Bước chọn thẻ chỉ gửi lời kể của lô, menu và tóm tắt cảnh trước; không gửi identity/mô tả nhân vật, research hoặc sources.
+Các dropdown trên thẻ cảnh lấy lựa chọn từ bible. Expression/Pose và khối nhân vật nguyên văn được ghép khi hiển thị/copy/xuất; không lưu chuỗi ghép vào scene.prompt. Cảnh cũ thiếu thẻ bible được báo rõ và có thể chọn lại bằng dropdown. Bước chọn thẻ chỉ gửi lời kể của lô, menu, tên roster và tóm tắt cảnh trước; không gửi identity/mô tả nhân vật, research hoặc sources.
 
 ### Sửa nhân vật hoặc tạo lại một cảnh
 Trong mỗi thẻ cảnh, chọn các tên ở **Nhân vật trong cảnh** (chỉ từ roster đã chốt). Tên hợp lệ gỡ lỗi invalidCharacters; không chọn tên nào dùng nhân vật chủ đạo. Bật **Cảnh không có nhân vật** cho đồ vật/biểu đồ để bỏ khối nhân vật khỏi prompt. Các thay đổi cần Hoàn tất lại.
 
 **Tạo lại cảnh này** chọn thẻ và sinh mô tả cho đúng một cửa sổ lời kể, giữ nguyên các cảnh khác. Lời kể/index do code gắn. Lỗi mạng giữ cảnh cũ; tên sai vẫn thử lại đúng một lần rồi báo đỏ để bạn sửa bằng checkbox. Prompt chuyển động cũ của riêng cảnh được tạo lại bị xoá để bạn tạo lại khi cần. Nếu kịch bản/thời lượng không khớp cửa sổ đã lưu, giao diện báo lỗi thay vì thay lời kể âm thầm.
+
+### Mẫu nhân vật Tích
+Nút Nạp mẫu Tích ở Nhân vật chủ đạo tải tich-bible.txt và tich.preset.json. Hai bản chỉ đổi tên thành Tích, giữ nguyên identity/style và 8/8/4/7/9 thẻ. Bản Cậu bé học sinh vẫn dùng được bằng nút riêng. sceneTags và scenes gửi chỉ tên roster Tích, không gửi mô tả nhân vật, research hoặc sources.

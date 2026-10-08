@@ -6,8 +6,10 @@ export function loadChannelBible(channel,text){
  if(!result.errors.length){const c=result.character;channel.characters=[{id:slug(c.name)||'main',name:c.name||'Main character',role:'Nhân vật chủ đạo',description:c.identity,bible:structuredClone(c)}];}
  return result;
 }
-export async function loadSchoolboySample(channel,fetcher=fetch){
- const [json,text]=await Promise.all([fetcher('/schoolboy.preset.json'),fetcher('/schoolboy-bible.txt')]);
+export const loadTichSample=(channel,fetcher=fetch)=>loadCharacterSample(channel,'tich',fetcher);
+export const loadSchoolboySample=(channel,fetcher=fetch)=>loadCharacterSample(channel,'schoolboy',fetcher);
+async function loadCharacterSample(channel,name,fetcher){
+ const [json,text]=await Promise.all([fetcher('/'+name+'.preset.json'),fetcher('/'+name+'-bible.txt')]);
  if(!json.ok||!text.ok)throw Error('Không tải được mẫu nhân vật.');
  const preset=await json.json(),bible=await text.text(),parsed=parseCharacterBible(bible);
  if(parsed.errors.length||parsed.character.identity!==preset.identity||parsed.character.name!==preset.name)throw Error('Mẫu bible và preset không khớp.');
@@ -49,7 +51,7 @@ export function validateRosterExtras(output,main=[]){
  buildRoster(main,output.extras,output.backgrounds);return output;
 }
 export function renderBibleBlock(c,{esc,field,btn}){
- return `<section><h3>Nhân vật chủ đạo</h3>${field('Dán bible nhân vật','channel.bibleText',c.bibleText||'','textarea')}<div class="actions">${btn('Nạp bible','load-bible')}${btn('Nạp mẫu Cậu bé học sinh','load-schoolboy')}</div>${(c.bibleErrors||[]).map(e=>`<p role="alert">${esc(e)}</p>`).join('')}${(c.characters||[]).map(x=>`<article data-main-character><h4>${esc(x.name)}</h4><p>${esc(x.role)}</p><p>${esc(x.description)}</p></article>`).join('')}</section>`;
+ return `<section><h3>Nhân vật chủ đạo</h3>${field('Dán bible nhân vật','channel.bibleText',c.bibleText||'','textarea')}<div class="actions">${btn('Nạp bible','load-bible')}${btn('Nạp mẫu Tích','load-tich')}${btn('Mẫu Cậu bé học sinh','load-schoolboy')}</div>${(c.bibleErrors||[]).map(e=>`<p role="alert">${esc(e)}</p>`).join('')}${(c.characters||[]).map(x=>`<article data-main-character><h4>${esc(x.name)}</h4><p>${esc(x.role)}</p><p>${esc(x.description)}</p></article>`).join('')}</section>`;
 }
 export function renderRosterStep(c,p,{esc,field,btn}){
  const main=projectMainCharacters(c,p),extras=p.rosterDraft?.extraCharacters||p.extraCharacters||[],backgrounds=p.rosterDraft?.backgrounds||p.backgrounds||[];

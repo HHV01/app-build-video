@@ -2,7 +2,7 @@ import {updateSceneCharacters} from './scene-character.mjs';
 import {updateBibleTags} from './bible-scene-tags.mjs';
 import {renderSceneCards,updateSceneTags,finishSceneProject,sceneCompletionError} from './scene-cards.mjs';
 import {scenePlan,runSceneBatches,regenerateScene,runAnimationBatches,validateSceneCoverage} from './scene-workflow.mjs';
-import {loadChannelBible,loadSchoolboySample,initializeProjectRoster,ensureRosterDraft,projectMainCharacters,confirmProjectRoster,rosterExtrasContext,validateRosterExtras,renderBibleBlock,renderRosterStep} from './roster.mjs';
+import {loadChannelBible,loadTichSample,loadSchoolboySample,initializeProjectRoster,ensureRosterDraft,projectMainCharacters,confirmProjectRoster,rosterExtrasContext,validateRosterExtras,renderBibleBlock,renderRosterStep} from './roster.mjs';
 import {scenePromptRows,scenePromptsText,sceneText} from './scene-prompts.mjs';
 import { deleteChannels, undoChannels, draftChannels } from './channel-management.mjs';
 import { filterEditorNotes, writeCheckedPart, repeatedParts } from './script-quality.mjs';
@@ -346,6 +346,7 @@ case 'script':await generateScript();break;
 case 'check-repetition':p.repetitionCheck=repeatedParts(p.scriptParts?.length?p.scriptParts:(p.narration||'').split(/\n\s*\n/));await save();render();break;
 case 'copy-tags':p.tagText=limitTags((p.tagText||'').split(/[,;\n]/)).join(', ');await save();await copy(p.tagText);render();break;
 case 'load-bible':{const result=loadChannelBible(c,c.bibleText||'');await save();render();if(result.errors.length)toast('Bible chưa hợp lệ. Danh sách cũ được giữ nguyên.',true);break;}
+case 'load-tich':await run('Đang nạp mẫu Tích…',async()=>{await loadTichSample(c);});break;
 case 'load-schoolboy':await run('Đang nạp mẫu nhân vật…',async()=>{await loadSchoolboySample(c);});break;
 case 'roster-extras':if(!p.narration?.trim())return toast('Cần kịch bản trước.',true);await run('Đang trích nhân vật phụ và bối cảnh…',async()=>{const main=projectMainCharacters(c,p);if(!main.length&&c.type!=='faceless')throw Error('Nạp bible hợp lệ ở Bản sắc trước.');const result=await generate('rosterExtras',rosterExtrasContext(c,p));validateRosterExtras(result,main);p.rosterDraft={extraCharacters:structuredClone(result.extras),backgrounds:structuredClone(result.backgrounds)};p.rosterReviewed=false;p.rosterConfirmed=false;p.approved=p.approved.filter(x=>x<4);});break;
 case 'roster-add':{const kind=el.dataset.kind;if(!['extraCharacters','backgrounds'].includes(kind))return;const draft=ensureRosterDraft(p);draft[kind]||=[];if(draft[kind].length>=6)return toast('Tối đa 6 mục.',true);draft[kind].push({name:'',description:'',...(kind==='extraCharacters'?{role:''}:{})});p.rosterReviewed=false;p.rosterConfirmed=false;p.approved=p.approved.filter(x=>x<4);await save();render();break;}

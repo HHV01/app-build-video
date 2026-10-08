@@ -60,7 +60,7 @@ async function generateSceneBatch(project,windows,{generate,save,channel}){
   let tags;const bible=sceneBible(channel,project);
   for(let attempt=0;attempt<2;attempt++){
    try{
-    const reply=await generate('sceneTags',{windows:windows.map(({index,narration})=>({index,narration})),tagMenu:bible?bibleMenu(bible):tagMenu,summaryPrev:project.scenes.at(-1)?.summary||''});
+    const reply=await generate('sceneTags',{rosterNames:rosterNames(channel,project),windows:windows.map(({index,narration})=>({index,narration})),tagMenu:bible?bibleMenu(bible):tagMenu,summaryPrev:project.scenes.at(-1)?.summary||''});
     tags=bible?validateBibleBatch(reply.tagsByIndex,windows,bible,project.scenes):validateSceneTags(reply.tagsByIndex,windows);break;
    }catch(error){
     if(!error.invalidTags)throw error;

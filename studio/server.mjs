@@ -197,7 +197,7 @@ async function generate(b) {
     if (b.action==='animation' && (ctxObj.scenes.length>4||!ctxObj.scenes.length||ctxObj.scenes.some(s=>!Number.isInteger(s.scene)||typeof s.narration!=='string'||!s.narration.trim())||new Set(ctxObj.scenes.map(s=>s.scene)).size!==ctxObj.scenes.length)) throw failure('Cần ID cảnh duy nhất và lời kể của từng cảnh.');
     if(b.action==='scenes'&&windows.length){try{ctxObj.tagsByIndex=bible?validateBibleBatch(ctxObj.tagsByIndex,windows,bible):validateSceneTags(ctxObj.tagsByIndex,windows);}catch(e){throw Object.assign(failure(e.message,400),{invalidTags:true});}}
     if(b.action==='scenes'&&windows.length)ctxObj.tagsByIndex=compactSceneContext(ctxObj,windows).tagsByIndex;
-    if(b.action==='scenes'){const names=b.context?.rosterNames??[];if(!Array.isArray(names)||names.some(name=>typeof name!=='string'||!name.trim()))throw failure('Danh sách tên roster không hợp lệ.');ctxObj.rosterNames=[...new Set(names)];}
+    if(['scenes','sceneTags'].includes(b.action)){const names=b.context?.rosterNames??[];if(!Array.isArray(names)||names.some(name=>typeof name!=='string'||!name.trim()))throw failure('Danh sách tên roster không hợp lệ.');ctxObj.rosterNames=[...new Set(names)];}
     const context = JSON.stringify(ctxObj);
     if (context.length > 65000) throw failure('Dữ liệu quá dài. Giảm số transcript hoặc video trong một lượt.');
     const directives = {
