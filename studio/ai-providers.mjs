@@ -1,7 +1,9 @@
 export const DIRECT_AI_BASES={gemini:'https://generativelanguage.googleapis.com/v1beta/openai',xai:'https://api.x.ai/v1'};
 const fault=(message,status=400)=>Object.assign(Error(message),{status});
 export function resolveAIConnection(settings,keys,env,model){
- if(settings.aiMode==='direct'){
+ const explicit=/^(gemini|xai|grok|gateway)\/(.+)$/.exec(model||'');
+ if(explicit?.[1]==='gateway'){settings={...settings,aiMode:'gateway'};model=explicit[2];}
+ else if(explicit||settings.aiMode==='direct'){
   const match=/^(gemini|xai|grok)\/(.+)$/.exec(model||'');
   if(!match)throw fault('Model trực tiếp phải có dạng gemini/tên-model hoặc xai/tên-model.');
   const provider=match[1]==='grok'?'xai':match[1],key=keys[provider]||env[provider==='gemini'?'GEMINI_API_KEY':'XAI_API_KEY'];

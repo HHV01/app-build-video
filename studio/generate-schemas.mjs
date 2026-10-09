@@ -1,0 +1,16 @@
+export const schemas = {
+  planSegment: '{"text":"AI segment text","fills":{"slot_name":"value"}}',
+  sceneTags: '{"tagsByIndex":[{"index":1,"tags":["wide"],"summary":"short continuity summary, at most 20 words"}]}',
+  rosterExtras: '{"extras":[{"name":"name","role":"supporting role","description":"English description, at most 40 words"}],"backgrounds":[{"name":"name","description":"English description, at most 40 words"}]}',
+  scenes: '{"scenes":[{"narration":"original batch narration","visual":"subject and action","prompt":"English subject, action, setting and camera angle only","overlay":"editor text or empty","sfx":"sound or empty","characters":["character name"],"noCharacter":false,"background":"setting name"}]}',
+  animation: '{"animations":[{"scene":1,"prompt":"English subject movement and camera action only"}]}',
+  angles: '{"angles":[{"angle":"góc kể","reason":"căn cứ từ tiêu đề nguồn"}]}',
+  groups: '{"groups":[{"name":"nhóm vấn đề","angle":"câu hỏi xuyên suốt","reason":"lý do từ mẫu","videoIds":["ID có thật"]}]}',
+  packaging: '{"tags":["tag bổ sung khi thiếu"],"variants":[{"title":"tiêu đề","thumbnailVisual":"mô tả cảnh tiếng Anh","overlay":"1–4 tiếng, phải nằm trong title","flavour":"khuôn + kiểu hook","hookType":"id trong 10 kiểu hook","hook":"15 giây mở đầu","promise":"lời hứa video trả lời"}]}',
+  identity: '{"voice":"giọng kể","hook":"cách mở đầu","titlePattern":"khuôn tiêu đề","sampleAngle":"angle kênh mẫu, chỉ suy luận","style":"nguyên tắc hình ảnh","names":[{"name":"tên gốc","tagline":"mô tả"}],"limitations":"điểm chưa đủ bằng chứng"}',
+  ideas: '{"ideas":[{"title":"chủ đề","question":"câu hỏi","angle":"góc riêng","opening":"cảnh mở đầu","sourceIds":["ID từ mẫu nếu có"],"difficulty":"dễ/vừa/khó"}]}',
+  topics: '{"topics":[{"title":"chủ đề theo khuôn","group":"tên nhóm","knownBy":"cao/vừa/thấp","gap":"vì sao kho chưa có"}]}',
+  research: '{"summary":"tóm tắt","timeline":[{"date":"ngày","event":"sự kiện","sourceId":"ID"}],"facts":[{"value":"giá trị","claim":"phát biểu","sourceId":"ID","status":"supported hoặc needs_check"}],"sensory":"mô tả cảm quan","cast":[{"name":"tên","role":"vai","sourceId":"ID"}],"angles":["góc 1","góc 2","góc 3"],"claims":[{"claim":"phát biểu","sourceId":"ID nguồn hoặc trống","status":"supported hoặc needs_check","note":"bằng chứng/việc cần kiểm tra"}],"questions":["câu cần tìm nguồn"]}',
+  outline: '{"segments":[{"title":"ý","question":"câu hỏi","insight":"thông tin mới","story":"hành động và hậu quả","visual":"cơ hội hình ảnh","share":0.15}]}',
+  script: '{"narration":"toàn bộ lời kể nguyên bản, không nhãn cảnh","editorNotes":["điểm cần kiểm chứng"]}',
+};

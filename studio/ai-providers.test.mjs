@@ -16,5 +16,5 @@ test('direct fallback switches endpoint and credentials, while invalid key error
 test('missing direct credentials never fall back to gateway, and existing gateway mode is preserved',()=>{
  assert.throws(()=>resolveAIConnection({aiMode:'direct'},{},{OPENAI_API_KEY:'gateway'},'gemini/a'),/Gemini/);
  assert.throws(()=>resolveAIConnection({aiMode:'direct'},keys,{},'groq/a'),/gemini.*xai/i);
- const r=resolveAIConnection({},keys,{OPENAI_API_KEY:'gateway',OPENAI_BASE_URL:'http://localhost:20128/v1'},'gemini/a');assert.equal(r.key,'gateway');assert.equal(r.model,'gemini/a');assert.equal(r.base,'http://localhost:20128/v1');
+ const r=resolveAIConnection({},keys,{OPENAI_API_KEY:'gateway',OPENAI_BASE_URL:'http://localhost:20128/v1'},'legacy-model');assert.equal(r.key,'gateway');assert.equal(r.model,'legacy-model');assert.equal(r.base,'http://localhost:20128/v1');
 });

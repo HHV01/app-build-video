@@ -1,0 +1,15 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {TASK_TIERS,selectTaskModels,createUsageCounter} from './task-tiers.mjs';import {schemas} from './generate-schemas.mjs';import {sendAICompletion} from './ai-providers.mjs';
+test('every generated action has exactly one tier and independent model chains',()=>{
+ for(const action of Object.keys(schemas))assert(['light','heavy'].includes(TASK_TIERS[action]));
+ const settings={model:'gateway/main',fallbackModels:['gateway/backup'],lightModel:'gemini/small',lightFallbackModels:['xai/small'],autoFallback:true};
+ assert.deepEqual(selectTaskModels(settings,'angles'),{primary:'gemini/small',backups:['xai/small']});assert.deepEqual(selectTaskModels(settings,'script'),{primary:'gateway/main',backups:['gateway/backup']});
+ assert.deepEqual(selectTaskModels({...settings,lightModel:''},'angles'),{primary:'gateway/main',backups:['gateway/backup']});assert.throws(()=>selectTaskModels(settings,'newAction'));
+});
+test('mixed model prefixes route independently of global mode and strip only routing prefix',async()=>{
+ const seen=[];for(const model of ['gateway/provider/main','gemini/small','xai/grok'])await sendAICompletion({aiMode:'gateway'},{gemini:'google-key',xai:'xai-key'},{OPENAI_BASE_URL:'http://localhost:20128/v1',OPENAI_API_KEY:'gateway-key'},model,{messages:[]},async(url,o)=>{seen.push([url,o.headers.Authorization,JSON.parse(o.body).model]);return {};});
+ assert.deepEqual(seen,[['http://localhost:20128/v1/chat/completions','Bearer gateway-key','provider/main'],['https://generativelanguage.googleapis.com/v1beta/openai/chat/completions','Bearer google-key','small'],['https://api.x.ai/v1/chat/completions','Bearer xai-key','grok']]);
+});
+test('session statistics accumulate tokens and calls without retaining prompt or credentials',()=>{const counter=createUsageCounter();counter.record('script','gateway/main',{prompt_tokens:10,completion_tokens:20,total_tokens:30});counter.record('script','gateway/main',{prompt_tokens:4,completion_tokens:6,total_tokens:10});counter.record('angles','gemini/small',{prompt_tokens:2,completion_tokens:3,total_tokens:5},true);assert.deepEqual(counter.rows()[0],{action:'script',model:'gateway/main',calls:2,inputTokens:14,outputTokens:26,totalTokens:40,switches:0});assert.equal(counter.rows()[1].switches,1);assert.doesNotMatch(JSON.stringify(counter.rows()),/prompt|key/);});
+
+test('mixed fallback calls gateway then Gemini then xAI in order',async()=>{const {withModelFallback}=await import('./model-fallback.mjs');const urls=[];const result=await withModelFallback('gateway/a',['gemini/b','xai/c'],m=>sendAICompletion({aiMode:'gateway'},{gemini:'g',xai:'x'},{OPENAI_API_KEY:'w'},m,{messages:[]},async(url)=>{urls.push(url);if(!url.includes('api.x.ai'))throw Object.assign(Error('busy'),{upstreamStatus:502});return {output:{ok:true}};}),{cooldowns:new Map()});assert.equal(result.fallback.selectedModel,'xai/c');assert.equal(urls.length,3);assert(urls[0].includes('localhost'));assert(urls[1].includes('googleapis'));assert(urls[2].includes('api.x.ai'));});

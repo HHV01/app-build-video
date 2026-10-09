@@ -173,3 +173,6 @@ Hook được coi là định hướng thay vì lời bắt buộc chép nguyên
 
 ## Đợt cuối · Phần 1
 Phân loại lỗi, lý do chuyển, cooldown tiêm đồng hồ, giới hạn thời gian và banner/trạng thái. Test mock bảng mã lỗi, nghỉ/hết nghỉ, tất cả nghỉ, 90 giây, banner credit. Chưa chạy với Gemini/Grok thật có lỗi quota/credit.
+
+## Đợt cuối · Phần 2
+TASK_TIERS và schema dùng chung để phát hiện action chưa phân loại. Chọn model nhẹ/nặng riêng, routing theo tiền tố, bảng usage phiên. Mock kiểm URL/khóa chuỗi gateway→Gemini→xAI, chọn model HTTP và cộng usage. Chưa kiểm với khóa Gemini/Grok thật; không khẳng định mức tiết kiệm token.

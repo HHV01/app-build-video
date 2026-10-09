@@ -144,3 +144,6 @@ Endpoint theo tài liệu chính thức: https://ai.google.dev/gemini-api/docs/o
 
 ## Dự phòng linh hoạt
 Thiếu khóa, 401/402/403/404 và lỗi dịch vụ có thể chuyển model; 400/422 sai yêu cầu dừng ngay (JSON/cắt dở được thử lại). Model 429/402/403 nghỉ 10 phút; nếu tất cả nghỉ, thử model hết nghỉ sớm nhất. Mỗi model tối đa 30 giây khi có dự phòng, cả chuỗi 90 giây. Banner hiển thị model thay thế và trạng thái nghỉ; GET /api/ai/status không trả khóa.
+
+## Việc nhẹ/nặng và thống kê phiên
+Model cho việc nhẹ để trống thì dùng model chính; khi có model nhẹ, dùng chuỗi dự phòng riêng (tối đa 3). Việc nhẹ: thẻ/cảnh/chuyển động/nhóm/bản sắc/góc kể/nhân vật. Việc nặng: research/dàn ý/script/ý tưởng/chủ đề/thumbnail/đoạn mở-kết. Tiền tố gateway/ đi qua gateway và chỉ bỏ tiền tố đầu; gemini/, xai/ hoặc grok/ gọi trực tiếp. Tên không tiền tố giữ aiMode cũ. Bảng tiêu thụ ghi usage thực trả về, số lượt và chuyển model, trong bộ nhớ phiên, không lưu prompt.
