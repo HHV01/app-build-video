@@ -147,3 +147,6 @@ Thiếu khóa, 401/402/403/404 và lỗi dịch vụ có thể chuyển model; 4
 
 ## Việc nhẹ/nặng và thống kê phiên
 Model cho việc nhẹ để trống thì dùng model chính; khi có model nhẹ, dùng chuỗi dự phòng riêng (tối đa 3). Việc nhẹ: thẻ/cảnh/chuyển động/nhóm/bản sắc/góc kể/nhân vật. Việc nặng: research/dàn ý/script/ý tưởng/chủ đề/thumbnail/đoạn mở-kết. Tiền tố gateway/ đi qua gateway và chỉ bỏ tiền tố đầu; gemini/, xai/ hoặc grok/ gọi trực tiếp. Tên không tiền tố giữ aiMode cũ. Bảng tiêu thụ ghi usage thực trả về, số lượt và chuyển model, trong bộ nhớ phiên, không lưu prompt.
+
+## Nối mạch kịch bản và giới hạn ngữ cảnh
+Mở đầu/kết thúc nhận tối đa 12 tiêu đề dàn ý và tiêu đề video; phần kết nhận tiêu đề thân bài. Thân bài đầu nhận các chỗ trống mở đầu đã điền và 300 ký tự cuối hook, không nhận câu fixed hoặc phần chữ cố định template. Chỉ giữ tóm tắt 4 phần gần nhất (240 ký tự/phần), phần cũ nén thành một dòng tối đa 300; tổng tóm tắt tối đa 1.200 ký tự. Ngân sách từ/±5% giữ nguyên.

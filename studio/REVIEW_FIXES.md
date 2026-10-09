@@ -176,3 +176,6 @@ Phân loại lỗi, lý do chuyển, cooldown tiêm đồng hồ, giới hạn t
 
 ## Đợt cuối · Phần 2
 TASK_TIERS và schema dùng chung để phát hiện action chưa phân loại. Chọn model nhẹ/nặng riêng, routing theo tiền tố, bảng usage phiên. Mock kiểm URL/khóa chuỗi gateway→Gemini→xAI, chọn model HTTP và cộng usage. Chưa kiểm với khóa Gemini/Grok thật; không khẳng định mức tiết kiệm token.
+
+## Đợt cuối · Phần 3
+Outline/title cho opening/closing, openingHandoff cho thân bài đầu, tóm tắt có giới hạn. Mock 12 lượt cùng fixture: ngữ cảnh trước [537,1561,1924,2287,2650,3013,3376,3739,4102,4467,4830,5214] ký tự; sau [714,1441,1684,1927,2170,2430,2430,2430,2430,2432,2432,2453]. Lượt cuối 5.214 → 2.453 ký tự. Đây là độ dài JSON context bằng mock, không phải số token hoặc chứng minh chất lượng AI. Chưa chạy script thật với Gemini/Grok sau sửa.

@@ -32,9 +32,10 @@ export async function writeChannelScript(c,p,{generate,save,onProgress=()=>{}}){
  validatePlan(c.openingPlan||[]);validatePlan(c.closingPlan||[]);
  const base=scriptPlan(p.outline,p.minutes),target=base.reduce((n,x)=>n+x.targetWords,0),basis=JSON.stringify([c.openingPlan,c.closingPlan,c.identity,p.topic,p.outline,p.minutes,p.researchFacts,openingHookFor(p)]);
  if(p.planDraft?.basis!==basis)p.planDraft={basis,opening:[],closing:[],body:[],notes:[]};const draft=p.planDraft;
+ const outlineTitles=(p.outline||[]).slice(0,12).map(x=>String(x.title||'').slice(0,80)),selectedTitle=String(p.packaging?.[p.selectedPackaging||0]?.title||p.topic||'').slice(0,300);
  const segment=async(row,side)=>{
   if(row.kind==='fixed')return {source:structuredClone(row),text:row.text,sfx:row.sfx||''};
-  const context={kind:row.kind,topic:p.topic||'',language:c.language||'vi',...(row.kind==='ai'?{instruction:row.instruction,maxWords:row.maxWords,voice:c.identity?.voice||'',openingScene:draft.opening.filter(x=>x.source.kind==='ai').map(x=>x.text).join(' ').slice(0,1600),supportedFacts:evidence(p)}:{slots:row.slots,openingScene:draft.opening.filter(x=>x.source.kind==='ai').map(x=>x.text).join(' ').slice(0,1600)})};
+  const context={outlineTitles,selectedTitle,...(side==='closing'&&row.kind==='ai'?{bodyTitles:outlineTitles}:{}),kind:row.kind,topic:p.topic||'',language:c.language||'vi',...(row.kind==='ai'?{instruction:row.instruction,maxWords:row.maxWords,voice:c.identity?.voice||'',openingScene:draft.opening.filter(x=>x.source.kind==='ai').map(x=>x.text).join(' ').slice(0,1600),supportedFacts:evidence(p)}:{slots:row.slots,openingScene:draft.opening.filter(x=>x.source.kind==='ai').map(x=>x.text).join(' ').slice(0,1600)})};
   const output=await generate('planSegment',context);
   if(row.kind==='template')return {source:structuredClone(row),fills:output.fills,text:fillTemplate(row,output.fills)};
   if(typeof output.text!=='string'||!output.text.trim()||words(output.text).length>row.maxWords)throw Error(`Đoạn ${side} AI phải có 1–${row.maxWords} từ.`);
@@ -50,7 +51,7 @@ export async function writeChannelScript(c,p,{generate,save,onProgress=()=>{}}){
  const available=charged.reduce((n,x)=>n+x.targetWords,0);if(!charged.length)throw Error('Không còn ngân sách từ cho thân bài.');
  let assigned=0;const bodyPlan=charged.map((part,i)=>{const targetWords=i===charged.length-1?remaining-assigned:Math.floor(remaining*part.targetWords/available);assigned+=targetWords;return {...part,targetWords};});
  for(let i=draft.body.length;i<bodyPlan.length;i++){
-  const part=bodyPlan[i],ctx={...scriptPartContext(c,p,part,i,bodyPlan.length,draft.body),includeCTA:c.closingPlan?.length?false:Boolean(p.includeCTA)&&i===bodyPlan.length-1,planManagedOpening:Boolean(c.openingPlan?.length),planManagedClosing:Boolean(c.closingPlan?.length)};
+  const part=bodyPlan[i],ctx={...scriptPartContext(c,p,part,i,bodyPlan.length,draft.body),includeCTA:c.closingPlan?.length?false:Boolean(p.includeCTA)&&i===bodyPlan.length-1,...(i===0&&c.openingPlan?.length?{openingHandoff:{fills:Object.assign({},...draft.opening.filter(x=>x.source.kind==='template').map(x=>x.fills)),ending:draft.opening.filter(x=>x.source.kind==='ai').map(x=>x.text).join(' ').slice(-300)}}:{}),planManagedOpening:Boolean(c.openingPlan?.length),planManagedClosing:Boolean(c.closingPlan?.length)};
   // Previous summaries contain body only; fixed and template sentences never go to AI.
   onProgress(`Đang viết thân bài ${i+1}/${bodyPlan.length}`);let result;
   for(let retry=0;retry<2;retry++){result=await generate('script',{...ctx,...(retry?{lengthCorrection:`Viết đúng ${part.targetWords} từ (±5%).`}:{})});if(typeof result.narration==='string'&&result.narration.trim()&&Math.abs(words(result.narration).length-part.targetWords)<=part.targetWords*.05)break;if(retry===1)throw Error(`Thân bài vẫn lệch mục tiêu ${part.targetWords} từ sau một lần thử lại.`);}
@@ -64,7 +65,7 @@ export function renderChannelPlans(c,{esc,btn}){
 }
 export function planSegmentContext(value){
  if(!['ai','template'].includes(value.kind))throw Error('Loại đoạn AI không hợp lệ.');
- const context={kind:value.kind,topic:String(value.topic||'').slice(0,300),language:String(value.language||'vi').slice(0,30),openingScene:String(value.openingScene||'').slice(0,1600)};
+ const context={kind:value.kind,topic:String(value.topic||'').slice(0,300),language:String(value.language||'vi').slice(0,30),openingScene:String(value.openingScene||'').slice(0,1600),outlineTitles:(Array.isArray(value.outlineTitles)?value.outlineTitles:[]).slice(0,12).map(x=>String(x).slice(0,80)),selectedTitle:String(value.selectedTitle||value.topic||'').slice(0,300),...(Array.isArray(value.bodyTitles)?{bodyTitles:value.bodyTitles.slice(0,12).map(x=>String(x).slice(0,80))}:{})};
  if(value.kind==='ai'){if(typeof value.instruction!=='string'||!value.instruction.trim()||value.instruction.length>2000||!Number.isInteger(value.maxWords)||value.maxWords<1||value.maxWords>1000)throw Error('Cần instruction và maxWords hợp lệ.');Object.assign(context,{instruction:value.instruction,maxWords:value.maxWords,voice:String(value.voice||'').slice(0,1600),supportedFacts:(Array.isArray(value.supportedFacts)?value.supportedFacts:[]).slice(0,3).map(x=>({claim:String(x.claim||'').slice(0,300)}))});}
  else {if(!value.slots||typeof value.slots!=='object'||Array.isArray(value.slots)||!Object.keys(value.slots).length||Object.keys(value.slots).length>20||Object.entries(value.slots).some(([key,n])=>!/^[_\p{L}\p{N}]{1,60}$/u.test(key)||!Number.isInteger(n)||n<1||n>100))throw Error('Chỗ trống/maxWords không hợp lệ.');context.slots=value.slots;}
  return context;
