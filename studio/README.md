@@ -133,3 +133,11 @@ Viết script từ dàn ý lưu từng phần. Nếu model lỗi giữa chừng,
 Nếu model báo `Failed to validate JSON` (HTTP 400), Studio thử lại đúng một lần ở phần đang viết với chỉ dẫn JSON nhưng bỏ chế độ ép JSON của dịch vụ. Nếu vẫn thất bại, chuyển sang model dự phòng khi đã bật tự động chuyển model. JSON đầu ra vẫn được kiểm tra trước khi nhận; lỗi tham số/quyền truy cập không dùng cơ chế này.
 
 Giới hạn đầu ra là giới hạn của một lượt gọi, không phải thông báo hết hạn mức tài khoản. Khi model báo finish_reason=length, Studio không nhận lời kể bị cắt: thử lại tối đa một lần với ngân sách đầu ra tăng có giới hạn (script 2.000 → 4.000), rồi chuyển model theo cấu hình dự phòng. Các lượt bình thường giữ ngân sách cũ.
+
+## Gemini và Grok API trực tiếp
+1. Mở Kết nối API, nhập khóa Gemini và/hoặc Grok (xAI), bấm Lưu khóa riêng cho từng dịch vụ. Grok khác Groq.
+2. Bấm Tải danh sách model ở mỗi dịch vụ; chọn model theo quyền của khóa.
+3. Bấm Dùng làm model chính. Nếu đã chọn model và lưu khóa dịch vụ còn lại, model đó được điền làm dự phòng. Bấm Lưu cấu hình; chọn API trực tiếp.
+4. Bấm Kiểm tra AI, rồi trở lại dự án và Tiếp tục viết script.
+Khóa nằm trong `.studio-data/ai-keys.json`, bị Git bỏ qua; GET settings chỉ trả trạng thái đã cấu hình. Để trống giữ khóa cũ. API trực tiếp gọi Google/xAI, không đi qua OmniRoute. Model ghi `gemini/tên-model` hoặc `xai/tên-model`. Lỗi khóa/quyền không tự chuyển; timeout/quota/quá tải và lỗi JSON/đầu ra dùng cơ chế dự phòng có giới hạn.
+Endpoint theo tài liệu chính thức: https://ai.google.dev/gemini-api/docs/openai và https://docs.x.ai/developers/model-capabilities/legacy/chat-completions.

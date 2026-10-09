@@ -394,3 +394,18 @@ test('persistent output truncation switches model without accepting partial narr
  try{const r=await h.server.req('/api/generate','POST',{action:'script',context:{}});assert.equal(r.status,200,r.body.error);assert.equal(r.body.output.narration,'A valid next part.');assert.deepEqual(h.seen.map(x=>x.model),['primary','primary','backup']);assert.equal(h.seen[2].max_tokens,2000);assert.equal(r.body.fallback.used,true);}
  finally{await h.stop();}
 });
+
+test('direct API keys persist separately and never appear in settings or state responses',async()=>{
+ const s=await boot({}, {settings:{youtubeKey:'youtube-retained'}});
+ try{const saved=await s.req('/api/ai/keys','PUT',{gemini:'fake-gemini-secret',xai:'fake-xai-secret'});assert.equal(saved.status,200);
+ const settings=await s.req('/api/settings');assert.equal(settings.body.geminiConfigured,true);assert.equal(settings.body.xaiConfigured,true);assert.doesNotMatch(JSON.stringify(settings.body),/fake-gemini-secret|fake-xai-secret/);
+ assert.doesNotMatch(JSON.stringify((await s.req('/api/state')).body),/fake-gemini-secret|fake-xai-secret/);
+ const stored=JSON.parse(await readFile(path.join(s.dir,'ai-keys.json'),'utf8'));assert.equal(stored.gemini,'fake-gemini-secret');assert.equal(stored.xai,'fake-xai-secret');assert.equal(JSON.parse(await readFile(path.join(s.dir,'settings.json'),'utf8')).youtubeKey,'youtube-retained');
+ assert.equal((await s.req('/api/ai/keys','PUT',{gemini:''})).status,200);assert.equal(JSON.parse(await readFile(path.join(s.dir,'ai-keys.json'),'utf8')).gemini,'fake-gemini-secret');
+ assert.equal((await s.req('/api/ai/keys','PUT',{gemini:{bad:true}})).status,400);
+ }finally{await s.stop();}
+});
+test('direct mode without keys returns an actionable error without using configured gateway',async()=>{
+ const s=await boot({}, {settings:{aiMode:'direct',model:'gemini/test-model'}});
+ try{const r=await s.req('/api/test','POST',{});assert.equal(r.status,428);assert.match(r.body.error,/Gemini/);}finally{await s.stop();}
+});

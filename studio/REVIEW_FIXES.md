@@ -164,3 +164,9 @@ Hook được coi là định hướng thay vì lời bắt buộc chép nguyên
 - Tái hiện finish_reason=length: trước đây luôn dừng 422 dù đã chia script khoảng 220 từ/phần.
 - Retry một lần với ngân sách đầu ra tăng có giới hạn, giữ JSON mode; nếu vẫn bị cắt, fallback. Chung giới hạn tối đa hai lượt/model với retry JSON, không gọi vô hạn hoặc nhận narration bị cắt.
 - Test hành vi HTTP/mock kiểm ngân sách, prompt giữ nguyên, fallback và state không đổi. Chưa xác nhận sinh script với AI thật sau sửa.
+
+## Gemini + Grok API trực tiếp
+- Hai khóa tách riêng ở ai-keys.json; không đưa vào state/settings API hoặc Git. Không sửa youtubeKey. Endpoint cố định Google/xAI; Grok không phải Groq.
+- UI lưu khóa từng dịch vụ, tải danh sách model được cấp quyền và chọn model chính/dự phòng. Chế độ gateway cũ vẫn dùng được khi chọn gateway.
+- Test đỏ trước: lưu khóa/thiếu khóa; mock request kiểm URL, model bỏ prefix, Authorization tách đúng provider, fallback liên dịch vụ; test UI render model/khóa không lộ.
+- Chưa kiểm chứng bằng khóa Gemini/xAI thật mới; chờ người dùng nhập tại Kết nối API.
