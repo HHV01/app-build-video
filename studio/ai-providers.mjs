@@ -12,9 +12,9 @@ export function resolveAIConnection(settings,keys,env,model){
  const base=(env.OPENAI_BASE_URL||'http://localhost:20128/v1').replace(/\/+$/,'');
  return {provider:'gateway',base,key:env.OPENAI_API_KEY,model:/^https:\/\/api\.groq\.com(?:\/|$)/.test(base)?model.replace(/^groq\//,''):model};
 }
-export async function sendAICompletion(settings,keys,env,model,payload,request,timeout){
+export async function sendAICompletion(settings,keys,env,model,payload,request,timeout,signal){
  const connection=resolveAIConnection(settings,keys,env,model);
- return request(connection.base+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+connection.key,'Content-Type':'application/json'},body:JSON.stringify({...payload,model:connection.model})},timeout);
+ return request(connection.base+'/chat/completions',{method:'POST',signal,headers:{Authorization:'Bearer '+connection.key,'Content-Type':'application/json'},body:JSON.stringify({...payload,model:connection.model})},timeout);
 }
 export function updatedAIKeys(current,input){
  const updated={...current};

@@ -8,10 +8,10 @@ test('Gemini and Grok requests go directly to official endpoints with separate c
  assert.equal(seen[0].url,'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');assert.equal(seen[0].headers.Authorization,'Bearer '+keys.gemini);assert.equal(seen[0].body.model,'gemini-test');
  assert.equal(seen[1].url,'https://api.x.ai/v1/chat/completions');assert.equal(seen[1].headers.Authorization,'Bearer '+keys.xai);assert.equal(seen[1].body.model,'grok-test');assert(!JSON.stringify(seen[1]).includes(keys.gemini));
 });
-test('direct fallback switches endpoint and credentials, while invalid key errors do not switch',async()=>{
+test('direct fallback switches endpoint and credentials, while invalid key errors switch',async()=>{
  const seen=[];const execute=async model=>sendAICompletion({aiMode:'direct'},keys,{},model,{messages:[]},async(url,options)=>{seen.push([url,options.headers.Authorization]);if(url.includes('googleapis'))throw Object.assign(Error('busy'),{upstreamStatus:429});return {output:{narration:'next part'}};},1000);
  const r=await withModelFallback('gemini/a',['xai/b'],execute);assert.equal(r.output.narration,'next part');assert.equal(r.fallback.used,true);assert.equal(seen.length,2);assert.equal(seen[1][1],'Bearer '+keys.xai);
- let calls=0;await assert.rejects(withModelFallback('gemini/a',['xai/b'],async()=>{calls++;throw Object.assign(Error('invalid key'),{upstreamStatus:401});}));assert.equal(calls,1);
+ let calls=0;await assert.rejects(withModelFallback('gemini/a',['xai/b'],async()=>{calls++;throw Object.assign(Error('invalid key'),{upstreamStatus:401});},{cooldowns:new Map()}));assert.equal(calls,2);
 });
 test('missing direct credentials never fall back to gateway, and existing gateway mode is preserved',()=>{
  assert.throws(()=>resolveAIConnection({aiMode:'direct'},{},{OPENAI_API_KEY:'gateway'},'gemini/a'),/Gemini/);

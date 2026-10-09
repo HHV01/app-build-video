@@ -380,7 +380,7 @@ test('malformed JSON in successful HTTP response is retried and parsed before re
 });
 test('all models failing JSON stop after bounded retries with an understandable error',async()=>{
  const h=await jsonFailureHarness(()=>badJsonReply,{autoFallback:true,fallbackModels:['backup']});
- try{const r=await h.server.req('/api/generate','POST',{action:'script',context:{}});assert.equal(r.status,503);assert.equal(h.seen.length,4);assert.match(r.body.error,/JSON hợp lệ/);assert.match(r.body.error,/đã lưu được giữ/);}finally{await h.stop();}
+ try{const r=await h.server.req('/api/generate','POST',{action:'script',context:{}});assert.equal(r.status,503);assert.equal(h.seen.length,4);assert.match(r.body.error,/JSON hợp lệ/);assert.match(r.body.error,/đã lưu được giữ/i);}finally{await h.stop();}
 });
 
 const truncatedScriptReply={body:{choices:[{message:{content:'{"narration":"unfinished'},finish_reason:'length'}]}};
@@ -407,5 +407,5 @@ test('direct API keys persist separately and never appear in settings or state r
 });
 test('direct mode without keys returns an actionable error without using configured gateway',async()=>{
  const s=await boot({}, {settings:{aiMode:'direct',model:'gemini/test-model'}});
- try{const r=await s.req('/api/test','POST',{});assert.equal(r.status,428);assert.match(r.body.error,/Gemini/);}finally{await s.stop();}
+ try{const r=await s.req('/api/test','POST',{});assert.equal(r.status,503);assert.match(r.body.error,/missing_key/);}finally{await s.stop();}
 });

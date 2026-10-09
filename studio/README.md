@@ -141,3 +141,6 @@ Giới hạn đầu ra là giới hạn của một lượt gọi, không phải
 4. Bấm Kiểm tra AI, rồi trở lại dự án và Tiếp tục viết script.
 Khóa nằm trong `.studio-data/ai-keys.json`, bị Git bỏ qua; GET settings chỉ trả trạng thái đã cấu hình. Để trống giữ khóa cũ. API trực tiếp gọi Google/xAI, không đi qua OmniRoute. Model ghi `gemini/tên-model` hoặc `xai/tên-model`. Lỗi khóa/quyền không tự chuyển; timeout/quota/quá tải và lỗi JSON/đầu ra dùng cơ chế dự phòng có giới hạn.
 Endpoint theo tài liệu chính thức: https://ai.google.dev/gemini-api/docs/openai và https://docs.x.ai/developers/model-capabilities/legacy/chat-completions.
+
+## Dự phòng linh hoạt
+Thiếu khóa, 401/402/403/404 và lỗi dịch vụ có thể chuyển model; 400/422 sai yêu cầu dừng ngay (JSON/cắt dở được thử lại). Model 429/402/403 nghỉ 10 phút; nếu tất cả nghỉ, thử model hết nghỉ sớm nhất. Mỗi model tối đa 30 giây khi có dự phòng, cả chuỗi 90 giây. Banner hiển thị model thay thế và trạng thái nghỉ; GET /api/ai/status không trả khóa.

@@ -170,3 +170,6 @@ Hook được coi là định hướng thay vì lời bắt buộc chép nguyên
 - UI lưu khóa từng dịch vụ, tải danh sách model được cấp quyền và chọn model chính/dự phòng. Chế độ gateway cũ vẫn dùng được khi chọn gateway.
 - Test đỏ trước: lưu khóa/thiếu khóa; mock request kiểm URL, model bỏ prefix, Authorization tách đúng provider, fallback liên dịch vụ; test UI render model/khóa không lộ.
 - Chưa kiểm chứng bằng khóa Gemini/xAI thật mới; chờ người dùng nhập tại Kết nối API.
+
+## Đợt cuối · Phần 1
+Phân loại lỗi, lý do chuyển, cooldown tiêm đồng hồ, giới hạn thời gian và banner/trạng thái. Test mock bảng mã lỗi, nghỉ/hết nghỉ, tất cả nghỉ, 90 giây, banner credit. Chưa chạy với Gemini/Grok thật có lỗi quota/credit.
