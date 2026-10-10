@@ -288,3 +288,14 @@ test('saved shelf migration unlocks matching channels and preserves downstream d
  assert.deepEqual(flow.shelf.videos,[{id:'retained'}]);assert.equal(flow.groups.chosen,'history');
  const snapshot=JSON.stringify(state);normalizeShelfChecks(state);assert.equal(JSON.stringify(state),snapshot);
 });
+
+test('shelf baseline uses mature videos only and all-new channels have no multiples',async()=>{
+ const h=harness(fixture().map(v=>v.channelId==='b'?{...v,views:Number(v.id.slice(1))<10?9000000:100,publishedAt:new Date(now-(Number(v.id.slice(1))<10?10:100)*86400000).toISOString()}:v.channelId==='c'?{...v,publishedAt:new Date(now-10*86400000).toISOString()}:v));
+ const shelf=(await prepare(h)).survey.nicheFlow.shelf;assert.equal(shelf.count,3);assert.equal(shelf.passed,true);
+ const b=shelf.channels.find(c=>c.channelId==='b'),c=shelf.channels.find(c=>c.channelId==='c');assert.equal(b.baseline,100);assert.equal(c.baseline,null);assert.equal(c.tier,'chỉ cùng khuôn');assert.equal(shelf.channels[0].tier,'chuẩn thước');
+ assert(shelf.videos.filter(v=>v.channelId==='c').every(v=>v.multiple===null&&v.newVideo===true));assert(shelf.videos.filter(v=>v.channelId==='b'&&!v.newVideo).every(v=>v.multiple===1));
+});
+test('legacy shelf migration records affected channels and a stable notice instead of silent changes',()=>{
+ const shelf={channels:[{channelId:'a',sameTemplate:true,pass:true},{channelId:'b',sameTemplate:true,pass:false},{channelId:'c',sameTemplate:true,pass:false}],videos:[],passed:false,count:1};const state={surveys:[{nicheFlow:{shelf}}]};normalizeShelfChecks(state);
+ assert.equal(shelf.channels[1].migratedFromStrict,true);assert.equal(shelf.channels[0].migratedFromStrict,undefined);assert.match(shelf.migrationNotice,/2 kênh trước đây bị loại giờ được tính/);assert.equal(shelf.passed,true);const first=JSON.stringify(state);normalizeShelfChecks(state);assert.equal(JSON.stringify(state),first);
+});

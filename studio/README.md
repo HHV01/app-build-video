@@ -152,3 +152,6 @@ Model cho việc nhẹ để trống thì dùng model chính; khi có model nh�
 Mở đầu/kết thúc nhận tối đa 12 tiêu đề dàn ý và tiêu đề video; phần kết nhận tiêu đề thân bài. Thân bài đầu nhận các chỗ trống mở đầu đã điền và 300 ký tự cuối hook, không nhận câu fixed hoặc phần chữ cố định template. Chỉ giữ tóm tắt 4 phần gần nhất (240 ký tự/phần), phần cũ nén thành một dòng tối đa 300; tổng tóm tắt tối đa 1.200 ký tự. Ngân sách từ/±5% giữ nguyên.
 
 Lỗi yêu cầu cục bộ status 400/422 cũng dừng chuỗi, kể cả không có upstreamStatus; ngoại lệ JSON/cắt dở giữ cơ chế thử lại.
+
+## Kho: cùng khuôn và chuẩn thước
+Cổng vẫn cần 3 kênh cùng khuôn. Nhãn chuẩn thước dành cho kênh đạt số video trưởng thành và trung vị view; kênh còn lại mang nhãn chỉ cùng khuôn. Baseline chỉ dùng video ≥90 ngày; video mới có multiple=null, không tham gia trung vị/xếp hạng và gợi ý câu gõ thử. Nếu không có video trưởng thành, baseline=null. Khi chuyển khảo sát cũ, app gắn migratedFromStrict và hiện số kênh được tính thêm; bấm Đã hiểu để không hiện lại thông báo. Nội dung/chọn nhóm cũ được giữ.

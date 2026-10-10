@@ -161,3 +161,11 @@ test('G3 DNA uses reader-facing percentages rather than raw field names',()=>{co
 test('angle niche input and suggestion selector render separately from reference proposals',()=>{
  const s=survey({nicheStep:1,angleNiche:'Tài chính cá nhân',angleSource:'niche',nicheAngleFor:'Tài chính cá nhân',nicheAngleSuggestions:[{angle:'Quyết định nhỏ thay đổi tiền bạc',reason:'Hợp ngách'}],angle:'Quyết định nhỏ thay đổi tiền bạc'}),html=renderNiche(s,ui);assert(html.includes('survey.angleNiche'));assert(html.includes('niche-suggest-angles'));assert(html.includes('Quyết định nhỏ thay đổi tiền bạc'));assert(html.includes('✓ Đã chọn'));assert(html.includes('niche-reference-angles'));s.angleNiche='Lịch sử';assert(!renderNiche(s,ui).includes('<h2>Quyết định nhỏ thay đổi tiền bạc</h2>'));
 });
+
+test('shelf renders both tiers and migration notice only until acknowledged',()=>{
+ const shelf={...flow.shelf,channels:[{channelTitle:'A',tier:'chuẩn thước',metricsPassed:true,sameTemplate:true,pass:true,matureCount:20,median:30000},{channelTitle:'B',tier:'chỉ cùng khuôn',metricsPassed:false,sameTemplate:true,pass:true,matureCount:1,median:1000}],migrationNotice:'Luật Kho đã nới: 1 kênh trước đây bị loại giờ được tính'};
+ const s=survey({nicheStep:2,nicheFlow:{...flow,shelf}});const html=renderNiche(s,ui);assert.match(html,/chuẩn thước/);assert.match(html,/chỉ cùng khuôn/);assert.match(html,/1 kênh chuẩn thước \/ 3 kênh cùng khuôn/);assert.match(html,/Luật Kho đã nới/);s.shelfMigrationSeen=true;assert(!renderNiche(s,ui).includes('Luật Kho đã nới'));
+});
+test('group ranking excludes null multiples rather than treating young videos as zero',()=>{
+ const s=survey({nicheStep:3,nicheFlow:{...flow,shelf:{...flow.shelf,videos:[{id:'v1',channelId:'a',multiple:2},{id:'v2',channelId:'b',multiple:null,newVideo:true}]}}});const html=renderNiche(s,ui);assert.match(html,/×2\.00/);assert(!html.includes('×1.00'));
+});

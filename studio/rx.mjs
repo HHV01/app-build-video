@@ -555,7 +555,7 @@ export function suggestedQueries(groups, videos, template, count = 3) {
   for (const g of Array.isArray(groups) ? groups : []) {
     if (!g || g.id === 'unclassified') continue;
     const rows = (Array.isArray(g.videoIds) ? g.videoIds : []).map(id => byId.get(id))
-      .filter(v => v && Number.isFinite(Number(v.multiple)));
+      .filter(v => v && v.multiple!=null && Number.isFinite(Number(v.multiple)));
     if (!rows.length) continue;
     candidates.push({ score: median(rows.map(v => Number(v.multiple))), queries: queriesOf(rows) });
   }

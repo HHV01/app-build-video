@@ -181,3 +181,8 @@ TASK_TIERS và schema dùng chung để phát hiện action chưa phân loại. 
 Outline/title cho opening/closing, openingHandoff cho thân bài đầu, tóm tắt có giới hạn. Mock 12 lượt cùng fixture: ngữ cảnh trước [537,1561,1924,2287,2650,3013,3376,3739,4102,4467,4830,5214] ký tự; sau [714,1441,1684,1927,2170,2430,2430,2430,2430,2432,2432,2453]. Lượt cuối 5.214 → 2.453 ký tự. Đây là độ dài JSON context bằng mock, không phải số token hoặc chứng minh chất lượng AI. Chưa chạy script thật với Gemini/Grok sau sửa.
 
 Phần 1 kiểm tra bổ sung sau commit WIP 6dcde5a: tái hiện lỗi status 400/422 không có upstreamStatus bị switch; bổ sung test đỏ rồi sửa điều kiện stop. Không thay đổi các mở rộng khác của commit WIP.
+
+## Đợt cuối · Phần 4
+Tier chuẩn thước/chỉ cùng khuôn, baseline trưởng thành, video mới multiple=null; trung vị nhóm và suggestedQueries loại null. Migration có cờ migratedFromStrict, thông báo có nút xác nhận một lần, không thay cổng 3 kênh cùng khuôn. Test mock kênh mới hoàn toàn, baseline bị video mới nhiều view làm lệch, tier/UI, migration/idempotence và gợi ý/ranking. Chưa cào lại YouTube thật.
+
+Nghiệm thu tay bằng app thật + gateway giả localhost: model nhẹ gateway/light chạy angles, gateway/main trả 402 ở script rồi chuyển gateway/heavy-backup. Trình duyệt hiển thị banner “402: hết credit”, nghỉ 10 phút và bảng phiên có 12/15/27 token mock cho hai lượt thành công, 1 lần chuyển. Không dùng khóa hoặc AI thật.

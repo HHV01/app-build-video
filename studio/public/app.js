@@ -285,6 +285,7 @@ case 'home-workshop':if(state.channels.length)go('channel/'+state.channels[0].id
 case 'home-projects':if(state.projects.length){const pr=state.projects.at(-1);go(`channel/${pr.channelId}/workshop/${pr.id}/${pr.step}`);}else toast('Chưa có dự án. Tạo kênh rồi bấm Làm kịch bản mới.');break;
 case 'theme':document.body.classList.toggle('light');localStorage.setItem('tich-theme',document.body.classList.contains('light')?'light':'dark');render();break;
 case 'guide':toast('Bắt đầu Tìm ngách hoặc Dựng kênh. Dữ liệu tự lưu khi bạn chỉnh. AI dùng Groq; khảo sát YouTube cần khóa riêng.');break;
+case 'niche-dismiss-migration':s.shelfMigrationSeen=true;await save();render();break;
 case 'niche-step':{const next=Number(el.dataset.step);if(!Number.isInteger(next)||next<0||next>5||STAGES.slice(0,next).some(st=>s.nicheFlow?.[st]?.passed!==true))return toast('Chưa qua cổng trước.',true);s.nicheStep=next;await save();render();break;}
 case 'niche-field':await nicheAction('field',{market:s.market,language:s.language,format:s.format});break;
 case 'niche-analyze':{

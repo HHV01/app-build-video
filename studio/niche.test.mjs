@@ -223,3 +223,5 @@ test('shelf counts distinct matching channels regardless of metric pass',()=>{
  assert.equal(shelfGate(channels).passed,false);
  assert.equal(shelfGate([...channels,{channelId:'c',sameTemplate:true,pass:false}]).passed,true);
 });
+
+test('probe suggestions ignore groups composed entirely of new unscored videos',async()=>{const {suggestedQueries}=await import('./rx.mjs');assert.deepEqual(suggestedQueries([{id:'new',videoIds:['v1','v2','v3']}],[1,2,3].map(i=>({id:'v'+i,title:'Entire history of New '+i,multiple:null,newVideo:true})),'entire history of'),[]);});

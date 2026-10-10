@@ -1,9 +1,14 @@
 // Integrates existing rx/core rules; it contains no second set of thresholds.
-import { videoMetadata, RULES, STAGES, findTemplate, carriesTemplate, contentVideos, overlapsShelf, suggestedQueries, channelShelf, shelfGate, probeGate, blindTitles, groupCountGate, nextStage, lockedNiche, validateTopics } from './rx.mjs';
+import { videoMetadata, ageDays, RULES, STAGES, findTemplate, carriesTemplate, contentVideos, overlapsShelf, suggestedQueries, channelShelf, shelfGate, probeGate, blindTitles, groupCountGate, nextStage, lockedNiche, validateTopics } from './rx.mjs';
 import { median, validateGroups } from './core.mjs';
 
 const fault = (message, status = 400) => Object.assign(new Error(message), { status });
 const newest = videos => [...videos].sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+export function matureReferenceMultiples(videos,now=Date.now()){
+ const rows=videos.filter(v=>Number.isFinite(v.views)),mature=rows.filter(v=>{const age=ageDays(v,now);return age!=null&&age>=RULES.matureDays;});
+ const baseline=mature.length?median(mature.map(v=>v.views)):null;
+ return {baseline,videos:rows.map(v=>{const age=ageDays(v,now),newVideo=age!=null&&age<RULES.matureDays;return {...v,baseline,newVideo,multiple:age!=null&&!newVideo&&baseline>0?v.views/baseline:null};})};
+}
 export function createNicheAPI({ getState, updateState, youtube, videoDetails, generate }) {
   function requireStage(id, stage, state = getState()) {
     const survey = state.surveys.find(s => s.id === id);
@@ -59,10 +64,9 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
     // bằng nhau là quá chặt: kênh lặp cụm dài hơn vẫn là cùng một dòng khuôn.
     const sameTemplate = Boolean(result.template) && `${result.template} `.startsWith(`${template} `);
     const pass = sameTemplate;
-    const baseline=median(carrying.filter(v=>Number.isFinite(v.views)).map(v=>v.views));
-    const references=carrying.filter(v=>Number.isFinite(v.views)).map(v=>({...v,multiple:baseline>0?v.views/baseline:0}));
+    const {baseline,videos:references}=matureReferenceMultiples(carrying);
     const otherReason = result.template ? `Lặp khuôn khác: "${result.template}"` : result.reason || 'Không lặp cùng khuôn';
-    return { ...shelf, channelId: cat.id, channelTitle: cat.name, complete: cat.complete, template: result, sameTemplate, pass, metricsPassed:shelf.pass, videos: pass ? references : [], provenance: cat.provenance, reason: cat.durationWarning || [!cat.complete && 'Kho chưa đầy đủ', !sameTemplate && otherReason, !shelf.pass && (shelf.reason || 'Chưa qua cổng view')].filter(Boolean).join(' · ') };
+    return { ...shelf, channelId: cat.id, channelTitle: cat.name, complete: cat.complete, template: result, sameTemplate, pass, metricsPassed:shelf.pass,tier:shelf.pass?'chuẩn thước':'chỉ cùng khuôn',baseline, videos: pass ? references : [], provenance: cat.provenance, reason: cat.durationWarning || [!cat.complete && 'Kho chưa đầy đủ', !sameTemplate && otherReason, !shelf.pass && (shelf.reason || 'Chưa qua cổng view')].filter(Boolean).join(' · ') };
   }
   async function act(stage, body) {
     const snapshot = getState(), revision = snapshot.revision;
@@ -125,7 +129,7 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
       const channels = catalogs.map(cat => ({...evaluateChannel(cat,flow.template.value,flow.field.format),addedByUser:Boolean(cat.addedByUser),...(cat.lookupError?{reason:cat.lookupError}:{} )}));
       const gate = shelfGate(channels);
       const readUnits=catalogs.filter(c=>c.discovered).reduce((n,c)=>n+(c.quotaEstimate?.readUnits||0),0)+extraReadUnits;
-      value = { ...gate, channels, notice, quotaEstimate:body.mode==='live'?{searchCalls:1,readUnits,extraReadUnits,note:'Ước tính theo số trang và lô chi tiết; cache có thể giảm số lượt thực tế.'}:undefined, videos: channels.filter(c => c.pass).flatMap(c => c.videos), provenance: body.mode, criteria:'same-template', formatWarning: 'Phân loại video dài/Shorts theo dữ liệu nhập hoặc thời lượng là gần đúng.' };
+      value = { ...gate, channels, notice, quotaEstimate:body.mode==='live'?{searchCalls:1,readUnits,extraReadUnits,note:'Ước tính theo số trang và lô chi tiết; cache có thể giảm số lượt thực tế.'}:undefined, videos: channels.filter(c => c.pass).flatMap(c => c.videos), provenance: body.mode, criteria:'same-template-v2', formatWarning: 'Phân loại video dài/Shorts theo dữ liệu nhập hoặc thời lượng là gần đúng.' };
     } else if (stage === 'groups') {
       if (body.groupId) {
         if (!flow.groups?.passed || !flow.groups.groups.some(g => g.id === body.groupId)) throw fault('Chọn một nhóm trong kết quả đã đạt.', 409);
@@ -210,7 +214,14 @@ export function createNicheAPI({ getState, updateState, youtube, videoDetails, g
 
 export function normalizeShelfChecks(state){
  for(const survey of state.surveys||[]){const shelf=survey.nicheFlow?.shelf;if(!Array.isArray(shelf?.channels))continue;
- for(const channel of shelf.channels){channel.metricsPassed??=channel.pass===true;channel.pass=channel.sameTemplate===true;}
- Object.assign(shelf,shelfGate(shelf.channels),{criteria:'same-template'});
+  const legacy=shelf.criteria!=='same-template-v2';let affected=0;const updatedVideos=new Map();
+  for(const channel of shelf.channels){
+   channel.metricsPassed??=channel.pass===true;
+   if(legacy&&channel.sameTemplate===true&&!channel.metricsPassed){channel.migratedFromStrict=true;affected++;}
+   channel.pass=channel.sameTemplate===true;channel.tier=channel.metricsPassed?'chuẩn thước':'chỉ cùng khuôn';
+   if(legacy){const rows=channel.videos?.length?channel.videos:(shelf.videos||[]).filter(v=>v.channelId===channel.channelId);const result=matureReferenceMultiples(rows);channel.baseline=result.baseline;if(Array.isArray(channel.videos))channel.videos=result.videos;for(const v of result.videos)updatedVideos.set(v.id,v);}
+  }
+  if(legacy){shelf.videos=(shelf.videos||[]).map(v=>updatedVideos.get(v.id)||v);if(affected)shelf.migrationNotice=`Luật Kho đã nới: ${affected} kênh trước đây bị loại giờ được tính`;if(survey.nicheFlow.groups?.groups)survey.nicheFlow.groups.suggestedQueries=suggestedQueries(survey.nicheFlow.groups.groups,shelf.videos,survey.nicheFlow.template?.value||'');}
+  Object.assign(shelf,shelfGate(shelf.channels),{criteria:'same-template-v2'});
  }return state;
 }
