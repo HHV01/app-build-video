@@ -186,3 +186,6 @@ Phần 1 kiểm tra bổ sung sau commit WIP 6dcde5a: tái hiện lỗi status 4
 Tier chuẩn thước/chỉ cùng khuôn, baseline trưởng thành, video mới multiple=null; trung vị nhóm và suggestedQueries loại null. Migration có cờ migratedFromStrict, thông báo có nút xác nhận một lần, không thay cổng 3 kênh cùng khuôn. Test mock kênh mới hoàn toàn, baseline bị video mới nhiều view làm lệch, tier/UI, migration/idempotence và gợi ý/ranking. Chưa cào lại YouTube thật.
 
 Nghiệm thu tay bằng app thật + gateway giả localhost: model nhẹ gateway/light chạy angles, gateway/main trả 402 ở script rồi chuyển gateway/heavy-backup. Trình duyệt hiển thị banner “402: hết credit”, nghỉ 10 phút và bảng phiên có 12/15/27 token mock cho hai lượt thành công, 1 lần chuyển. Không dùng khóa hoặc AI thật.
+
+## Sửa xung đột thông báo lỗi bản nháp (2026-10-10)
+Test hành vi đỏ trước: hai phiên sửa/xoá scriptDraft.error làm chặn lưu. Cho phép chọn thông báo của phiên đang lưu; giữ chặn xung đột scriptDraft.parts. 227/227 test xanh. Chưa tái hiện hai phiên trên trình duyệt thật.

@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mergeState} from './sync.mjs';
+test('Draft diagnostics do not block saving, while conflicting narration stays protected',()=>{
+ const base={projects:[{id:'p',scriptDraft:{parts:['saved'],error:'old'}}]};
+ const local=structuredClone(base),remote=structuredClone(base);
+ delete local.projects[0].scriptDraft.error;remote.projects[0].scriptDraft.error='upstream timeout';
+ let result=mergeState(base,local,remote);assert.deepEqual(result.conflicts,[]);assert.deepEqual(result.state.projects[0].scriptDraft.parts,['saved']);assert.equal(result.state.projects[0].scriptDraft.error,undefined);
+ local.projects[0].scriptDraft.error='retry failed';result=mergeState(base,local,remote);assert.deepEqual(result.conflicts,[]);assert.equal(result.state.projects[0].scriptDraft.error,'retry failed');
+ local.projects[0].scriptDraft.parts=['mine'];remote.projects[0].scriptDraft.parts=['theirs'];result=mergeState(base,local,remote);assert.deepEqual(result.conflicts,['projects[p].scriptDraft.parts']);
+});
 test('Concurrent disjoint edits and new records survive stale revisions',()=>{
  const base={revision:1,surveys:[{id:'s',name:'old',angle:''}],channels:[]};const local=structuredClone(base),remote=structuredClone(base);local.surveys[0].name='mine';remote.surveys[0].angle='theirs';remote.channels.push({id:'c',name:'new'});remote.revision=2;
  const result=mergeState(base,local,remote);assert.deepEqual(result.conflicts,[]);assert.equal(result.state.revision,2);assert.deepEqual(result.state.surveys[0],{id:'s',name:'mine',angle:'theirs'});assert.equal(result.state.channels[0].id,'c');

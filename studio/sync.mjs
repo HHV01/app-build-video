@@ -9,6 +9,8 @@ export function mergeState(base, local, remote) {
     if(/^channels\[[^\]]+\]$/.test(p)&&b&&(l===undefined||r===undefined))return undefined;
     if(equal(l,b))return clone(r);
     if(equal(r,b)||equal(l,r))return clone(l);
+    // A retry's diagnostic is transient; never block narrative saves on it.
+    if(/^projects\[[^\]]+\]\.scriptDraft\.error$/.test(p))return clone(l);
     if([b,l,r].every(v=>Array.isArray(v)&&v.every(x=>x&&typeof x==='object'&&typeof x.id==='string'))){
       const maps=[b,l,r].map(a=>new Map(a.map(x=>[x.id,x])));
       return [...new Set([...r,...l,...b].map(x=>x.id))].map(id=>merge(maps[0].get(id),maps[1].get(id),maps[2].get(id),`${p}[${id}]`)).filter(x=>x!==undefined);
