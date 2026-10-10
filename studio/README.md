@@ -157,3 +157,5 @@ Lỗi yêu cầu cục bộ status 400/422 cũng dừng chuỗi, kể cả khôn
 Cổng vẫn cần 3 kênh cùng khuôn. Nhãn chuẩn thước dành cho kênh đạt số video trưởng thành và trung vị view; kênh còn lại mang nhãn chỉ cùng khuôn. Baseline chỉ dùng video ≥90 ngày; video mới có multiple=null, không tham gia trung vị/xếp hạng và gợi ý câu gõ thử. Nếu không có video trưởng thành, baseline=null. Khi chuyển khảo sát cũ, app gắn migratedFromStrict và hiện số kênh được tính thêm; bấm Đã hiểu để không hiện lại thông báo. Nội dung/chọn nhóm cũ được giữ.
 
 Khi tiếp tục bản nháp, xung đột riêng ở thông báo scriptDraft.error không chặn lưu. Xung đột lời kể vẫn được bảo vệ; giữ trang mở và chép nội dung trước khi tải lại nếu chưa lưu.
+
+Gemini 3 Flash trực tiếp mặc định dùng reasoning_effort=low để hạn chế phần suy luận chiếm ngân sách đầu ra. Nếu truyền mức riêng thì vẫn giữ mức đã chọn. Danh sách model trả thành công chưa đủ chứng minh model viết được; cần thử sinh văn bản.

@@ -189,3 +189,6 @@ Nghiệm thu tay bằng app thật + gateway giả localhost: model nhẹ gatewa
 
 ## Sửa xung đột thông báo lỗi bản nháp (2026-10-10)
 Test hành vi đỏ trước: hai phiên sửa/xoá scriptDraft.error làm chặn lưu. Cho phép chọn thông báo của phiên đang lưu; giữ chặn xung đột scriptDraft.parts. 227/227 test xanh. Chưa tái hiện hai phiên trên trình duyệt thật.
+
+## Khắc phục viết script Gemini trực tiếp (2026-10-11)
+Tái hiện thật: Gemini 3.8/3.7 timeout; Gemini 3 Flash trả truncated ở yêu cầu script. Test hành vi đỏ trước, bổ sung reasoning_effort=low cho Gemini 3 Flash, không đổi xAI/gateway và giữ cấu hình explicit. 228/228 test xanh. Sau restart, script thật HTTP 200: thử 144 từ/21.1 giây; đúng phần 6 bản nháp 30 phút HTTP 200, 210 từ/4.325 giây (mục tiêu169). Chưa kiểm nghiệm toàn bộ script 30 phút; không lưu đầu ra thử vào dự án. Cấu hình máy chuyển model chính sang gemini-3-flash-preview; tạm tắt fallback vì hai model dự phòng hiện timeout, chờ model/khóa dự phòng khả dụng.

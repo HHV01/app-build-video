@@ -3,6 +3,13 @@ import assert from 'node:assert/strict';
 import {resolveAIConnection,sendAICompletion} from './ai-providers.mjs';
 import {withModelFallback} from './model-fallback.mjs';
 const keys={gemini:'test-google-secret',xai:'test-xai-secret'};
+test('Gemini 3 Flash uses low thinking unless caller explicitly sets it, other providers unchanged',async()=>{
+ const seen=[];const request=async(url,o)=>{seen.push(JSON.parse(o.body));return {};};
+ await sendAICompletion({},keys,{},'gemini/gemini-3-flash-preview',{max_tokens:2000},request,1000);
+ await sendAICompletion({},keys,{},'gemini/gemini-3-flash-preview',{reasoning_effort:'high'},request,1000);
+ await sendAICompletion({},keys,{},'xai/grok-test',{},request,1000);
+ assert.equal(seen[0].reasoning_effort,'low');assert.equal(seen[1].reasoning_effort,'high');assert.equal(seen[2].reasoning_effort,undefined);
+});
 test('Gemini and Grok requests go directly to official endpoints with separate credentials',async()=>{
  const seen=[];for(const model of ['gemini/gemini-test','xai/grok-test'])await sendAICompletion({aiMode:'direct'},keys,{},model,{messages:[{role:'user',content:'hello'}],max_tokens:100},async(url,options)=>{seen.push({url,headers:options.headers,body:JSON.parse(options.body)});return {ok:true};},1000);
  assert.equal(seen[0].url,'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');assert.equal(seen[0].headers.Authorization,'Bearer '+keys.gemini);assert.equal(seen[0].body.model,'gemini-test');

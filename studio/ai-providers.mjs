@@ -16,7 +16,8 @@ export function resolveAIConnection(settings,keys,env,model){
 }
 export async function sendAICompletion(settings,keys,env,model,payload,request,timeout,signal){
  const connection=resolveAIConnection(settings,keys,env,model);
- return request(connection.base+'/chat/completions',{method:'POST',signal,headers:{Authorization:'Bearer '+connection.key,'Content-Type':'application/json'},body:JSON.stringify({...payload,model:connection.model})},timeout);
+ const thinking=connection.provider==='gemini'&&/^gemini-3(?:\.\d+)?-flash(?:-|$)/.test(connection.model)?{reasoning_effort:'low'}:{};
+ return request(connection.base+'/chat/completions',{method:'POST',signal,headers:{Authorization:'Bearer '+connection.key,'Content-Type':'application/json'},body:JSON.stringify({...thinking,...payload,model:connection.model})},timeout);
 }
 export function updatedAIKeys(current,input){
  const updated={...current};
