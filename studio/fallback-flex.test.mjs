@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {classifyAIError,withModelFallback,MODEL_COOLDOWN_MS} from './model-fallback.mjs';
 test('error classification switches configuration/provider failures but stops bad requests',()=>{
  for(const status of [0,401,402,403,404,429,500,502,503,504])assert.equal(classifyAIError({upstreamStatus:status}),'switch');
- assert.equal(classifyAIError({status:428}),'switch');for(const status of [400,422])assert.equal(classifyAIError({status,upstreamStatus:status}),'stop');assert.equal(classifyAIError({outputTruncated:true,status:422}),'switch');
+ assert.equal(classifyAIError({status:428}),'switch');assert.equal(classifyAIError({status:400}),'stop');assert.equal(classifyAIError({status:422}),'stop');for(const status of [400,422])assert.equal(classifyAIError({status,upstreamStatus:status}),'stop');assert.equal(classifyAIError({outputTruncated:true,status:422}),'switch');
 });
 test('cooldown skips quota models until expiry and tries earliest when all resting',async()=>{
  let time=0;const cooldowns=new Map(),opts={now:()=>time,cooldowns},calls=[];

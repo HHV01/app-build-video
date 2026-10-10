@@ -14,7 +14,7 @@ export function classifyAIError(e){
   const us=e?.upstreamStatus;
   if(us===0||us===401||us===402||us===403||us===404||us===429||us===500||us===502||us===503||us===504) return 'switch';
   if(e?.status===428&&us==null) return 'switch';
-  if(us===400||us===422) return 'stop';
+  if(us===400||us===422||e?.status===400||e?.status===422) return 'stop';
   return 'switch';
 }
 export function aiErrorReason(e){

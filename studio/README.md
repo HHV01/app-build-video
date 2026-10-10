@@ -150,3 +150,5 @@ Model cho việc nhẹ để trống thì dùng model chính; khi có model nh�
 
 ## Nối mạch kịch bản và giới hạn ngữ cảnh
 Mở đầu/kết thúc nhận tối đa 12 tiêu đề dàn ý và tiêu đề video; phần kết nhận tiêu đề thân bài. Thân bài đầu nhận các chỗ trống mở đầu đã điền và 300 ký tự cuối hook, không nhận câu fixed hoặc phần chữ cố định template. Chỉ giữ tóm tắt 4 phần gần nhất (240 ký tự/phần), phần cũ nén thành một dòng tối đa 300; tổng tóm tắt tối đa 1.200 ký tự. Ngân sách từ/±5% giữ nguyên.
+
+Lỗi yêu cầu cục bộ status 400/422 cũng dừng chuỗi, kể cả không có upstreamStatus; ngoại lệ JSON/cắt dở giữ cơ chế thử lại.
