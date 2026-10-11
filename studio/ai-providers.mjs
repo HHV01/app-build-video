@@ -18,11 +18,16 @@ export function resolveAIConnection(settings,keys,env,model){
 export async function sendAICompletion(settings,keys,env,model,payload,request,timeout,signal){
  const connection=resolveAIConnection(settings,keys,env,model);
  const thinking=(connection.provider==='gemini'&&/^gemini-3(?:\.\d+)?-flash(?:-|$)/.test(connection.model))||(connection.provider==='groq'&&/^openai\/gpt-oss-/.test(connection.model))?{reasoning_effort:'low'}:{};
- return request(connection.base+'/chat/completions',{method:'POST',signal,headers:{Authorization:'Bearer '+connection.key,'Content-Type':'application/json'},body:JSON.stringify({...thinking,...payload,model:connection.model})},timeout);
+ const call=key=>request(connection.base+'/chat/completions',{method:'POST',signal,headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({...thinking,...payload,model:connection.model})},timeout);
+ try{return await call(connection.key);}catch(e){
+  const backup=keys.groqBackup||env.GROQ_BACKUP_API_KEY;
+  if(connection.provider!=='groq'||!backup||backup===connection.key||![401,403].includes(e.upstreamStatus))throw e;
+  return call(backup);
+ }
 }
 export function updatedAIKeys(current,input){
  const updated={...current};
- for(const provider of ['gemini','xai','groq'])if(Object.hasOwn(input,provider)){
+ for(const provider of ['gemini','xai','groq','groqBackup'])if(Object.hasOwn(input,provider)){
   const key=input[provider];if(typeof key!=='string'||key.length>1000||/[\r\n]/.test(key))throw fault('Khóa API phải là chuỗi một dòng, tối đa 1.000 ký tự.');
   if(key.trim())updated[provider]=key.trim();
  }return updated;

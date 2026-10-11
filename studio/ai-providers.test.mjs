@@ -32,3 +32,10 @@ test('missing direct credentials never fall back to gateway, and existing gatewa
  assert.throws(()=>resolveAIConnection({aiMode:'direct'},keys,{},'groq/a'),/Groq/i);
  const r=resolveAIConnection({},keys,{OPENAI_API_KEY:'gateway',OPENAI_BASE_URL:'http://localhost:20128/v1'},'legacy-model');assert.equal(r.key,'gateway');assert.equal(r.model,'legacy-model');assert.equal(r.base,'http://localhost:20128/v1');
 });
+test('Groq backup key is separate and only retried once for authentication failures',async()=>{
+ const stored=updatedAIKeys({groq:'main-secret'},{groqBackup:'backup-secret'});assert.equal(stored.groq,'main-secret');assert.equal(stored.groqBackup,'backup-secret');
+ const seen=[];const r=await sendAICompletion({aiMode:'direct'},stored,{},'groq/openai/gpt-oss-120b',{},async(url,o)=>{seen.push(o.headers.Authorization);if(seen.length===1)throw Object.assign(Error('auth'),{upstreamStatus:401});return {ok:true};},1000);
+ assert.equal(r.ok,true);assert.deepEqual(seen,['Bearer main-secret','Bearer backup-secret']);
+ for(const status of [429,503]){let calls=0;await assert.rejects(sendAICompletion({aiMode:'direct'},stored,{},'groq/openai/gpt-oss-120b',{},async()=>{calls++;throw Object.assign(Error('busy'),{upstreamStatus:status});},1000));assert.equal(calls,1);}
+ let calls=0;await assert.rejects(sendAICompletion({aiMode:'direct'},stored,{},'groq/openai/gpt-oss-120b',{},async()=>{calls++;throw Object.assign(Error('auth'),{upstreamStatus:403});},1000));assert.equal(calls,2);
+});

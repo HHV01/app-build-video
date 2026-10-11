@@ -164,3 +164,5 @@ Groq API trực tiếp: lưu khóa Groq (gsk_) ở mục riêng, khác Grok/xAI.
 
 ### Tiết kiệm lượt viết và ngữ cảnh
 Bản nháp mới chia tối đa 400 từ/lượt; bản nháp đang viết giữ kế hoạch cũ để tiếp tục đúng phần. Ngữ cảnh viết giữ nguyên claim, số liệu, sourceId và status liên quan, bỏ metadata thừa, giới hạn tóm tắt/đoạn nối và tránh gửi trùng bản sắc. Hướng dẫn hook chỉ gửi ở phần đầu, kết luận chỉ ở phần cuối. Lệch từ nhẹ (trong 25%) được giữ và cảnh báo; lệch lớn thử sửa tối đa một lần. Luồng opening/closing cố định cân mục tiêu các phần sau và giữ kiểm tra tổng ±5%, phần cuối kiểm chặt hơn. HTTP429 dùng Retry-After hoặc thời gian trong lỗi dịch vụ; khi có thời gian chờ rõ thì không gọi model sớm. Thiếu thông tin vẫn dùng 10 phút mặc định.
+
+Groq có thêm ô khóa dự phòng riêng. Giữ khóa chính; chỉ thử khóa dự phòng tối đa1 lần khi khóa chính bị401/403. Lỗi429 vẫn tuân thủ thời gian chờ/chuyển model, không tự quay vòng khóa vì hạn mức có thể chung ở cấp tài khoản. Khóa dự phòng lưu ở ai-keys.json, hoặc GROQ_BACKUP_API_KEY; UI chỉ trả trạng thái đã lưu.

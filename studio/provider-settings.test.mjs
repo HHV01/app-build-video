@@ -12,3 +12,7 @@ test('Groq has a separate password field and provider/model controls',()=>{
  const html=renderProviderSettings({groqConfigured:true,model:'groq/openai/gpt-oss-120b',providerModels:{groq:['openai/gpt-oss-120b']},groqKey:'PRIVATE_GROQ'},helpers);
  assert.match(html,/id="groq-key" type="password"/);assert.match(html,/value="openai\/gpt-oss-120b" selected/);assert.match(html,/data-provider="groq"/);assert.doesNotMatch(html,/PRIVATE_GROQ/);
 });
+test('Groq backup UI has a private save field and describes authentication-only failover',()=>{
+ const html=renderProviderSettings({groqBackupConfigured:true,groqBackup:'DO_NOT_EXPOSE'},helpers);
+ assert.match(html,/id="groqBackup-key" type="password"/);assert.match(html,/data-provider="groqBackup"/);assert.match(html,/401\/403/);assert.doesNotMatch(html,/DO_NOT_EXPOSE/);
+});

@@ -198,3 +198,6 @@ Test hành vi đỏ trước cho routing/khóa/model Groq, UI provider riêng v�
 
 ## Tối ưu token/lượt script (2026-10-11)
 Test hành vi đỏ trước, sau sửa 237/237 xanh. Ngữ cảnh fixture bỏ metadata nhưng giữ nguyên claim, sourceId, status. Trên bản nháp thật có 11 phần: context kế tiếp4576→3261 ký tự; cùng dàn ý, kế hoạch bản mới26→14 lượt. Đây là số ký tự/lượt dự kiến, chưa phải lượng token thực đo hoặc đánh giá chất lượng AI. Bản cũ vẫn dùng kế hoạch220 từ, không viết lại phần đã lưu; mới400 từ. Luồng plan giảm retry lệch nhẹ, cân lại từ còn lại, giữ tổng±5%. Hook/kết chỉ gửi đúng phần. Quota đọc Retry-After/duration trong lỗi, chống thử sớm khi có thông tin; testHTTP xác nhận bấm hai lần chỉ1 upstreamcall. Chưa chạy toàn bộ script vớiAI thật sau tối ưu để tránh tiêu hao thêm hạn mức.
+
+## Khóa Groq dự phòng (2026-10-11)
+Test hành vi đỏ trước cho key storage/failover, UIpassword và HTTPflag không lộ khóa;239/239 xanh. Bảo toàn khóa chính, retry auth401/403 một lần, không retry khóa cho429/503. Khoá mới xác thực Models API thật thành công. Chưa gây lỗi khóa thật để kiểm failover ngoài mock, chưa xác định hai khóa có chung tài khoản/quota. Không thay model hiện tại hoặc youtubeKey.

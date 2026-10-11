@@ -77,7 +77,7 @@ function failure(message, status = 400) { return Object.assign(new Error(message
 process.on('unhandledRejection', e => console.error('[unhandled]', redact(String(e?.stack || e))));
 function redact(text) {
   let t = String(text).replace(/(?:gsk_|sk-|AIza)[A-Za-z0-9_-]+/g, '[ẩn khóa]');
-  for (const secret of [settings.youtubeKey, env.OPENAI_API_KEY,aiKeys.gemini,aiKeys.xai,aiKeys.groq,env.GEMINI_API_KEY,env.XAI_API_KEY,env.GROQ_API_KEY]) if (secret) t = t.split(secret).join('[ẩn khóa]');
+  for (const secret of [settings.youtubeKey, env.OPENAI_API_KEY,aiKeys.gemini,aiKeys.xai,aiKeys.groq,aiKeys.groqBackup,env.GEMINI_API_KEY,env.XAI_API_KEY,env.GROQ_API_KEY,env.GROQ_BACKUP_API_KEY]) if (secret) t = t.split(secret).join('[ẩn khóa]');
   return t.slice(0, 700);
 }
 async function body(req) {
@@ -326,7 +326,7 @@ const server = http.createServer(async (req, res) => {
         stateMutationQueue = task.catch(() => {});
         return await task;
       }
-      if (url.pathname === '/api/settings' && req.method === 'GET') return json(res, 200, { aiMode:settings.aiMode||'gateway',geminiConfigured:Boolean(aiKeys.gemini||env.GEMINI_API_KEY),xaiConfigured:Boolean(aiKeys.xai||env.XAI_API_KEY),groqConfigured:Boolean(aiKeys.groq||env.GROQ_API_KEY),lightModel:settings.lightModel||'',lightFallbackModels:settings.lightFallbackModels||[],model: settings.model, autoFallback:settings.autoFallback===true, fallbackModels:settings.fallbackModels||[], gateway: env.OPENAI_BASE_URL || 'http://localhost:20128/v1', gatewayConfigured: Boolean(env.OPENAI_API_KEY), youtubeConfigured: Boolean(settings.youtubeKey), usage, quota: QUOTA_COST });
+      if (url.pathname === '/api/settings' && req.method === 'GET') return json(res, 200, { aiMode:settings.aiMode||'gateway',geminiConfigured:Boolean(aiKeys.gemini||env.GEMINI_API_KEY),xaiConfigured:Boolean(aiKeys.xai||env.XAI_API_KEY),groqConfigured:Boolean(aiKeys.groq||env.GROQ_API_KEY),groqBackupConfigured:Boolean(aiKeys.groqBackup||env.GROQ_BACKUP_API_KEY),lightModel:settings.lightModel||'',lightFallbackModels:settings.lightFallbackModels||[],model: settings.model, autoFallback:settings.autoFallback===true, fallbackModels:settings.fallbackModels||[], gateway: env.OPENAI_BASE_URL || 'http://localhost:20128/v1', gatewayConfigured: Boolean(env.OPENAI_API_KEY), youtubeConfigured: Boolean(settings.youtubeKey), usage, quota: QUOTA_COST });
       if(url.pathname==='/api/ai/status'&&req.method==='GET'){const value={...getAIStatus(),usage:aiUsage.rows().map(r=>({...r,model:redact(r.model)}))};value.cooldowns=value.cooldowns.map(c=>({...c,model:redact(c.model)}));if(value.fallback)value.fallback={...value.fallback,requestedModel:redact(value.fallback.requestedModel),selectedModel:value.fallback.selectedModel?redact(value.fallback.selectedModel):null,attempts:value.fallback.attempts.map(a=>({...a,model:redact(a.model)}))};return json(res,200,value);}
       if(url.pathname==='/api/ai/keys'&&req.method==='PUT'){
         const updated=updatedAIKeys(aiKeys,await body(req));await atomicSave('ai-keys.json',updated);aiKeys=updated;return json(res,200,{saved:true});
