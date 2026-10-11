@@ -347,7 +347,7 @@ test('niche angle HTTP uses niche context and strips unrelated private research'
 });
 
 async function jsonFailureHarness(reply,settings={}){
- const seen=[];const gateway=http.createServer(async(req,res)=>{let raw='';for await(const chunk of req)raw+=chunk;const sent=JSON.parse(raw);seen.push(sent);const value=reply(sent,seen.length);res.writeHead(value.status||200,{'Content-Type':'application/json'});res.end(JSON.stringify(value.body));});
+ const seen=[];const gateway=http.createServer(async(req,res)=>{let raw='';for await(const chunk of req)raw+=chunk;const sent=JSON.parse(raw);seen.push(sent);const value=reply(sent,seen.length);res.writeHead(value.status||200,{'Content-Type':'application/json',...(value.headers||{})});res.end(JSON.stringify(value.body));});
  await new Promise(r=>gateway.listen(0,'127.0.0.1',r));const envFile=path.join(tempRoot,`env-json-${Date.now()}-${Math.random()}.env`);
  await writeFile(envFile,`OPENAI_BASE_URL=http://127.0.0.1:${gateway.address().port}/v1\nOPENAI_API_KEY=test-key\n`);
  const server=await boot({STUDIO_ENV_FILE:envFile},{settings:{model:'primary',...settings}});
@@ -420,4 +420,8 @@ test('middle writing calls omit repeated opening instructions but retain continu
  try{for(const index of [1,2,3])assert.equal((await h.server.req('/api/generate','POST',{action:'script',context:{targetWords:200,scriptPart:{index,count:3},outlineFocus:{title:'Egypt'},...(index===1?{openingHook:'HOOK_ONLY_FIRST'}:{}),...(index===3?{closingQuestion:'CLOSE_ONLY_LAST'}:{})}})).status,200);
  const texts=h.seen.map(x=>x.messages[1].content);assert.match(texts[0],/15–25/);assert.doesNotMatch(texts[1],/15–25|HOOK_ONLY_FIRST|CLOSE_ONLY_LAST/);assert.match(texts[1],/previousEnding|lời kể trước/);assert.match(texts[1],/supported/);assert(texts[1].length<texts[0].length);
  }finally{await h.stop();}
+});
+test('HTTP generation exposes pacing interval from real rate headers and usage only',async()=>{
+ const h=await jsonFailureHarness(()=>({headers:{'x-ratelimit-limit-tokens':'8000'},body:{choices:[{message:{content:'{"narration":"Safe script."}'},finish_reason:'stop'}],usage:{prompt_tokens:1400,completion_tokens:200,total_tokens:1600}}}));
+ try{const r=await h.server.req('/api/generate','POST',{action:'script',context:{}});assert.equal(r.status,200);assert.equal(r.body.pacingMs,12000);assert.doesNotMatch(JSON.stringify(r.body),/test-key/);}finally{await h.stop();}
 });

@@ -18,7 +18,7 @@ import { enrichVideos, normalizeImport, validateGroups, parseAIJSON, durationSec
 import { blindTitles, groupCountGate, RULES, STAGES, videoMetadata } from './rx.mjs';
 import { createNicheAPI,normalizeShelfChecks } from './niche-api.mjs';
 import { createAssetStore } from './assets.mjs';
-import { tokenBudget,parseRetryAfter } from './server-lib.mjs';
+import { tokenBudget,parseRetryAfter,ratePacingMs } from './server-lib.mjs';
 import { normalizeScriptProjects } from './public/script-workflow.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -93,6 +93,7 @@ async function upstream(url, options = {}, timeout = 60000) {
     const detail = redact(value.error?.message || (typeof value.error==='string'?value.error:'') || value.message || 'Không có chi tiết lỗi.');
     throw Object.assign(failure(`${response.status === 429 ? 'Đã chạm hạn mức. Chờ rồi thử lại.' : `Dịch vụ trả HTTP ${response.status}.`} ${detail}`, response.status === 429 ? 429 : 502),{upstreamStatus:response.status,upstreamCode:value.error?.code,retryAfterMs:response.status===429?parseRetryAfter(response.headers,detail):undefined});
   }
+  value.pacingMs=ratePacingMs(response.headers,value.usage);
   return value;
 }
 async function ai(prompt, schema, maxTokens = 700,action='test') {
@@ -112,7 +113,7 @@ async function ai(prompt, schema, maxTokens = 700,action='test') {
   if (value.choices?.[0]?.finish_reason === 'length') throw Object.assign(failure('Model cắt dở câu trả lời do giới hạn đầu ra của lượt viết; không phải thông báo hết token tài khoản. Nháp đã lưu được giữ.',422),{outputTruncated:true,upstreamStatus:422});
   if (!content) throw failure('AI chưa trả nội dung. Thử lại hoặc chọn model khác.', 502);
   let output;try{output=parseAIJSON(content);}catch{throw Object.assign(failure('AI trả JSON không hợp lệ; phần đã lưu được giữ.',502),{invalidAIJSON:true,upstreamStatus:502});}
-  return { output, usage: value.usage || null, model };
+  return { output, usage: value.usage || null, model, pacingMs:value.pacingMs||0 };
   }catch(e){if(!counted)aiUsage.record(action,model,{},model!==chain.primary&&attempt===0);throw e;}
   }catch(e){
    if(attempt===0&&isJSONGenerationFailure(e)){strictJSON=false;continue;}

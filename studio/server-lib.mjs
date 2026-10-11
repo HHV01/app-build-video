@@ -23,3 +23,7 @@ export function parseRetryAfter(headers,detail='',now=Date.now()){
  if(text){let ms=0;for(const m of text.matchAll(/(\d+(?:\.\d+)?)\s*(h|m|s)/g))ms+=Number(m[1])*({h:3600000,m:60000,s:1000}[m[2]]);if(ms>0)return ms;}
  return undefined;
 }
+export function ratePacingMs(headers,usage={}){
+ const limit=Number(headers.get('x-ratelimit-limit-tokens')),used=Number(usage.total_tokens??(Number(usage.prompt_tokens||0)+Number(usage.completion_tokens||0)));
+ return Number.isFinite(limit)&&limit>0&&Number.isFinite(used)&&used>0?Math.min(60000,Math.ceil(used*60000/limit)):0;
+}

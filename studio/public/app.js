@@ -1,3 +1,5 @@
+import {createAIPacer} from './ai-pacer.mjs';
+const aiPacer=createAIPacer({readUntil:()=>Number(localStorage.getItem('tich-ai-next-call'))||0,writeUntil:value=>localStorage.setItem('tich-ai-next-call',String(value))});
 import {renderAIStatus,renderAIUsage} from './ai-status.mjs';
 let aiStatus={cooldowns:[]};
 import {renderProviderSettings} from './provider-settings.mjs';
@@ -118,7 +120,7 @@ async function run(label, fn) {
 }
 async function refreshAIStatus(){try{aiStatus=await api('/api/ai/status');const box=document.querySelector('#ai-status-banner');if(box)box.innerHTML=renderAIStatus(aiStatus,esc);}catch{}}
 setInterval(()=>{if(busy)refreshAIStatus();},3000);
-async function generate(action, context) { const r = await api('/api/generate', 'POST', { action, context, jobId: uid() }); await refreshAIStatus();activity(`AI · ${action} · ${r.model} · ${n(r.usage?.total_tokens)} token`); if(r.fallback?.used)toast('Model quá tải, đã chuyển sang '+r.model);return r.output; }
+async function generate(action, context) { const label=document.querySelector('#busy-label'),previous=label?.textContent;await aiPacer.wait(ms=>{if(label)label.textContent='Đang chờ '+Math.ceil(ms/1000)+' giây để giữ nhịp hạn mức API · nội dung đã viết vẫn được giữ';});if(label)label.textContent=previous;const r = await api('/api/generate', 'POST', { action, context, jobId: uid() }); aiPacer.schedule(r.pacingMs);await refreshAIStatus();activity(`AI · ${action} · ${r.model} · ${n(r.usage?.total_tokens)} token`); if(r.fallback?.used)toast('Model quá tải, đã chuyển sang '+r.model);return r.output; }
 function download(name, text, type = 'text/plain;charset=utf-8') { const url = URL.createObjectURL(new Blob([text], { type })); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
 async function copy(text) {
  text=String(text??'');if(!text.trim())return toast('Chưa có nội dung để chép.',true);

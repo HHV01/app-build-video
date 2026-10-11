@@ -26,3 +26,7 @@ test('planned channel avoids regenerating a mildly long part and rebalances late
  await writeChannelScript(c,p,{save:async()=>{},generate:async(a,ctx)=>{seen.push(ctx);return {narration:Array(seen.length===1?Math.round(ctx.targetWords*1.12):ctx.targetWords).fill('word').join(' ')};}});
  assert.equal(seen.length,3);assert.equal(p.narration.split(/\s+/).length,900);assert(p.scriptWarnings.length);assert(seen[1].targetWords<seen[0].targetWords);
 });
+test('writing pacer spaces calls according to actual provider token limit, without changing content',async()=>{
+ const {createAIPacer}=await import('./public/ai-pacer.mjs');let time=1000;const sleeps=[],ticks=[];const p=createAIPacer({now:()=>time,sleep:async ms=>{sleeps.push(ms);time+=ms;}});
+ p.schedule(12000);await p.wait(ms=>ticks.push(ms));assert.equal(time,13000);assert(sleeps.every(ms=>ms<=1000));assert(ticks[0]===12000);await p.wait(()=>assert.fail('no extra wait'));
+});

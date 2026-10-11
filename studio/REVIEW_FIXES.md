@@ -201,3 +201,6 @@ Test hành vi đỏ trước, sau sửa 237/237 xanh. Ngữ cảnh fixture bỏ 
 
 ## Khóa Groq dự phòng (2026-10-11)
 Test hành vi đỏ trước cho key storage/failover, UIpassword và HTTPflag không lộ khóa;239/239 xanh. Bảo toàn khóa chính, retry auth401/403 một lần, không retry khóa cho429/503. Khoá mới xác thực Models API thật thành công. Chưa gây lỗi khóa thật để kiểm failover ngoài mock, chưa xác định hai khóa có chung tài khoản/quota. Không thay model hiện tại hoặc youtubeKey.
+
+## Nhịp chờ giữa lượt AI (2026-10-11)
+Nguyên nhân bổ sung: script gọi liên tục trong khi headerGroq thật báo8000token/phút,1000request/ngày. Probe tối thiểu khóa chính/dự phòng và120B/20B đềuHTTP200 sau chờ; không suy ra hai khóa độc lập quota. Test đỏ trước cho pacingUI vàHTTPheader/usage;241/241 xanh. Trả pacingMs chỉ từ rateheader/usage, client chờ từng nhịp1 giây với đếm ngược, dùng localStorage để chia thời điểm chờ qua tab/reload. Không thay nội dung hoặc khóa; chưa đo token/độ dài fullscript hoặc xác nhận loại bỏ429 trênAIthật.
