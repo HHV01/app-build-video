@@ -213,3 +213,7 @@ Nguyên nhân bổ sung: script gọi liên tục trong khi headerGroq thật b�
 Mặc định bài dài gửi trích đoạn mở/giữa/kết và công bố tỷ lệ ký tự đã xem; chọn **Đọc toàn bộ** sẽ tốn token hơn. Một lượt gọi model chính, tối đa 1800 token đầu ra, không tự retry/fallback cho đánh giá. Bài không đổi dùng nhận xét đã lưu; đổi lời kể/định hướng thì báo nhận xét cũ. Kiểm tra lặp ý bằng code đọc lời kể hiện tại, không dùng scriptParts cũ. Nhận xét là đánh giá biên tập, không bảo đảm lượt xem hay thay đối chiếu nguồn.
 
 Kiểm chứng: test hành vi đỏ trước → xanh, mock HTTP/context sạch, trích dẫn đúng, cache và giữ nguyên lời kể. Chưa kiểm chứng chất lượng nhận xét bằng AI thật hoặc toàn bộ thao tác giao diện trên trình duyệt.
+
+
+### Tự đề xuất nhân vật phụ và bối cảnh
+Mở bước Nhân vật + bối cảnh sẽ tự trích từ kịch bản một lần (có dùng token AI), tối đa 6 nhân vật phụ và 6 bối cảnh. Không cần bible để nhận đề xuất; vẫn cần bible cho nhân vật chủ đạo trước khi xác nhận với kênh có nhân vật. Không bịa thêm khi không cần; giữ danh sách đã sửa/xác nhận. Lỗi được lưu để không tự gọi lặp khi mở lại, có nút Đề xuất lại. Bạn sửa và xác nhận trước khi sang cảnh. Test hành vi đỏ trước, toàn bộ 250 test xanh; chưa kiểm chứng chất lượng trích bằng AI thật.

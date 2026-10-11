@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {loadChannelBible,loadSchoolboySample,projectMainCharacters,buildRoster,initializeProjectRoster,confirmProjectRoster,rosterExtrasContext,renderBibleBlock,renderRosterStep} from './public/roster.mjs';
+import {loadChannelBible,loadSchoolboySample,projectMainCharacters,buildRoster,initializeProjectRoster,confirmProjectRoster,rosterExtrasContext,renderBibleBlock,renderRosterStep,shouldSuggestRoster,suggestRoster} from './public/roster.mjs';
 import {scenePromptRows,scenePromptsText} from './public/scene-prompts.mjs';
 const preset=JSON.parse(await readFile('studio/public/schoolboy.preset.json','utf8'));
 const bible=await readFile('studio/public/schoolboy-bible.txt','utf8');
@@ -60,3 +60,6 @@ test('K3 extraction drafts do not replace confirmed extras until review succeeds
  assert.throws(()=>confirmProjectRoster(c,p),/xác nhận/);assert.equal(p.extraCharacters[0].name,'Old');
  p.rosterReviewed=true;confirmProjectRoster(c,p);assert.equal(p.extraCharacters[0].name,'New');assert.equal(p.rosterDraft,undefined);
 });
+
+test('auto roster suggests once without bible, preserves edits and empty results',async()=>{const c={},p={narration:'A visitor walks into a room.',approved:[0,3]};let calls=0;const deps={generate:async(action,ctx)=>{calls++;assert.equal(action,'rosterExtras');assert.equal(ctx.scriptText,p.narration);return {extras:[],backgrounds:[{name:'Room',description:'A simple room.'}]};}};assert.equal(shouldSuggestRoster(c,p),true);await suggestRoster(c,p,deps);assert.equal(calls,1);assert.equal(p.rosterDraft.backgrounds[0].name,'Room');assert.equal(shouldSuggestRoster(c,p),false);await suggestRoster(c,p,deps);assert.equal(calls,1);const edited={narration:'Story',rosterDraft:{extraCharacters:[{name:'Custom'}],backgrounds:[]}};assert.equal(shouldSuggestRoster(c,edited),false);const empty={narration:'Story'};await suggestRoster(c,empty,{generate:async()=>({extras:[],backgrounds:[]})});assert.equal(shouldSuggestRoster(c,empty),false);});
+test('failed automatic extraction preserves existing data and does not loop',async()=>{const p={narration:'Story',approved:[3]};await assert.rejects(suggestRoster({},p,{generate:async()=>{throw Error('Offline');}}));assert.equal(p.rosterSuggestion.error,'Offline');assert.equal(shouldSuggestRoster({},p),false);assert.deepEqual(p.approved,[3]);});
