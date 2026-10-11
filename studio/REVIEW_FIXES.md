@@ -192,3 +192,6 @@ Test hành vi đỏ trước: hai phiên sửa/xoá scriptDraft.error làm chặ
 
 ## Khắc phục viết script Gemini trực tiếp (2026-10-11)
 Tái hiện thật: Gemini 3.8/3.7 timeout; Gemini 3 Flash trả truncated ở yêu cầu script. Test hành vi đỏ trước, bổ sung reasoning_effort=low cho Gemini 3 Flash, không đổi xAI/gateway và giữ cấu hình explicit. 228/228 test xanh. Sau restart, script thật HTTP 200: thử 144 từ/21.1 giây; đúng phần 6 bản nháp 30 phút HTTP 200, 210 từ/4.325 giây (mục tiêu169). Chưa kiểm nghiệm toàn bộ script 30 phút; không lưu đầu ra thử vào dự án. Cấu hình máy chuyển model chính sang gemini-3-flash-preview; tạm tắt fallback vì hai model dự phòng hiện timeout, chờ model/khóa dự phòng khả dụng.
+
+## Groq trực tiếp, phân biệt với Grok/xAI (2026-10-11)
+Test hành vi đỏ trước cho routing/khóa/model Groq, UI provider riêng và HTTP lưu khóa không lộ. Bổ sung groq provider + GROQ_API_KEY + redaction; GPT-OSS mặc định reasoning_effort=low, bảo toàn model ID openai/... và gateway cũ. 230/230 test xanh. Khóa thật lấy danh sách model thành công; phần 6 bản nháp HTTP200, 208 từ/1.48 giây (mục tiêu169), không ghi vào dự án. Chưa kiểm toàn bộ script hoặc tự chuyển dự phòng với hai API thật. Cấu hình máy:120B chính,20B nhẹ,Gemini dự phòng.

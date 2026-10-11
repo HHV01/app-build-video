@@ -1,8 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {resolveAIConnection,sendAICompletion} from './ai-providers.mjs';
+import {resolveAIConnection,sendAICompletion,updatedAIKeys} from './ai-providers.mjs';
 import {withModelFallback} from './model-fallback.mjs';
 const keys={gemini:'test-google-secret',xai:'test-xai-secret'};
+test('Groq direct uses its own key and preserves full model ID, distinct from Grok and gateway',async()=>{
+ const stored=updatedAIKeys(keys,{groq:'fake-groq-secret'});assert.equal(stored.groq,'fake-groq-secret');assert.equal(stored.xai,keys.xai);
+ let seen;await sendAICompletion({aiMode:'gateway'},stored,{},'groq/openai/gpt-oss-120b',{messages:[]},async(url,o)=>{seen={url,...o,body:JSON.parse(o.body)};return {};},1000);
+ assert.equal(seen.url,'https://api.groq.com/openai/v1/chat/completions');assert.equal(seen.headers.Authorization,'Bearer fake-groq-secret');assert.equal(seen.body.model,'openai/gpt-oss-120b');assert.equal(seen.body.reasoning_effort,'low');
+ assert.throws(()=>resolveAIConnection({aiMode:'direct'},keys,{},'groq/openai/gpt-oss-120b'),/Groq/);
+ const legacy=resolveAIConnection({aiMode:'gateway'},keys,{OPENAI_API_KEY:'old-gateway'},'groq/old-model');assert.equal(legacy.provider,'gateway');assert.equal(legacy.model,'groq/old-model');
+});
 test('Gemini 3 Flash uses low thinking unless caller explicitly sets it, other providers unchanged',async()=>{
  const seen=[];const request=async(url,o)=>{seen.push(JSON.parse(o.body));return {};};
  await sendAICompletion({},keys,{},'gemini/gemini-3-flash-preview',{max_tokens:2000},request,1000);
@@ -22,6 +29,6 @@ test('direct fallback switches endpoint and credentials, while invalid key error
 });
 test('missing direct credentials never fall back to gateway, and existing gateway mode is preserved',()=>{
  assert.throws(()=>resolveAIConnection({aiMode:'direct'},{},{OPENAI_API_KEY:'gateway'},'gemini/a'),/Gemini/);
- assert.throws(()=>resolveAIConnection({aiMode:'direct'},keys,{},'groq/a'),/gemini.*xai/i);
+ assert.throws(()=>resolveAIConnection({aiMode:'direct'},keys,{},'groq/a'),/Groq/i);
  const r=resolveAIConnection({},keys,{OPENAI_API_KEY:'gateway',OPENAI_BASE_URL:'http://localhost:20128/v1'},'legacy-model');assert.equal(r.key,'gateway');assert.equal(r.model,'legacy-model');assert.equal(r.base,'http://localhost:20128/v1');
 });

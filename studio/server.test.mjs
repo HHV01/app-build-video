@@ -397,10 +397,10 @@ test('persistent output truncation switches model without accepting partial narr
 
 test('direct API keys persist separately and never appear in settings or state responses',async()=>{
  const s=await boot({}, {settings:{youtubeKey:'youtube-retained'}});
- try{const saved=await s.req('/api/ai/keys','PUT',{gemini:'fake-gemini-secret',xai:'fake-xai-secret'});assert.equal(saved.status,200);
- const settings=await s.req('/api/settings');assert.equal(settings.body.geminiConfigured,true);assert.equal(settings.body.xaiConfigured,true);assert.doesNotMatch(JSON.stringify(settings.body),/fake-gemini-secret|fake-xai-secret/);
- assert.doesNotMatch(JSON.stringify((await s.req('/api/state')).body),/fake-gemini-secret|fake-xai-secret/);
- const stored=JSON.parse(await readFile(path.join(s.dir,'ai-keys.json'),'utf8'));assert.equal(stored.gemini,'fake-gemini-secret');assert.equal(stored.xai,'fake-xai-secret');assert.equal(JSON.parse(await readFile(path.join(s.dir,'settings.json'),'utf8')).youtubeKey,'youtube-retained');
+ try{const saved=await s.req('/api/ai/keys','PUT',{gemini:'fake-gemini-secret',xai:'fake-xai-secret',groq:'fake-groq-secret'});assert.equal(saved.status,200);
+ const settings=await s.req('/api/settings');assert.equal(settings.body.geminiConfigured,true);assert.equal(settings.body.xaiConfigured,true);assert.equal(settings.body.groqConfigured,true);assert.doesNotMatch(JSON.stringify(settings.body),/fake-gemini-secret|fake-xai-secret|fake-groq-secret/);
+ assert.doesNotMatch(JSON.stringify((await s.req('/api/state')).body),/fake-gemini-secret|fake-xai-secret|fake-groq-secret/);
+ const stored=JSON.parse(await readFile(path.join(s.dir,'ai-keys.json'),'utf8'));assert.equal(stored.gemini,'fake-gemini-secret');assert.equal(stored.xai,'fake-xai-secret');assert.equal(stored.groq,'fake-groq-secret');assert.equal(JSON.parse(await readFile(path.join(s.dir,'settings.json'),'utf8')).youtubeKey,'youtube-retained');
  assert.equal((await s.req('/api/ai/keys','PUT',{gemini:''})).status,200);assert.equal(JSON.parse(await readFile(path.join(s.dir,'ai-keys.json'),'utf8')).gemini,'fake-gemini-secret');
  assert.equal((await s.req('/api/ai/keys','PUT',{gemini:{bad:true}})).status,400);
  }finally{await s.stop();}
