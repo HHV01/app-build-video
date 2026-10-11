@@ -225,3 +225,7 @@ Kênh thiếu bible hiện nút Nạp mẫu Tích ngay trong Nhân vật + bối
 
 ### Thẻ cảnh tập trung vào prompt ảnh
 Phần chính: mốc bắt đầu–kết thúc cộng dồn theo thời lượng cảnh (thời gian ước tính), lời kể, mô tả hình, prompt ảnh ghép và Copy prompt ảnh. Nhân vật, thẻ bible, animation, overlay và SFX nằm trong Chỉnh nâng cao. Không tự gọi tạo ảnh hoặc chuyển động. Directive yêu cầu hình hợp bối cảnh lịch sử và ý nghĩa lời kể, cảm xúc/đạo cụ có căn cứ; nhân vật chủ đạo có thể làm người dẫn chuyện. Cảnh cũ giữ nguyên, Tạo lại cảnh này áp dụng directive mới. Kiểm chứng bằng test hành vi render và mock HTTP, chưa kiểm chứng chất lượng bằng AI thật.
+
+
+### Prompt riêng tiếng Việt, bám ý lời kể
+AI sinh mô tả hình và prompt riêng bằng tiếng Việt, summary tiếng Việt; ID thẻ và tên roster giữ nguyên. Directive yêu cầu ý chính của đúng cửa sổ lời kể, chủ thể/hành động/quan hệ rõ, ẩn dụ hoặc sơ đồ cho ý trừu tượng, không bịa sự kiện ngoài đoạn. Thẻ cảnh có ô sửa visual/prompt, preview ghép cập nhật ngay và bỏ duyệt cuối khi sửa. Khối bible/phong cách gốc giữ nguyên nên prompt ghép vẫn có thể chứa tiếng Anh. Cảnh cũ không dịch tự động để tránh gọi AI và thay nội dung; bấm Tạo lại cảnh này nếu cần. Test hành vi UI/mock HTTP; chưa kiểm chứng độ bám sát với AI thật.
