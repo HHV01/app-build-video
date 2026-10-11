@@ -217,3 +217,7 @@ Kiểm chứng: test hành vi đỏ trước → xanh, mock HTTP/context sạch,
 
 ### Tự đề xuất nhân vật phụ và bối cảnh
 Mở bước Nhân vật + bối cảnh sẽ tự trích từ kịch bản một lần (có dùng token AI), tối đa 6 nhân vật phụ và 6 bối cảnh. Không cần bible để nhận đề xuất; vẫn cần bible cho nhân vật chủ đạo trước khi xác nhận với kênh có nhân vật. Không bịa thêm khi không cần; giữ danh sách đã sửa/xác nhận. Lỗi được lưu để không tự gọi lặp khi mở lại, có nút Đề xuất lại. Bạn sửa và xác nhận trước khi sang cảnh. Test hành vi đỏ trước, toàn bộ 250 test xanh; chưa kiểm chứng chất lượng trích bằng AI thật.
+
+
+### Nạp nhân vật ngay tại bước roster
+Kênh thiếu bible hiện nút Nạp mẫu Tích ngay trong Nhân vật + bối cảnh, không phải quay lại Bản sắc. Nút tiếp tục chỉ bật khi có nhân vật chủ đạo hợp lệ (hoặc kênh faceless) và đã xác nhận. Nạp mẫu giữ danh sách phụ/bối cảnh, bỏ duyệt bước cuối để xem lại. Test render hành vi đỏ trước rồi xanh; không sửa bible gốc.
