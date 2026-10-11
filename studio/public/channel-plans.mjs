@@ -1,3 +1,4 @@
+import {writeCheckedPart} from './script-quality.mjs';
 import {scriptPlan} from '../production.mjs';
 import {scriptPartContext,openingHookFor} from './research-context.mjs';
 const words=s=>String(s||'').trim().split(/\s+/).filter(Boolean);
@@ -30,8 +31,8 @@ export function assemblePlannedScript(p){
 const evidence=p=>(Array.isArray(p.researchFacts)?p.researchFacts:[]).filter(x=>x.status==='supported').slice(0,3).map(x=>({claim:String(x.claim||'').slice(0,300)}));
 export async function writeChannelScript(c,p,{generate,save,onProgress=()=>{}}){
  validatePlan(c.openingPlan||[]);validatePlan(c.closingPlan||[]);
- const base=scriptPlan(p.outline,p.minutes),target=base.reduce((n,x)=>n+x.targetWords,0),basis=JSON.stringify([c.openingPlan,c.closingPlan,c.identity,p.topic,p.outline,p.minutes,p.researchFacts,openingHookFor(p)]);
- if(p.planDraft?.basis!==basis)p.planDraft={basis,opening:[],closing:[],body:[],notes:[]};const draft=p.planDraft;
+ const batchWords=p.planDraft?.batchWords||(p.planDraft?220:400),base=scriptPlan(p.outline,p.minutes,150,batchWords),target=base.reduce((n,x)=>n+x.targetWords,0),basis=JSON.stringify([c.openingPlan,c.closingPlan,c.identity,p.topic,p.outline,p.minutes,p.researchFacts,openingHookFor(p)]);
+ if(p.planDraft?.basis!==basis)p.planDraft={basis,batchWords,basePlan:structuredClone(base),opening:[],closing:[],body:[],notes:[],warnings:[]};const draft=p.planDraft;
  const outlineTitles=(p.outline||[]).slice(0,12).map(x=>String(x.title||'').slice(0,80)),selectedTitle=String(p.packaging?.[p.selectedPackaging||0]?.title||p.topic||'').slice(0,300);
  const segment=async(row,side)=>{
   if(row.kind==='fixed')return {source:structuredClone(row),text:row.text,sfx:row.sfx||''};
@@ -51,14 +52,17 @@ export async function writeChannelScript(c,p,{generate,save,onProgress=()=>{}}){
  const available=charged.reduce((n,x)=>n+x.targetWords,0);if(!charged.length)throw Error('Không còn ngân sách từ cho thân bài.');
  let assigned=0;const bodyPlan=charged.map((part,i)=>{const targetWords=i===charged.length-1?remaining-assigned:Math.floor(remaining*part.targetWords/available);assigned+=targetWords;return {...part,targetWords};});
  for(let i=draft.body.length;i<bodyPlan.length;i++){
-  const part=bodyPlan[i],ctx={...scriptPartContext(c,p,part,i,bodyPlan.length,draft.body),includeCTA:c.closingPlan?.length?false:Boolean(p.includeCTA)&&i===bodyPlan.length-1,...(i===0&&c.openingPlan?.length?{openingHandoff:{fills:Object.assign({},...draft.opening.filter(x=>x.source.kind==='template').map(x=>x.fills)),ending:draft.opening.filter(x=>x.source.kind==='ai').map(x=>x.text).join(' ').slice(-300)}}:{}),planManagedOpening:Boolean(c.openingPlan?.length),planManagedClosing:Boolean(c.closingPlan?.length)};
+  const pending=bodyPlan.slice(i).reduce((n,x)=>n+x.targetWords,0),left=remaining-draft.body.reduce((n,x)=>n+words(x).length,0);
+  const part={...bodyPlan[i],targetWords:Math.max(1,i===bodyPlan.length-1?left:Math.round(left*bodyPlan[i].targetWords/pending))},ctx={...scriptPartContext(c,p,part,i,bodyPlan.length,draft.body),includeCTA:c.closingPlan?.length?false:Boolean(p.includeCTA)&&i===bodyPlan.length-1,...(i===0&&c.openingPlan?.length?{openingHandoff:{fills:Object.assign({},...draft.opening.filter(x=>x.source.kind==='template').map(x=>x.fills)),ending:draft.opening.filter(x=>x.source.kind==='ai').map(x=>x.text).join(' ').slice(-300)}}:{}),planManagedOpening:Boolean(c.openingPlan?.length),planManagedClosing:Boolean(c.closingPlan?.length)};
   // Previous summaries contain body only; fixed and template sentences never go to AI.
   onProgress(`Đang viết thân bài ${i+1}/${bodyPlan.length}`);let result;
-  for(let retry=0;retry<2;retry++){result=await generate('script',{...ctx,...(retry?{lengthCorrection:`Viết đúng ${part.targetWords} từ (±5%).`}:{})});if(typeof result.narration==='string'&&result.narration.trim()&&Math.abs(words(result.narration).length-part.targetWords)<=part.targetWords*.05)break;if(retry===1)throw Error(`Thân bài vẫn lệch mục tiêu ${part.targetWords} từ sau một lần thử lại.`);}
+  result=await writeCheckedPart(context=>generate('script',context),ctx,{tolerance:i===bodyPlan.length-1?.05:.25});
+  if(i===bodyPlan.length-1&&Math.abs(words(result.narration).length-part.targetWords)>part.targetWords*.05)throw Error('Phần cuối vẫn lệch mục tiêu sau một lần thử lại.');
+  if(result.warning){draft.warnings||=[];draft.warnings.push('Phần '+(i+1)+': '+result.warning);}
   draft.body.push(result.narration.trim());draft.notes.push(...(result.editorNotes||[]));await save();
  }
  p.planResult=structuredClone(draft);assemblePlannedScript(p);if(Math.abs(words(p.narration).length-target)>target*.05)throw Error('Kịch bản lệch quá 5% mục tiêu.');
- p.scriptParts=[...draft.body];p.editorNotes=draft.notes;p.scriptWarnings=[];p.approved=(p.approved||[]).filter(n=>n<3);p.rosterReviewed=false;p.rosterConfirmed=false;delete p.planDraft;await save();return p.narration;
+ p.scriptParts=[...draft.body];p.editorNotes=draft.notes;p.scriptWarnings=draft.warnings||[];p.approved=(p.approved||[]).filter(n=>n<3);p.rosterReviewed=false;p.rosterConfirmed=false;delete p.planDraft;await save();return p.narration;
 }
 export function renderChannelPlans(c,{esc,btn}){
  return `<section><h3>Mở đầu và kết thúc cố định</h3>${btn('Nạp mẫu Tích Thông Thái','load-tich-channel')}<p class="muted">Fixed do code giữ nguyên. Template chỉ điền chỗ trống. AI viết theo instruction và maxWords; SFX tách khỏi lời kể.</p>${['openingPlan','closingPlan'].map(key=>`<section><h4>${key==='openingPlan'?'Mở đầu':'Kết thúc'}</h4>${(c[key]||[]).map((row,i)=>{const attr=field=>`data-plan="${key}" data-plan-index="${i}" data-plan-field="${field}"`;return `<article class="panel"><label>Loại đoạn<select ${attr('kind')}>${['fixed','template','ai'].map(k=>`<option ${k===row.kind?'selected':''} value="${k}">${k}</option>`).join('')}</select></label>${row.kind==='ai'?`<label>instruction<textarea ${attr('instruction')}>${esc(row.instruction||'')}</textarea></label><label>maxWords<input type="number" min="1" max="1000" ${attr('maxWords')} value="${row.maxWords||100}"></label>`:`<label>Câu giữ nguyên<textarea ${attr('text')}>${esc(row.text||'')}</textarea></label>${row.kind==='template'?`<label>Chỗ trống và maxWords (JSON)<textarea ${attr('slots')}>${esc(JSON.stringify(row.slots||{}))}</textarea></label>`:`<label>SFX · không đọc<input ${attr('sfx')} value="${esc(row.sfx||'')}"></label>`}`}<div class="actions">${btn('↑','plan-up','small',`data-plan="${key}" data-index="${i}"`)}${btn('↓','plan-down','small',`data-plan="${key}" data-index="${i}"`)}${btn('Xoá đoạn','plan-remove','small',`data-plan="${key}" data-index="${i}"`)}</div><details open><summary>Xem trước</summary><p>${esc(row.kind==='ai'?`[AI ≤ ${row.maxWords} từ] ${row.instruction||''}`:row.text||'')}</p>${row.sfx?`<p>SFX riêng: ${esc(row.sfx)}</p>`:''}</details></article>`;}).join('')}${btn('Thêm đoạn','plan-add','',`data-plan="${key}"`)}</section>`).join('')}</section>`;

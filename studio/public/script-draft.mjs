@@ -1,15 +1,15 @@
 import {scriptPlan} from '../production.mjs';
-import {researchContext,scriptPartContext} from './research-context.mjs';
+import {researchContext,scriptPartContext,legacyScriptPartContext} from './research-context.mjs';
 import {filterEditorNotes,writeCheckedPart} from './script-quality.mjs';
 export function scriptDraftStatus(c,p){
- let total=0;try{total=scriptPlan(p.outline,p.minutes).length;}catch{}
+ let total=0;try{total=(p.scriptDraft?.plan||scriptPlan(p.outline,p.minutes,150,p.scriptDraft?220:400)).length;}catch{}
  const draft=p.scriptDraft;
  return {completed:draft?.parts?.length||0,total,text:(draft?.parts||[]).join('\n\n'),error:draft?.error||''};
 }
 export async function writeOutlineScript(c,p,{generate,save,onProgress=()=>{}}){
- const plan=scriptPlan(p.outline,p.minutes);
- const basis=JSON.stringify({research:researchContext(p),context:scriptPartContext(c,p,plan[0],0,plan.length),plan});
- if(p.scriptDraft?.basis!==basis)p.scriptDraft={basis,parts:[],notes:[]};
+ const batchWords=p.scriptDraft?.batchWords||(p.scriptDraft?220:400),plan=scriptPlan(p.outline,p.minutes,150,batchWords);
+ const basis=JSON.stringify({research:researchContext(p),context:legacyScriptPartContext(c,p,plan[0],0,plan.length),plan});
+ if(p.scriptDraft?.basis!==basis)p.scriptDraft={basis,batchWords,plan:structuredClone(plan),parts:[],notes:[]};
  const draft=p.scriptDraft;delete draft.error;
  try{
   for(let i=draft.parts.length;i<plan.length;i++){

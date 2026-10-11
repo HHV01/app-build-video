@@ -15,12 +15,12 @@ export function cleanNarration(text) {
  return String(text||'').split('\n').filter(line=>!/^\s*#{1,6}\s|^\s*\[(?:hook|intro|outro|scene[^\]]*|cảnh[^\]]*)\]\s*$/i.test(line)).map(line=>line.replace(/^\s*(?:cảnh|scene)\s*\d+\s*[:.\-]?\s*/i,'').replace(/^\s*\[(?:hook|intro|outro)\]\s*/i,'')).join('\n').trim();
 }
 const wordCount=text=>String(text).trim().split(/\s+/).filter(Boolean).length;
-export async function writeCheckedPart(generate,context) {
+export async function writeCheckedPart(generate,context,{tolerance=.25}={}) {
  let result=await generate(context);result={...result,narration:cleanNarration(result.narration)};
  if(!result.narration)throw Error('AI chưa trả lời kể; phần đã viết được giữ để tiếp tục.');
- const off=r=>Math.abs(wordCount(r.narration)-context.targetWords)>context.targetWords*.25;
+ const off=r=>Math.abs(wordCount(r.narration)-context.targetWords)>context.targetWords*tolerance;
  if(off(result)){result=await generate({...context,lengthCorrection:`Viết ${wordCount(result.narration)<context.targetWords?'dài hơn':'ngắn hơn'}: mục tiêu ${context.targetWords} từ, lần trước ${wordCount(result.narration)} từ. Chỉ sửa phần đang viết.`});result={...result,narration:cleanNarration(result.narration)};if(!result.narration)throw Error('AI chưa trả lời kể sau khi chỉnh độ dài.');}
- return {...result,...(off(result)?{warning:`Phần vẫn lệch độ dài: ${wordCount(result.narration)}/${context.targetWords} từ sau một lần thử lại.`}:{})};
+ return {...result,...(Math.abs(wordCount(result.narration)-context.targetWords)>context.targetWords*.05?{warning:`Phần vẫn lệch độ dài: ${wordCount(result.narration)}/${context.targetWords} từ; giữ nội dung để tránh gọi lại khi chỉ lệch nhẹ.`}:{})};
 }
 export function repeatedParts(parts=[]) {
  const grams=text=>{const words=normalize(text).split(' ');return new Set(words.slice(0,-4).map((_,i)=>words.slice(i,i+5).join(' ')));};const sets=parts.map(grams),pairs=[];

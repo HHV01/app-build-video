@@ -161,3 +161,6 @@ Khi tiếp tục bản nháp, xung đột riêng ở thông báo scriptDraft.err
 Gemini 3 Flash trực tiếp mặc định dùng reasoning_effort=low để hạn chế phần suy luận chiếm ngân sách đầu ra. Nếu truyền mức riêng thì vẫn giữ mức đã chọn. Danh sách model trả thành công chưa đủ chứng minh model viết được; cần thử sinh văn bản.
 
 Groq API trực tiếp: lưu khóa Groq (gsk_) ở mục riêng, khác Grok/xAI. Model có dạng groq/openai/gpt-oss-120b; có thể chọn groq/openai/gpt-oss-20b cho việc nhẹ và Gemini làm dự phòng. Khóa chỉ ở ai-keys.json, không trả lại UI. Model Groq cũ qua gateway vẫn hoạt động nếu chưa cấu hình Groq trực tiếp. Endpoint chính thức https://api.groq.com/openai/v1.
+
+### Tiết kiệm lượt viết và ngữ cảnh
+Bản nháp mới chia tối đa 400 từ/lượt; bản nháp đang viết giữ kế hoạch cũ để tiếp tục đúng phần. Ngữ cảnh viết giữ nguyên claim, số liệu, sourceId và status liên quan, bỏ metadata thừa, giới hạn tóm tắt/đoạn nối và tránh gửi trùng bản sắc. Hướng dẫn hook chỉ gửi ở phần đầu, kết luận chỉ ở phần cuối. Lệch từ nhẹ (trong 25%) được giữ và cảnh báo; lệch lớn thử sửa tối đa một lần. Luồng opening/closing cố định cân mục tiêu các phần sau và giữ kiểm tra tổng ±5%, phần cuối kiểm chặt hơn. HTTP429 dùng Retry-After hoặc thời gian trong lỗi dịch vụ; khi có thời gian chờ rõ thì không gọi model sớm. Thiếu thông tin vẫn dùng 10 phút mặc định.

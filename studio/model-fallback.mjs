@@ -55,7 +55,7 @@ export async function withModelFallback(primary,backups,execute,options={}){
   let available=models.filter(m=>!cooldowns.has(m)||cooldowns.get(m).until<=nowFn());
   if(!available.length){
     const best=models.reduce((a,b)=>cooldowns.get(a).until<=cooldowns.get(b).until?a:b);
-    available=[best];
+    if(!cooldowns.get(best).providerWait)available=[best];
   }
   for(const model of models){
     if(!available.includes(model)){
@@ -80,13 +80,16 @@ export async function withModelFallback(primary,backups,execute,options={}){
         const reason=aiErrorReason(e);
         attempts.push({model,status,reason});
         if([429,402,403].includes(status)){
-          cooldowns.set(model,{until:nowFn()+MODEL_COOLDOWN_MS,status,reason});
+          const providerWait=status===429&&Number.isFinite(e.retryAfterMs)&&e.retryAfterMs>0;
+          cooldowns.set(model,{until:nowFn()+(providerWait?e.retryAfterMs:MODEL_COOLDOWN_MS),status,reason,...(providerWait?{providerWait:true}:{})});
         }
       }
     }
     lastFallback={used:false,requestedModel:primary,selectedModel:null,attempts};
-    const msg='Các model chưa trả được kết quả: '+attempts.map(x=>`${x.model} (${x.status}: ${x.reason})`).join(' → ')+'. Không nhận được JSON hợp lệ hoặc phản hồi hoàn chỉnh. Nội dung đã lưu được giữ. Thử lại sau.';
-    throw Object.assign(new Error(msg),{status:503,attempts});
+    const waits=models.map(m=>cooldowns.get(m)?.until-nowFn()).filter(x=>x>0),retryAfterMs=waits.length?Math.min(...waits):undefined;
+    const outputIssue=attempts.some(x=>['json','truncated'].includes(x.reason))?' Không nhận được JSON hợp lệ hoặc phản hồi hoàn chỉnh.':'';
+    const msg='Các model chưa trả được kết quả: '+attempts.map(x=>`${x.model} (${x.status}: ${x.reason})`).join(' → ')+'.'+outputIssue+' Nội dung đã lưu được giữ.'+(retryAfterMs?' Chờ '+Math.ceil(retryAfterMs/1000)+' giây trước khi thử model đang nghỉ.':' Thử lại sau.');
+    throw Object.assign(new Error(msg),{status:503,attempts,retryAfterMs});
   }finally{
     activeFallback=null;
   }

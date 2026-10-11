@@ -10,7 +10,7 @@ export function researchContext(p={}) {
 }
 const terms=s=>new Set(String(s||'').toLowerCase().match(/[\p{L}\p{N}]{3,}/gu)||[]);
 export function openingHookFor(p={}) { return p.openingHook?.trim()||p.packaging?.[p.selectedPackaging||0]?.hook||''; }
-export function scriptPartContext(c,p,part,index,count,parts=[]) {
+export function legacyScriptPartContext(c,p,part,index,count,parts=[]) {
  const research=researchContext(p), focus=terms(JSON.stringify(part.focus));
  const related=x=>[...terms(JSON.stringify(x))].some(w=>focus.has(w));
  const select=rows=>rows.filter(related);
@@ -22,4 +22,22 @@ export function scriptPartContext(c,p,part,index,count,parts=[]) {
   researchSummary:research.researchSummary,researchFacts:select(research.researchFacts),claims:select(research.claims),researchTimeline:select(research.researchTimeline),researchCast:select(research.researchCast),researchSensory:research.researchSensory,
   ...(index===0?{openingEvidence}:{}),...(index===count-1?{closingQuestion:p.outline?.[0]?.question||openingHookFor(p)}:{}),
   outlineFocus:part.focus,targetWords:part.targetWords,scriptPart:{...part,index:index+1,count},previousSummaries,...(earlierSummary?{earlierSummary}:{}),previousEnding:parts.at(-1)?.slice(-700)||''};
+}
+
+export function scriptPartContext(c,p,part,index,count,parts=[]){
+ const ctx=legacyScriptPartContext(c,p,part,index,count,parts);
+ const evidenceKeys=['claim','value','status','sourceId','assertable'];
+ const pick=(row,keys)=>Object.fromEntries(keys.filter(k=>row[k]!==undefined).map(k=>[k,row[k]]));
+ for(const key of ['researchFacts','claims','openingEvidence'])if(ctx[key])ctx[key]=ctx[key].map(x=>pick(x,evidenceKeys));
+ ctx.researchTimeline=ctx.researchTimeline.map(x=>pick(x,['date','event','sourceId']));
+ ctx.researchCast=ctx.researchCast.map(x=>pick(x,['name','role','sourceId']));
+ const summary=String(ctx.researchSummary||'').match(/[^.!?]+[.!?]?/g)||[];
+ const focus=terms(JSON.stringify(part.focus));const related=summary.filter(x=>[...terms(x)].some(w=>focus.has(w)));
+ ctx.researchSummary=(related.length?related:summary.slice(0,2)).join(' ').slice(0,600);
+ ctx.researchSensory=String(ctx.researchSensory||'').slice(0,250);
+ ctx.previousSummaries=ctx.previousSummaries.map(x=>x.slice(0,160));if(ctx.earlierSummary)ctx.earlierSummary=ctx.earlierSummary.slice(0,180);
+ ctx.previousEnding=ctx.previousEnding.slice(-350);
+ delete ctx.scriptPart.focus;
+ const seen=new Set();for(const key of ['voice','hookPattern','structure']){if(ctx[key]&&seen.has(ctx[key]))delete ctx[key];else if(ctx[key])seen.add(ctx[key]);}
+ return ctx;
 }

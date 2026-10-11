@@ -15,3 +15,11 @@ export function tokenBudget(action, fallback = 2000) {
   return AI_TOKEN_BUDGET[action] || fallback;
 }
 
+
+export function parseRetryAfter(headers,detail='',now=Date.now()){
+ const raw=headers.get('retry-after');
+ if(raw){const seconds=Number(raw);const ms=Number.isFinite(seconds)?seconds*1000:Date.parse(raw)-now;if(Number.isFinite(ms)&&ms>0)return ms;}
+ const text=String(detail).match(/try again in\s+([\d.hms\s]+)/i)?.[1];
+ if(text){let ms=0;for(const m of text.matchAll(/(\d+(?:\.\d+)?)\s*(h|m|s)/g))ms+=Number(m[1])*({h:3600000,m:60000,s:1000}[m[2]]);if(ms>0)return ms;}
+ return undefined;
+}

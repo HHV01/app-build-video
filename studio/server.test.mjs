@@ -411,3 +411,13 @@ test('direct mode without keys returns an actionable error without using configu
 });
 
 test('light and heavy HTTP actions use separate models and expose aggregate statistics only',async()=>{const gw=await mockGateway({narration:'A part.'}),file=path.join(tempRoot,`env-tiers-${Date.now()}.env`);await writeFile(file,`OPENAI_BASE_URL=${gw.url}\nOPENAI_API_KEY=test-key\n`);const s=await boot({STUDIO_ENV_FILE:file},{settings:{model:'heavy',lightModel:'light',autoFallback:true,fallbackModels:['heavy-backup'],lightFallbackModels:['light-backup']}});try{assert.equal((await s.req('/api/generate','POST',{action:'angles',context:{private:'PRIVATE_PROMPT'}})).status,200);assert.equal((await s.req('/api/generate','POST',{action:'script',context:{}})).status,200);assert.deepEqual(gw.seen.map(x=>x.model),['light','heavy']);const status=(await s.req('/api/ai/status')).body;assert.deepEqual(status.usage.map(x=>[x.action,x.model,x.calls]),[['angles','light',1],['script','heavy',1]]);assert.doesNotMatch(JSON.stringify(status),/test-key|PRIVATE_PROMPT/);}finally{await s.stop();await gw.stop();await rm(file,{force:true});}});
+test('HTTP quota response respects provider wait and repeated clicks do not call upstream early',async()=>{
+ const h=await jsonFailureHarness(()=>({status:429,body:{error:{message:'Please try again in 12s.'}}}));
+ try{const first=await h.server.req('/api/generate','POST',{action:'script',context:{}});assert.equal(first.status,503);assert.equal(first.body.retryAfterMs,12000);const second=await h.server.req('/api/generate','POST',{action:'script',context:{}});assert.equal(second.status,503);assert.match(second.body.error,/Chờ/);assert.equal(h.seen.length,1);const status=(await h.server.req('/api/ai/status')).body;assert(status.cooldowns[0].remainingMs<=12000);assert(status.cooldowns[0].remainingMs>0);}finally{await h.stop();}
+});
+test('middle writing calls omit repeated opening instructions but retain continuity and evidence rules',async()=>{
+ const h=await jsonFailureHarness(()=>goodScriptReply);
+ try{for(const index of [1,2,3])assert.equal((await h.server.req('/api/generate','POST',{action:'script',context:{targetWords:200,scriptPart:{index,count:3},outlineFocus:{title:'Egypt'},...(index===1?{openingHook:'HOOK_ONLY_FIRST'}:{}),...(index===3?{closingQuestion:'CLOSE_ONLY_LAST'}:{})}})).status,200);
+ const texts=h.seen.map(x=>x.messages[1].content);assert.match(texts[0],/15–25/);assert.doesNotMatch(texts[1],/15–25|HOOK_ONLY_FIRST|CLOSE_ONLY_LAST/);assert.match(texts[1],/previousEnding|lời kể trước/);assert.match(texts[1],/supported/);assert(texts[1].length<texts[0].length);
+ }finally{await h.stop();}
+});

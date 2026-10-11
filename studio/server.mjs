@@ -18,7 +18,7 @@ import { enrichVideos, normalizeImport, validateGroups, parseAIJSON, durationSec
 import { blindTitles, groupCountGate, RULES, STAGES, videoMetadata } from './rx.mjs';
 import { createNicheAPI,normalizeShelfChecks } from './niche-api.mjs';
 import { createAssetStore } from './assets.mjs';
-import { tokenBudget } from './server-lib.mjs';
+import { tokenBudget,parseRetryAfter } from './server-lib.mjs';
 import { normalizeScriptProjects } from './public/script-workflow.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -90,8 +90,8 @@ async function upstream(url, options = {}, timeout = 60000) {
   try { response = await fetch(url, { ...options, signal: options.signal?AbortSignal.any([options.signal,AbortSignal.timeout(timeout)]):AbortSignal.timeout(timeout) }); } catch { throw Object.assign(failure('Dịch vụ chưa phản hồi. Kiểm tra OmniRoute hoặc thử lại sau.', 502),{upstreamStatus:0}); }
   let value; try { value = await response.json(); } catch { throw Object.assign(failure(`Dịch vụ trả HTTP ${response.status} nhưng không có dữ liệu JSON.`, 502),{upstreamStatus:response.ok?undefined:response.status}); }
   if (!response.ok) {
-    const detail = redact(value.error?.message || value.message || 'Không có chi tiết lỗi.');
-    throw Object.assign(failure(`${response.status === 429 ? 'Đã chạm hạn mức. Chờ rồi thử lại.' : `Dịch vụ trả HTTP ${response.status}.`} ${detail}`, response.status === 429 ? 429 : 502),{upstreamStatus:response.status,upstreamCode:value.error?.code});
+    const detail = redact(value.error?.message || (typeof value.error==='string'?value.error:'') || value.message || 'Không có chi tiết lỗi.');
+    throw Object.assign(failure(`${response.status === 429 ? 'Đã chạm hạn mức. Chờ rồi thử lại.' : `Dịch vụ trả HTTP ${response.status}.`} ${detail}`, response.status === 429 ? 429 : 502),{upstreamStatus:response.status,upstreamCode:value.error?.code,retryAfterMs:response.status===429?parseRetryAfter(response.headers,detail):undefined});
   }
   return value;
 }
@@ -222,7 +222,13 @@ async function generate(b) {
       outline: 'Lập 6–8 đoạn theo cấu trúc người dùng chọn. Mỗi đoạn có thông tin mới và tiến triển. Tổng share bằng 1. Đoạn đầu là mở đầu: dùng openingHook để đặt câu hỏi hoặc tạo tò mò, nêu điều người xem sẽ hiểu, rồi nối vào thân bài; tính trong tổng thời lượng. Đóng câu hỏi mở đầu ở đoạn cuối.',
       script: 'Viết script liên tục theo dàn ý và ngôn ngữ yêu cầu. Độ dài theo targetWords ±5%. Số liệu chưa có nguồn không dùng như fact. Không sponsor hoặc stage direction. CTA chỉ khi includeCTA=true, tại phần cuối. Không biến tài chính thành khuyên mua bán tài sản.',
     };
-    if (b.action === 'script' && b.context?.scriptPart && !b.context?.planManagedOpening && !b.context?.planManagedClosing) directives.script += ' Đây là MỘT PHẦN của script: chỉ viết phần outlineFocus được chỉ định, theo scriptPart.targetWords, không mở lại toàn video ở các phần giữa. Nếu scriptPart.index=1, bắt đầu bằng openingHook (nếu trống, tự viết hook phù hợp chủ đề): mở đầu khoảng 15–25 giây tạo tò mò, hứa giá trị rồi chuyển tự nhiên vào nội dung; tính trong targetWords, không chào hỏi chung chung hoặc kêu gọi đăng ký ở đầu. Hook là định hướng: diễn đạt thành lời kể tự nhiên theo selectedTitle, angle, audience và voice; không chép nhãn hoặc chỉ dẫn hook vào narration. Chọn cách mở hợp nội dung: lịch sử dùng tình huống hoặc nghịch lý có bằng chứng; nội dung giải thích dùng vấn đề cụ thể; tài chính dùng câu hỏi về cơ chế hoặc rủi ro, không hứa lợi nhuận. Ưu tiên openingEvidence cho chi tiết mở đầu; nếu thiếu bằng chứng thì đặt câu hỏi, không bịa số liệu, lời thoại, cảnh xảy ra hoặc giả vờ trích dẫn. Không dùng câu giật gân chung chung như bạn sẽ không tin. Các phần sau không lặp lại mở đầu. Giữ mạch với previousEnding. Ở phần cuối trả lời closingQuestion bằng những gì đã chứng minh trong thân bài, chốt một ý chính rồi mới CTA. CTA chỉ thêm ở phần cuối nếu context.includeCTA=true: tối đa một câu, mời người xem bình luận về một câu hỏi cụ thể của nội dung; tránh lời mời đăng ký máy móc hoặc hứa phần tiếp theo khi chưa có. Nếu includeCTA=false vẫn viết kết luận đầy đủ nhưng không kêu gọi hành động; dùng fact/claim supported.';
+    if(b.action==='script'&&b.context?.scriptPart&&!b.context?.planManagedOpening&&!b.context?.planManagedClosing){
+      const part=b.context.scriptPart;
+      directives.script+=' Chỉ viết outlineFocus của phần này; nối previousEnding, không lặp ý đã nói.';
+      if(part.index===1)directives.script+=' Mở 15–25 giây bằng openingHook (hoặc câu hỏi hợp selectedTitle, angle, audience), tính trong targetWords. Ưu tiên openingEvidence; thiếu chứng cứ thì đặt câu hỏi, không bịa số liệu, lời thoại hoặc cảnh lịch sử. Không chào chung chung, kêu gọi đăng ký hay dùng câu bạn sẽ không tin. Không chép chỉ dẫn hook vào lời kể.';
+      else directives.script+=' Không mở lại hook hay chào kênh.';
+      if(part.index===part.count)directives.script+=' Kết bằng trả lời closingQuestion từ chứng cứ thân bài. Nếu includeCTA=true thêm tối đa một câu hỏi mời bình luận; nếu false không CTA. Không hứa phần tiếp theo.';
+    }
     if (['outline','script'].includes(b.action)) directives[b.action] += ' Ưu tiên researchFacts và claims có status=supported. needs_check không được khẳng định trong lời kể; đây là dữ kiện chưa kiểm chứng.';
     if (b.action === 'script') directives.script += ' Chỉ dùng fact/claim supported để khẳng định. Ý chưa có nguồn: tự viết lại cho an toàn, bỏ cực cấp đầu tiên/duy nhất/lớn nhất, dùng một trong những, theo các nhà sử học hoặc ước tính; KHÔNG ghi chú cho việc viết lại này. Chỉ editorNotes khi câu có con số, năm hoặc tên riêng cụ thể không có trong facts/claims; tối đa 2 ghi chú mỗi phần, một câu ngắn nêu câu cần kiểm. Không ghi chú về tên nguồn, không nhắc thực thể không có trong context.';
     if (b.context?.lengthCorrection && b.action==='script') directives.script += ' '+b.context.lengthCorrection;
@@ -362,7 +368,7 @@ const server = http.createServer(async (req, res) => {
     if (!file.startsWith(base + path.sep) && file !== base) return json(res, 403, { error: 'Đường dẫn không được phép.' });
     const content = await readFile(file);
     res.writeHead(200, { 'Cache-Control': 'no-store', 'Content-Type': mime[path.extname(file)] || 'application/octet-stream', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'self'; img-src 'self' data: https://i.ytimg.com; style-src 'self'; script-src 'self'; connect-src 'self'; media-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'" }); res.end(content);
-  } catch (e) { json(res, e.status || (e.code === 'ENOENT' ? 404 : 500), { error: redact(e.status ? e.message : 'Không xử lý được yêu cầu. Kiểm tra dữ liệu hoặc thử lại.'),...(e.invalidTags?{invalidTags:true}:{}) }); }
+  } catch (e) { json(res, e.status || (e.code === 'ENOENT' ? 404 : 500), { error: redact(e.status ? e.message : 'Không xử lý được yêu cầu. Kiểm tra dữ liệu hoặc thử lại.'),...(e.invalidTags?{invalidTags:true}:{}),...(e.retryAfterMs?{retryAfterMs:e.retryAfterMs}:{}) }); }
 });
 server.listen(port, '127.0.0.1', () => console.log(`Tích Studio: http://localhost:${port}`));
 server.on('error', e => { console.error(e.code === 'EADDRINUSE' ? 'Cổng Studio đã được dùng. Mở ứng dụng đang chạy hoặc đổi STUDIO_PORT.' : 'Không khởi động được Studio.'); process.exitCode = 1; });
