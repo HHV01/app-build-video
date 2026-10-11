@@ -204,3 +204,12 @@ Test hành vi đỏ trước cho key storage/failover, UIpassword và HTTPflag k
 
 ## Nhịp chờ giữa lượt AI (2026-10-11)
 Nguyên nhân bổ sung: script gọi liên tục trong khi headerGroq thật báo8000token/phút,1000request/ngày. Probe tối thiểu khóa chính/dự phòng và120B/20B đềuHTTP200 sau chờ; không suy ra hai khóa độc lập quota. Test đỏ trước cho pacingUI vàHTTPheader/usage;241/241 xanh. Trả pacingMs chỉ từ rateheader/usage, client chờ từng nhịp1 giây với đếm ngược, dùng localStorage để chia thời điểm chờ qua tab/reload. Không thay nội dung hoặc khóa; chưa đo token/độ dài fullscript hoặc xác nhận loại bỏ429 trênAIthật.
+
+
+### Đánh giá kịch bản trước khi xuất
+
+Ở bước Kịch bản, bấm **Đánh giá trước khi xuất** sau khi hoàn tất lời kể. AI nhận xét hook, mạch kể, độ rõ, thông tin mới/lặp ý và kết thúc; tối đa 5 chỗ sửa, có câu trích nguyên văn, lý do, ưu tiên và câu viết thử. Nút tìm câu chỉ chọn đoạn trong lời kể; chép gợi ý dùng clipboard fallback hiện có, không tự sửa bài.
+
+Mặc định bài dài gửi trích đoạn mở/giữa/kết và công bố tỷ lệ ký tự đã xem; chọn **Đọc toàn bộ** sẽ tốn token hơn. Một lượt gọi model chính, tối đa 1800 token đầu ra, không tự retry/fallback cho đánh giá. Bài không đổi dùng nhận xét đã lưu; đổi lời kể/định hướng thì báo nhận xét cũ. Kiểm tra lặp ý bằng code đọc lời kể hiện tại, không dùng scriptParts cũ. Nhận xét là đánh giá biên tập, không bảo đảm lượt xem hay thay đối chiếu nguồn.
+
+Kiểm chứng: test hành vi đỏ trước → xanh, mock HTTP/context sạch, trích dẫn đúng, cache và giữ nguyên lời kể. Chưa kiểm chứng chất lượng nhận xét bằng AI thật hoặc toàn bộ thao tác giao diện trên trình duyệt.

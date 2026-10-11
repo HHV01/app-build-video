@@ -1,3 +1,4 @@
+import {sanitizeReviewContext,validateScriptReview} from './public/script-review.mjs';
 import {TASK_TIERS,selectTaskModels,createUsageCounter} from './task-tiers.mjs';
 import {schemas} from './generate-schemas.mjs';
 const aiUsage=createUsageCounter();
@@ -98,9 +99,9 @@ async function upstream(url, options = {}, timeout = 60000) {
 }
 async function ai(prompt, schema, maxTokens = 700,action='test') {
   const chain=selectTaskModels(settings,action);
-  return withModelFallback(chain.primary,chain.backups,async (model,{signal,timeoutMs})=>{
+  return withModelFallback(chain.primary,action==='scriptReview'?[]:chain.backups,async (model,{signal,timeoutMs})=>{
   let strictJSON=true,outputBudget=maxTokens;
-  for(let attempt=0;attempt<2;attempt++){
+  for(let attempt=0;attempt<(action==='scriptReview'?1:2);attempt++){
   try{
   let counted=false;
   try{
@@ -116,8 +117,8 @@ async function ai(prompt, schema, maxTokens = 700,action='test') {
   return { output, usage: value.usage || null, model, pacingMs:value.pacingMs||0 };
   }catch(e){if(!counted)aiUsage.record(action,model,{},model!==chain.primary&&attempt===0);throw e;}
   }catch(e){
-   if(attempt===0&&isJSONGenerationFailure(e)){strictJSON=false;continue;}
-   if(attempt===0&&e.outputTruncated===true){outputBudget=Math.min(maxTokens*2,Math.max(maxTokens,8000));continue;}
+   if(action!=='scriptReview'&&attempt===0&&isJSONGenerationFailure(e)){strictJSON=false;continue;}
+   if(action!=='scriptReview'&&attempt===0&&e.outputTruncated===true){outputBudget=Math.min(maxTokens*2,Math.max(maxTokens,8000));continue;}
    throw e;
   }
   }
@@ -197,7 +198,8 @@ async function generate(b) {
     const windows=(Array.isArray(b.context?.windows)?b.context.windows:[]).map(({index,narration})=>({index,narration}));
     if(['scenes','sceneTags'].includes(b.action)&&windows.length&&(windows.length>4||windows.some(w=>!Number.isInteger(w.index)||w.index<1||typeof w.narration!=='string'||!w.narration.trim())||new Set(windows.map(w=>w.index)).size!==windows.length))throw failure('Cần 1–4 cửa sổ lời kể với index duy nhất.');
     let planContext;if(b.action==='planSegment'){try{planContext=planSegmentContext(b.context||{});}catch(e){throw failure(e.message);}}
-    const ctxObj = b.action === 'angles'&&b.context?.basis==='niche'?{basis:'niche',niche:b.context.niche.trim(),language:String(b.context.language||'vi').slice(0,30),market:String(b.context.market||'VN').slice(0,10),format:b.context.format==='short'?'short':'long',titles:(Array.isArray(b.context.titles)?b.context.titles:[]).filter(x=>typeof x==='string').slice(0,20).map(x=>x.slice(0,300))}:b.action === 'planSegment' ? planContext : b.action === 'rosterExtras' ? rosterExtrasContext({characters:Array.isArray(b.context?.mainCharacters)?b.context.mainCharacters:[]},{narration:b.context?.scriptText}) : b.action === 'sceneTags' ? {windows,tagMenu:bible?bibleMenu(bible):tagMenu,summaryPrev:typeof b.context?.summaryPrev==='string'?b.context.summaryPrev.split(/\s+/).slice(0,20).join(' '):''} : b.action === 'scenes' ? (windows.length?compactSceneContext(b.context||{},windows):{narration:b.context?.narration}) : b.action === 'animation' ? {scenes:(Array.isArray(b.context?.scenes)?b.context.scenes:[]).map(s=>({scene:s.scene??s.id,narration:s.narration}))} : b.action === 'groups' ? { ...b.context, videos: blindTitles(b.context?.videos || []) } : (b.context || {});
+    let reviewCtx;if(b.action==='scriptReview'){try{reviewCtx=sanitizeReviewContext(b.context||{});}catch(e){throw failure(e.message,400);}}
+    const ctxObj = b.action==='scriptReview'?reviewCtx:b.action === 'angles'&&b.context?.basis==='niche'?{basis:'niche',niche:b.context.niche.trim(),language:String(b.context.language||'vi').slice(0,30),market:String(b.context.market||'VN').slice(0,10),format:b.context.format==='short'?'short':'long',titles:(Array.isArray(b.context.titles)?b.context.titles:[]).filter(x=>typeof x==='string').slice(0,20).map(x=>x.slice(0,300))}:b.action === 'planSegment' ? planContext : b.action === 'rosterExtras' ? rosterExtrasContext({characters:Array.isArray(b.context?.mainCharacters)?b.context.mainCharacters:[]},{narration:b.context?.scriptText}) : b.action === 'sceneTags' ? {windows,tagMenu:bible?bibleMenu(bible):tagMenu,summaryPrev:typeof b.context?.summaryPrev==='string'?b.context.summaryPrev.split(/\s+/).slice(0,20).join(' '):''} : b.action === 'scenes' ? (windows.length?compactSceneContext(b.context||{},windows):{narration:b.context?.narration}) : b.action === 'animation' ? {scenes:(Array.isArray(b.context?.scenes)?b.context.scenes:[]).map(s=>({scene:s.scene??s.id,narration:s.narration}))} : b.action === 'groups' ? { ...b.context, videos: blindTitles(b.context?.videos || []) } : (b.context || {});
     if (b.action==='rosterExtras' && (typeof ctxObj.scriptText!=='string'||!ctxObj.scriptText.trim())) throw failure('Cần kịch bản trước khi trích danh sách.');
     if(b.action==='sceneTags'&&!windows.length)throw failure('Cần cửa sổ lời kể để chọn thẻ.');
     if (b.action==='scenes' && !windows.length && (typeof ctxObj.narration!=='string'||!ctxObj.narration.trim())) throw failure('Cần lời kể của lô cảnh.');
@@ -237,8 +239,10 @@ async function generate(b) {
     if(b.action==='angles'&&ctxObj.basis==='niche')directives.angles='Đề xuất 3 góc kể khác nhau phù hợp ngách context.niche, ngôn ngữ và định dạng đã chọn. Ngách là căn cứ chính; titles chỉ tham khảo cách đặt câu hỏi/cấu trúc, không sao chép angle của kênh mẫu. Mỗi góc là một câu hỏi hoặc cách giải thích cụ thể có thể làm nhiều video, kèm reason giải thích vì sao hợp ngách. Không tự khẳng định hiệu quả/lượt xem hoặc ngách đã được xác thực. Không khuyên mua bán tài sản hoặc hứa làm giàu.';
     const actionSchema=b.action==='sceneTags'&&bible?'{"tagsByIndex":[{"index":1,"expression":"tag","pose":"tag or empty","prop":"tag or empty","outfit":"tag or empty","graphics":[],"camera":"wide","summary":"at most 20 words"}]}':schemas[b.action];
     if(b.action==='script'&&(b.context?.planManagedOpening||b.context?.planManagedClosing))directives.script += ' The application inserts channel opening and closing separately. For the first body part, start from the scene introduced by openingHandoff without repeating the hook or greeting. Write only outlineFocus body content within targetWords (±5%). Do not repeat greetings, channel subscriptions or fixed channel sentences. '+(b.context.planManagedOpening?'Do not write an opening hook.':'Include openingHook only in the first part. ')+(b.context.planManagedClosing?'Do not write the final conclusion or CTA.':'Conclude only in the last part.');
+    directives.scriptReview='Đánh giá biên tập lời kể đã cung cấp theo hook, flow, clarity, novelty, ending. Mỗi tiêu chí good/watch/fix và lý do ngắn. Không chấm điểm hoặc hứa lượt xem. scope sampled chỉ là trích đoạn, không tuyên bố đọc toàn bài. Tối đa 3 điểm tốt và 5 chỗ sửa, ưu tiên high trước. Mỗi chỗ sửa phải trích nguyên văn quote từ paragraph đã cho, nêu vấn đề, hướng sửa và câu viết thử tối đa 80 từ. Không bịa dữ kiện, không coi facts là đã tự kiểm nguồn, không viết lại toàn bài. overall ready hoặc revise. Trả JSON đúng schema.';
     const budget = b.action==='planSegment'?Math.max(600,6*(ctxObj.maxWords||Object.values(ctxObj.slots||{}).reduce((n,x)=>n+x,0))):tokenBudget(b.action);
     const response = await ai(`${directives[b.action]}\n${(sceneAction||b.action==='rosterExtras')?'Batch narration:':'Dữ liệu dự án:'}\n${context}`, actionSchema, budget,b.action);
+    if(b.action==='scriptReview'){try{response.output=validateScriptReview(response.output,ctxObj);}catch(e){throw failure(e.message,422);}}
     if(b.action==='planSegment'){try{validatePlanSegmentOutput(response.output,ctxObj);}catch(e){throw failure(e.message,422);}}
     if (b.action==='rosterExtras') { try { validateRosterExtras(response.output,ctxObj.mainCharacters); } catch(e) { throw failure(e.message,422); } }
     if(b.action==='sceneTags'){try{response.output={tagsByIndex:bible?validateBibleBatch(response.output.tagsByIndex,windows,bible):validateSceneTags(response.output.tagsByIndex,windows)};}catch(e){throw Object.assign(failure(e.message,422),{invalidTags:true});}}

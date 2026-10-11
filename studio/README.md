@@ -169,3 +169,12 @@ Groq có thêm ô khóa dự phòng riêng. Giữ khóa chính; chỉ thử khó
 
 ### Nhịp chờ hạn mức token
 Sau mỗi phản hồi có x-ratelimit-limit-tokens và usage, Studio tính thời gian chờ bằng token đã dùng ×60000/hạn mức token/phút (tối đa60 giây/lượt). Trước lượt AI kế tiếp UI hiện đếm ngược; thời điểm chờ lưu cục bộ và dùng chung giữa các tab cùng trình duyệt. Ví dụ1600 token, hạn mức8000/phút →12 giây. API vẫn có thể429 nếu dùng chung tài khoản ở app khác, hết quota ngày hoặc dịch vụ có hạn mức khác; nhịp chờ không tăng hạn mức.
+
+
+### Đánh giá kịch bản trước khi xuất
+
+Ở bước Kịch bản, bấm **Đánh giá trước khi xuất** sau khi hoàn tất lời kể. AI nhận xét hook, mạch kể, độ rõ, thông tin mới/lặp ý và kết thúc; tối đa 5 chỗ sửa, có câu trích nguyên văn, lý do, ưu tiên và câu viết thử. Nút tìm câu chỉ chọn đoạn trong lời kể; chép gợi ý dùng clipboard fallback hiện có, không tự sửa bài.
+
+Mặc định bài dài gửi trích đoạn mở/giữa/kết và công bố tỷ lệ ký tự đã xem; chọn **Đọc toàn bộ** sẽ tốn token hơn. Một lượt gọi model chính, tối đa 1800 token đầu ra, không tự retry/fallback cho đánh giá. Bài không đổi dùng nhận xét đã lưu; đổi lời kể/định hướng thì báo nhận xét cũ. Kiểm tra lặp ý bằng code đọc lời kể hiện tại, không dùng scriptParts cũ. Nhận xét là đánh giá biên tập, không bảo đảm lượt xem hay thay đối chiếu nguồn.
+
+Kiểm chứng: test hành vi đỏ trước → xanh, mock HTTP/context sạch, trích dẫn đúng, cache và giữ nguyên lời kể. Chưa kiểm chứng chất lượng nhận xét bằng AI thật hoặc toàn bộ thao tác giao diện trên trình duyệt.

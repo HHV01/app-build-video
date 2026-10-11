@@ -425,3 +425,12 @@ test('HTTP generation exposes pacing interval from real rate headers and usage o
  const h=await jsonFailureHarness(()=>({headers:{'x-ratelimit-limit-tokens':'8000'},body:{choices:[{message:{content:'{"narration":"Safe script."}'},finish_reason:'stop'}],usage:{prompt_tokens:1400,completion_tokens:200,total_tokens:1600}}}));
  try{const r=await h.server.req('/api/generate','POST',{action:'script',context:{}});assert.equal(r.status,200);assert.equal(r.body.pacingMs,12000);assert.doesNotMatch(JSON.stringify(r.body),/test-key/);}finally{await h.stop();}
 });
+test('editorial review uses one bounded call, sanitized context and exact quotes',async()=>{
+ const output={overall:'revise',summary:'Cần ví dụ.',strengths:['Rõ chủ đề.'],rubric:['hook','flow','clarity','novelty','ending'].map(criterion=>({criterion,verdict:'watch',reason:'Cần đọc thử.'})),issues:[{priority:'high',paragraph:1,quote:'Ngân sách',why:'Thiếu ví dụ.',suggestion:'Thêm ví dụ.',rewrite:'Bạn ghi lại khoản chi hôm nay.'}]};
+ const h=await jsonFailureHarness(()=>({body:{choices:[{message:{content:JSON.stringify(output)},finish_reason:'stop'}]}}));
+ try{const r=await h.server.req('/api/generate','POST',{action:'scriptReview',context:{paragraphs:[{index:1,text:'Ngân sách giúp bạn hiểu thu chi.'}],scope:'full',coveragePercent:100,research:'PRIVATE_RESEARCH',sources:'PRIVATE_SOURCES',identity:'PRIVATE_IDENTITY'}});assert.equal(r.status,200,r.body.error);assert.equal(r.body.output.issues[0].quote,'Ngân sách');assert.equal(h.seen.length,1);assert(h.seen[0].max_tokens<=1800);assert.doesNotMatch(JSON.stringify(h.seen),/PRIVATE_RESEARCH|PRIVATE_SOURCES|PRIVATE_IDENTITY/);}finally{await h.stop();}
+});
+test('editorial review does not retry or switch models on upstream failure',async()=>{
+ const h=await jsonFailureHarness(()=>badJsonReply,{autoFallback:true,fallbackModels:['backup']});
+ try{const r=await h.server.req('/api/generate','POST',{action:'scriptReview',context:{paragraphs:[{index:1,text:'Lời kể.'}]}});assert.notEqual(r.status,200);assert.equal(h.seen.length,1);}finally{await h.stop();}
+});
