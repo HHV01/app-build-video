@@ -186,3 +186,7 @@ Mở bước Nhân vật + bối cảnh sẽ tự trích từ kịch bản một
 
 ### Nạp nhân vật ngay tại bước roster
 Kênh thiếu bible hiện nút Nạp mẫu Tích ngay trong Nhân vật + bối cảnh, không phải quay lại Bản sắc. Nút tiếp tục chỉ bật khi có nhân vật chủ đạo hợp lệ (hoặc kênh faceless) và đã xác nhận. Nạp mẫu giữ danh sách phụ/bối cảnh, bỏ duyệt bước cuối để xem lại. Test render hành vi đỏ trước rồi xanh; không sửa bible gốc.
+
+
+### Thẻ cảnh tập trung vào prompt ảnh
+Phần chính: mốc bắt đầu–kết thúc cộng dồn theo thời lượng cảnh (thời gian ước tính), lời kể, mô tả hình, prompt ảnh ghép và Copy prompt ảnh. Nhân vật, thẻ bible, animation, overlay và SFX nằm trong Chỉnh nâng cao. Không tự gọi tạo ảnh hoặc chuyển động. Directive yêu cầu hình hợp bối cảnh lịch sử và ý nghĩa lời kể, cảm xúc/đạo cụ có căn cứ; nhân vật chủ đạo có thể làm người dẫn chuyện. Cảnh cũ giữ nguyên, Tạo lại cảnh này áp dụng directive mới. Kiểm chứng bằng test hành vi render và mock HTTP, chưa kiểm chứng chất lượng bằng AI thật.

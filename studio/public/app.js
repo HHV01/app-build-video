@@ -378,6 +378,7 @@ case 'finish-scenes':finishSceneProject(p,c);activity('Hoàn tất kịch bản 
 case 'regenerate-scene':await run('Đang tạo lại cảnh…',()=>regenerateScene(p,Number(el.dataset.index),{generate,save,channel:c,onProgress:text=>{document.querySelector('#busy-label').textContent=text;}}));break;
 case 'generate-scenes':await run('Đang chia cảnh…',()=>runSceneBatches(p,{generate,save,channel:c,onProgress:text=>{document.querySelector('#busy-label').textContent=text;}}));break;
 case 'generate-animation':await run('Đang tạo prompt chuyển động…',()=>runAnimationBatches(p,{generate,save,onProgress:text=>{document.querySelector('#busy-label').textContent=text;}}));break;
+case 'copy-image-prompt':{const row=scenePromptRows(c,p)[Number(el.dataset.index)];if(row)await copy(row.image_prompt);break;}
 case 'copy-scene-prompt':{const row=scenePromptRows(c,p)[Number(el.dataset.index)];await copy(row?sceneText(row):'');break;}
 case 'copy-scene-prompts':await copy(scenePromptsText(c,p));break;
 case 'export-scene-prompts':download('scene-prompts.txt',scenePromptsText(c,p));break;
