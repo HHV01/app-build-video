@@ -194,3 +194,7 @@ Phần chính: mốc bắt đầu–kết thúc cộng dồn theo thời lượn
 
 ### Prompt riêng tiếng Việt, bám ý lời kể
 AI sinh mô tả hình và prompt riêng bằng tiếng Việt, summary tiếng Việt; ID thẻ và tên roster giữ nguyên. Directive yêu cầu ý chính của đúng cửa sổ lời kể, chủ thể/hành động/quan hệ rõ, ẩn dụ hoặc sơ đồ cho ý trừu tượng, không bịa sự kiện ngoài đoạn. Thẻ cảnh có ô sửa visual/prompt, preview ghép cập nhật ngay và bỏ duyệt cuối khi sửa. Khối bible/phong cách gốc giữ nguyên nên prompt ghép vẫn có thể chứa tiếng Anh. Cảnh cũ không dịch tự động để tránh gọi AI và thay nội dung; bấm Tạo lại cảnh này nếu cần. Test hành vi UI/mock HTTP; chưa kiểm chứng độ bám sát với AI thật.
+
+
+### Gộp chọn thẻ và viết cảnh
+Giao diện dùng combined=true: một lượt scenes trả tagsByIndex và scenes cho mỗi lô tối đa 4 cửa sổ. Kiểm menu/bible và tên roster, thử lại có giới hạn khi lỗi; lời kể và thời lượng do code gắn. Giữ luồng hai lượt cho tương thích. Lưu/resume từng lô, không viết lại cảnh đã có. Giảm số lượt bình thường từ hai xuống một, vẫn giữ pacing quota. 256 test xanh gồm mock HTTP và resume; chưa đo tốc độ với AI thật.

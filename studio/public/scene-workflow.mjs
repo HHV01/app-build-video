@@ -42,7 +42,7 @@ export function validateSceneCoverage(project){
  project.coverageWarning=coverageWarning?`Chưa phủ đủ kịch bản: ${(coverage*100).toFixed(1)}%${ordered?'':' — lời kể thiếu, trùng hoặc sai thứ tự.'}`:'';
  return {coverage,coverageWarning,complete:scenes.length>0&&!coverageWarning};
 }
-export async function runSceneBatches(project,{generate,save,channel={},onProgress=()=>{}}){
+export async function runSceneBatches(project,{generate,save,channel={},combined=false,onProgress=()=>{}}){
  const plan=scenePlan(project);project.scenes||=[];
  const basis=JSON.stringify([plan.narration,plan.seconds,plan.ceiling]);
  if(project.scenes.length&&project.sceneBasis&&project.sceneBasis!==basis)throw Error('Kịch bản hoặc thời lượng đã đổi. Giữ cảnh cũ; hãy dùng một bản dự án mới để chia lại.');
@@ -51,17 +51,17 @@ export async function runSceneBatches(project,{generate,save,channel={},onProgre
  for(let start=project.scenes.length;start<plan.count;start=project.scenes.length){
   const {windows}=sceneWindows(plan.narration,plan.seconds,plan.ceiling,start,4);
   onProgress(`Đang tạo cảnh ${start+1}–${start+windows.length}/${plan.count}`);
-  const batch=await generateSceneBatch(project,windows,{generate,save,channel});
+  const batch=await generateSceneBatch(project,windows,{generate,save,channel,combined});
   project.scenes.push(...batch);delete project.sceneIssues;validateSceneCoverage(project);await save();
  }
  return validateSceneCoverage(project);
 }
-async function generateSceneBatch(project,windows,{generate,save,channel}){
-  let tags;const bible=sceneBible(channel,project);
+async function generateSceneBatch(project,windows,{generate,save,channel,combined=false}){
+  let tags,combinedReply;const bible=sceneBible(channel,project);
   for(let attempt=0;attempt<2;attempt++){
    try{
-    const reply=await generate('sceneTags',{rosterNames:rosterNames(channel,project),windows:windows.map(({index,narration})=>({index,narration})),tagMenu:bible?bibleMenu(bible):tagMenu,summaryPrev:project.scenes.at(-1)?.summary||''});
-    tags=bible?validateBibleBatch(reply.tagsByIndex,windows,bible,project.scenes):validateSceneTags(reply.tagsByIndex,windows);break;
+    const reply=await generate(combined?'scenes':'sceneTags',{...(combined?{combined:true}:{}),... {rosterNames:rosterNames(channel,project),windows:windows.map(({index,narration})=>({index,narration})),tagMenu:bible?bibleMenu(bible):tagMenu,summaryPrev:project.scenes.at(-1)?.summary||''}});
+    combinedReply=combined?reply:undefined;tags=bible?validateBibleBatch(reply.tagsByIndex,windows,bible,project.scenes):validateSceneTags(reply.tagsByIndex,windows);break;
    }catch(error){
     if(!error.invalidTags)throw error;
     if(attempt===1){project.sceneIssues=windows.map(w=>({index:w.index,invalidTags:true,reason:error.message}));await save();throw tagError('Thẻ cảnh vẫn sai sau một lần thử lại. Lô trước được giữ; bấm Tiếp tục để thử lô này.');}
@@ -70,7 +70,7 @@ async function generateSceneBatch(project,windows,{generate,save,channel}){
   const names=rosterNames(channel,project),context={...compactSceneContext({tagsByIndex:tags},windows),rosterNames:names,...(bible?{tagMenu:bibleMenu(bible)}:{})};
   let reply;
   for(let attempt=0;attempt<2;attempt++){
-   reply=await generate('scenes',context);
+   reply=attempt===0&&combinedReply?combinedReply:await generate('scenes',context);
    if(!Array.isArray(reply.scenes)||reply.scenes.length!==windows.length)throw Error('AI trả sai số cảnh; lô chưa được lưu, có thể tiếp tục.');
    if(!reply.scenes.some(row=>characterIssue(row,names)))break;
   }
@@ -82,7 +82,7 @@ async function generateSceneBatch(project,windows,{generate,save,channel}){
   });
  return batch;
 }
-export async function regenerateScene(project,position,{generate,save,channel={},onProgress=()=>{}}){
+export async function regenerateScene(project,position,{generate,save,channel={},combined=false,onProgress=()=>{}}){
  if(!Number.isInteger(position)||position<0||!project.scenes?.[position])throw Error('Không tìm thấy cảnh.');
  const plan=scenePlan(project),basis=JSON.stringify([plan.narration,plan.seconds,plan.ceiling]);
  if(project.sceneBasis&&project.sceneBasis!==basis)throw Error('Kịch bản hoặc thời lượng đã đổi. Không thể tạo lại với cửa sổ cũ.');
@@ -90,7 +90,7 @@ export async function regenerateScene(project,position,{generate,save,channel={}
  if(windows.length!==1||(old.index??old.scene??old.id??position+1)!==windows[0].index||old.narration!==windows[0].narration)throw Error('Lời kể cảnh không khớp cửa sổ kịch bản. Kiểm tra kịch bản và thời lượng trước khi tạo lại.');
  onProgress(`Đang tạo lại cảnh ${windows[0].index}`);
  const draft=structuredClone(project);draft.scenes=draft.scenes.slice(0,position);
- const [replacement]=await generateSceneBatch(draft,windows,{generate,save:async()=>{},channel});
+ const [replacement]=await generateSceneBatch(draft,windows,{generate,save:async()=>{},channel,combined});
  project.scenes[position]=replacement;project.sceneBasis=basis;
  const index=windows[0].index;
  if(Array.isArray(project.animations))project.animations=project.animations.filter(item=>item.scene!==index);
