@@ -3,7 +3,7 @@ import {sceneCharacterRoster,rosterNames,characterIssue} from './scene-character
 import {composeImagePrompt} from './character-bible.mjs';
 import {animationFor,validateSceneCoverage,validateSceneTags,sceneNarration} from './scene-workflow.mjs';
 
-export const SCENE_COLUMNS=['scene','narration','image_prompt','animation_prompt','overlay','sfx','characters','background','tags','warnings'];
+export const SCENE_COLUMNS=['scene','narration','image_prompt','animation_prompt','overlay','sfx','characters','background','tags','warnings','prompt_vi'];
 export const WARNING_MESSAGES={bibleWarnings:'Lưu ý từ bible:',invalidCharacters:'Tên nhân vật ngoài roster; prompt ảnh bị khóa để tránh mất nhân vật.',invalidTags:'Thẻ ngoài menu hoặc thẻ chưa hợp lệ.',duplicateNarration:'Lời kể trùng với cảnh trước.',promptLong:'Prompt riêng dài hơn 80 từ.',coverageWarning:'Lời kể chưa phủ đủ hoặc sai thứ tự kịch bản.',emptyNarration:'Lời kể cảnh rỗng.',indexWarning:'Index cảnh không liên tục.'};
 
 // Presentation only: the sole composer is the supplied character-bible function.
@@ -37,7 +37,8 @@ export function scenePromptRows(channel,project) {
   const bible=sceneBible(channel,project);if(bible){const validation=bibleSceneCheck(scene,bible,project.scenes.slice(0,index));checked.invalidTags=checked.invalidTags||validation.errors.length>0;checked.tagWarnings=validation.warnings;checked.bibleWarnings=validation.warnings.length>0;checked.tagErrors=validation.errors;}
   if(!bible&&Array.isArray(scene.tags)&&scene.tags.length){try{validateSceneTags([{index:number,tags:scene.tags,summary:''}],[{index:number}]);}catch{checked.invalidTags=true;}}
   const warnings=Object.keys(WARNING_MESSAGES).filter(key=>key==='coverageWarning'?Boolean(inspected.coverageWarning):Boolean(checked[key]));
-  return {scene:number,narration:scene.narration||'',image_prompt:prompt,animation_prompt:animationFor(project,number),overlay:scene.overlay||'',sfx,characters:scene.noCharacter===true?supplied.join(', '):present.join(', '),background:scene.background||'',tags:bible?BIBLE_FIELDS.flatMap(key=>Array.isArray(scene[key])?scene[key].map(tag=>`${key}:${tag}`):scene[key]?[`${key}:${scene[key]}`]:[]).join(', '):Array.isArray(scene.tags)?scene.tags.join(', '):'',warnings:warnings.join(', '),visual:scene.visual||'',characterError:issue||scene.characterError||'',tagErrors:checked.tagErrors||[],tagWarnings:checked.tagWarnings||[],prompt};
+  const check_vi=sceneCheckVi(channel,project,scene);
+  return {check_vi,prompt_vi:[scene.prompt||'',check_vi].filter(Boolean).join('\n'),scene:number,narration:scene.narration||'',image_prompt:prompt,animation_prompt:animationFor(project,number),overlay:scene.overlay||'',sfx,characters:scene.noCharacter===true?supplied.join(', '):present.join(', '),background:scene.background||'',tags:bible?BIBLE_FIELDS.flatMap(key=>Array.isArray(scene[key])?scene[key].map(tag=>`${key}:${tag}`):scene[key]?[`${key}:${scene[key]}`]:[]).join(', '):Array.isArray(scene.tags)?scene.tags.join(', '):'',warnings:warnings.join(', '),visual:scene.visual||'',characterError:issue||scene.characterError||'',tagErrors:checked.tagErrors||[],tagWarnings:checked.tagWarnings||[],prompt};
  });
 }
 export function sceneText(row,format='txt'){
@@ -48,4 +49,12 @@ export function scenePromptsText(channel,project,format='txt') {
  const rows=scenePromptRows(channel,project);
  if(format==='csv'){const quote=s=>'"'+String(s??'').replaceAll('"','""')+'"';return SCENE_COLUMNS.join(',')+'\n'+rows.map(row=>SCENE_COLUMNS.map(key=>quote(row[key])).join(',')).join('\n');}
  return rows.map(row=>sceneText(row,format)).join('\n\n');
+}
+
+export function sceneCheckVi(channel,project,scene){
+ const bible=sceneBible(channel,project),{main}=sceneCharacterRoster(channel,project),names=scene.noCharacter===true?['Không có nhân vật']:(scene.characters?.length?scene.characters:main.map(x=>x.name));
+ const parts=[names.join(', ')||'Không có nhân vật'];
+ const groups={expression:['expressions','biểu cảm'],pose:['poses','dáng'],prop:['props','đạo cụ'],outfit:['outfits','trang phục'],graphics:['graphics','đồ họa']};
+ if(!scene.noCharacter)for(const [key,[list,label]] of Object.entries(groups)){if(key==='outfit'&&(!scene[key]||scene[key]==='default'))continue;const tags=Array.isArray(scene[key])?scene[key]:scene[key]?[scene[key]]:[];if(tags.length)parts.push(label+': '+tags.map(tag=>bible?.[list]?.find(x=>x.tag===tag)?.vi||tag).join(', '));}
+ const camera={wide:'toàn cảnh',medium:'trung cảnh','close-up':'cận cảnh','over-shoulder':'qua vai','low-angle':'góc thấp','high-angle':'góc cao','eye-level':'ngang mắt'};if(scene.camera)parts.push('góc máy: '+(camera[scene.camera]||scene.camera));else if(scene.tags?.length)parts.push('thẻ: '+scene.tags.map(x=>camera[x]||x).join(', '));return parts.filter(Boolean).join(' · ');
 }

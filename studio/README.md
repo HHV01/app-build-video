@@ -198,3 +198,7 @@ AI sinh mô tả hình và prompt riêng bằng tiếng Việt, summary tiếng 
 
 ### Gộp chọn thẻ và viết cảnh
 Giao diện dùng combined=true: một lượt scenes trả tagsByIndex và scenes cho mỗi lô tối đa 4 cửa sổ. Kiểm menu/bible và tên roster, thử lại có giới hạn khi lỗi; lời kể và thời lượng do code gắn. Giữ luồng hai lượt cho tương thích. Lưu/resume từng lô, không viết lại cảnh đã có. Giảm số lượt bình thường từ hai xuống một, vẫn giữ pacing quota. 256 test xanh gồm mock HTTP và resume; chưa đo tốc độ với AI thật.
+
+
+### Việc 1 — Kiểm tra cảnh tiếng Việt
+Dòng Kiểm tra dưới lời kể ghép bằng code: nhân vật, nhãn vi của biểu cảm/dáng/đạo cụ/trang phục khác mặc định/đồ họa, góc máy tiếng Việt; thiếu vi dùng ID thẻ. Đổi thẻ/nhân vật cập nhật qua render, không gọi AI. CSV thêm prompt_vi ở cuối; TXT/Markdown/Copy tất cả cũng có bản Việt + dòng kiểm tra. image_prompt giữ cách ghép cũ. Test hành vi đỏ trước rồi 257/257 xanh. Chưa chạy tay dự án mới với AI thật.
