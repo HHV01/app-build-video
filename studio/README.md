@@ -206,3 +206,7 @@ Dòng Kiểm tra dưới lời kể ghép bằng code: nhân vật, nhãn vi c�
 
 ### Việc 2 — Dịch prompt tiếng Anh tùy chọn
 Chọn Ngôn ngữ prompt gửi app ảnh theo kênh: Việt mặc định, Anh dùng promptEn khi có; cảnh chưa dịch báo Chưa dịch cảnh n và dùng Việt. prompt_vi luôn giữ bản Việt. Nút Dịch prompt sang tiếng Anh mới gọi AI việc nhẹ, lô 4, lưu từng lô và bỏ qua cảnh đã dịch. Lưu promptEn/overlayEn riêng, có ô sửa; không ghi đè prompt/overlay Việt, không gửi research/identity/bible. Kiểm số và tên roster trong bản dịch. image_prompt vẫn ghép bằng composeImagePrompt gốc. 260/260 test xanh, mock HTTP model nhẹ. Chưa kiểm chứng chất lượng dịch và thao tác trình duyệt với AI thật.
+
+
+### Việc 3 — Kiểm kê chờ duyệt
+Danh sách: [REPO_CLEANUP_REVIEW_20261012.md](../docs/REPO_CLEANUP_REVIEW_20261012.md). tools/ ảnh: 48 file, 14,93 MiB; scratch/: 36 file, 2,59 MiB; tmp/: 14.761 file, 2.817,51 MiB; docs/ocr/: 33 file, 0,05 MiB. Git đang theo dõi đúng 107 ảnh (104,54 MiB), nhóm file gốc theo yêu cầu 21 file (0,34 MiB). Các nhóm có thể trùng nhau, không cộng tổng. Mỗi file có dung lượng, trạng thái tracked và đề xuất. Chưa di chuyển, chưa git rm --cached, chưa thêm ignore hoặc xóa trên đĩa. Bước 2 chờ người dùng duyệt; workflow studio-test.yml giữ nguyên. Chỉ thay tài liệu kiểm kê, không thêm test giả cho việc liệt kê.
