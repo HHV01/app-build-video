@@ -218,3 +218,7 @@ Khi dịch lưu promptEnFor/overlayEnFor theo đúng bản Việt của lượt 
 
 ### Tiến độ cảnh không lặp lỗi toàn cục
 Chưa tạo đủ cảnh hiện một lần ở đầu trang: đã tạo X/Y, còn Z cảnh. Không hiện coverageWarning trên mỗi thẻ; lỗi riêng như thẻ sai, lời kể trùng và prompt dài vẫn hiện. Kiểm tra phủ kịch bản và cổng hoàn tất/export warnings giữ nguyên. Test hành vi render đỏ trước rồi xanh, không gọi AI thêm.
+
+
+### Thẻ nhân vật phải khớp mô tả cảnh
+Lượt combined gửi thêm nghĩa ngắn của pose/prop (không identity) để AI hiểu ID thẻ. Directive yêu cầu thiết kế hành động từ lời kể rồi chọn thẻ tương thích, visual/prompt nêu hành động đã chọn, không tự giơ bảng trắng hoặc vừa giơ bảng hai tay vừa chống cằm. Code phòng vệ: blank-sign thiếu căn cứ trong visual/prompt thì không ghép Pose giơ bảng, báo vàng tagPromptMismatch, dòng Kiểm tra bỏ dáng đó. State/thẻ gốc không sửa ngầm, bible không thay đổi, vẫn dùng composeImagePrompt duy nhất. Không tăng lượt AI. 264/264 test xanh gồm tái hiện prompt sai; chưa kiểm chứng hình vẽ với app ảnh thật hoặc bao quát mọi xung đột dáng.

@@ -60,7 +60,7 @@ async function generateSceneBatch(project,windows,{generate,save,channel,combine
   let tags,combinedReply;const bible=sceneBible(channel,project);
   for(let attempt=0;attempt<2;attempt++){
    try{
-    const reply=await generate(combined?'scenes':'sceneTags',{...(combined?{combined:true}:{}),... {rosterNames:rosterNames(channel,project),windows:windows.map(({index,narration})=>({index,narration})),tagMenu:bible?bibleMenu(bible):tagMenu,summaryPrev:project.scenes.at(-1)?.summary||''}});
+    const reply=await generate(combined?'scenes':'sceneTags',{...(combined?{combined:true,...(bible?{tagHints:[...bible.poses,...bible.props].map(x=>({tag:x.tag,meaning:[x.vi,x.desc].filter(Boolean).join(' · ').slice(0,140)}))}:{})}:{}),... {rosterNames:rosterNames(channel,project),windows:windows.map(({index,narration})=>({index,narration})),tagMenu:bible?bibleMenu(bible):tagMenu,summaryPrev:project.scenes.at(-1)?.summary||''}});
     combinedReply=combined?reply:undefined;tags=bible?validateBibleBatch(reply.tagsByIndex,windows,bible,project.scenes):validateSceneTags(reply.tagsByIndex,windows);break;
    }catch(error){
     if(!error.invalidTags)throw error;
