@@ -62,7 +62,7 @@ try {
     const errorText = await response.text();
     console.error(`❌ Lỗi kết nối (${response.status}): ${errorText}`);
     console.log('\n💡 Gợi ý:');
-    console.log('1. Đảm bảo OmniRoute đang chạy bằng lệnh: npm run omniroute (hoặc start_omniroute.bat)');
+    console.log('1. Đảm bảo OmniRoute đang chạy bằng lệnh: npm run omniroute (hoặc scripts/windows/start_omniroute.bat)');
     console.log('2. Truy cập Dashboard tại: http://localhost:20128/dashboard để kiểm tra trạng thái providers.');
     process.exit(1);
   }
@@ -80,6 +80,6 @@ try {
 } catch (err) {
   console.error(`❌ Không thể kết nối tới OmniRoute: ${err.message}`);
   console.log('\n💡 OmniRoute có thể chưa được khởi động:');
-  console.log('👉 Chạy lệnh: npm run omniroute (hoặc click chạy file start_omniroute.bat)');
+  console.log('👉 Chạy lệnh: npm run omniroute (hoặc click chạy file scripts/windows/start_omniroute.bat)');
   console.log('👉 Mở Dashboard: npm run omniroute:dashboard');
 }

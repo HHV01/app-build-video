@@ -28,7 +28,7 @@ Trong thư mục dự án `Video`, bạn có thể dùng các lệnh sau:
 | `npm run omniroute:test` | Kiểm tra kết nối và token phản hồi qua Node.js |
 | `npm run omniroute:test:py` | Kiểm tra kết nối và token phản hồi qua Python |
 | `npm run omniroute:status` | Kiểm tra trạng thái các providers và quota |
-| **Double click `start_omniroute.bat`** | Bật OmniRoute server nhanh bằng 1 click trên Windows |
+| **Double click `scripts/windows/start_omniroute.bat`** | Bật OmniRoute server nhanh bằng 1 click trên Windows |
 
 ---
 
@@ -59,7 +59,7 @@ OPENAI_API_KEY="omniroute"
 ## 🚀 4. Quy Trình Sử Dụng Chuẩn
 
 ### Bước 1: Khởi động OmniRoute
-Chạy file [start_omniroute.bat](file:///c:/Users/VNTT/Desktop/Video/start_omniroute.bat) hoặc mở terminal gõ:
+Chạy file [scripts/windows/start_omniroute.bat](../scripts/windows/start_omniroute.bat) hoặc mở terminal gõ:
 ```bash
 npm run omniroute
 ```

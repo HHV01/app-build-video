@@ -92,5 +92,5 @@ except urllib.error.HTTPError as e:
 except Exception as e:
     print(f"❌ Không thể kết nối tới OmniRoute: {e}", flush=True)
     print("\n💡 OmniRoute có thể chưa được khởi động:", flush=True)
-    print("👉 Chạy lệnh: npm run omniroute (hoặc chạy start_omniroute.bat)", flush=True)
+    print("👉 Chạy lệnh: npm run omniroute (hoặc chạy scripts/windows/start_omniroute.bat)", flush=True)
     print("👉 Mở Dashboard: npm run omniroute:dashboard", flush=True)
