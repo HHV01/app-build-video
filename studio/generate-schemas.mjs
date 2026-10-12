@@ -1,4 +1,5 @@
 export const schemas = {
+ translatePrompts: '{"translations":[{"scene":1,"promptEn":"English translation","overlayEn":"English overlay or empty"}]}',
  scriptReview: '{"overall":"ready|revise","summary":"assessment","strengths":["strength"],"rubric":[{"criterion":"hook|flow|clarity|novelty|ending (all five exactly once)","verdict":"good|watch|fix","reason":"reason"}],"issues":[{"priority":"high|medium|low","paragraph":1,"quote":"exact excerpt","why":"problem","suggestion":"what to change","rewrite":"example at most 80 words"}]}',
   planSegment: '{"text":"AI segment text","fills":{"slot_name":"value"}}',
   sceneTags: '{"tagsByIndex":[{"index":1,"tags":["wide"],"summary":"short continuity summary, at most 20 words"}]}',

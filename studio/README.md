@@ -202,3 +202,7 @@ Giao diện dùng combined=true: một lượt scenes trả tagsByIndex và scen
 
 ### Việc 1 — Kiểm tra cảnh tiếng Việt
 Dòng Kiểm tra dưới lời kể ghép bằng code: nhân vật, nhãn vi của biểu cảm/dáng/đạo cụ/trang phục khác mặc định/đồ họa, góc máy tiếng Việt; thiếu vi dùng ID thẻ. Đổi thẻ/nhân vật cập nhật qua render, không gọi AI. CSV thêm prompt_vi ở cuối; TXT/Markdown/Copy tất cả cũng có bản Việt + dòng kiểm tra. image_prompt giữ cách ghép cũ. Test hành vi đỏ trước rồi 257/257 xanh. Chưa chạy tay dự án mới với AI thật.
+
+
+### Việc 2 — Dịch prompt tiếng Anh tùy chọn
+Chọn Ngôn ngữ prompt gửi app ảnh theo kênh: Việt mặc định, Anh dùng promptEn khi có; cảnh chưa dịch báo Chưa dịch cảnh n và dùng Việt. prompt_vi luôn giữ bản Việt. Nút Dịch prompt sang tiếng Anh mới gọi AI việc nhẹ, lô 4, lưu từng lô và bỏ qua cảnh đã dịch. Lưu promptEn/overlayEn riêng, có ô sửa; không ghi đè prompt/overlay Việt, không gửi research/identity/bible. Kiểm số và tên roster trong bản dịch. image_prompt vẫn ghép bằng composeImagePrompt gốc. 260/260 test xanh, mock HTTP model nhẹ. Chưa kiểm chứng chất lượng dịch và thao tác trình duyệt với AI thật.
