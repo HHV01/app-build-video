@@ -210,3 +210,7 @@ Chọn Ngôn ngữ prompt gửi app ảnh theo kênh: Việt mặc định, Anh 
 
 ### Việc 3 — Kiểm kê chờ duyệt
 Danh sách: [REPO_CLEANUP_REVIEW_20261012.md](../docs/REPO_CLEANUP_REVIEW_20261012.md). tools/ ảnh: 48 file, 14,93 MiB; scratch/: 36 file, 2,59 MiB; tmp/: 14.761 file, 2.817,51 MiB; docs/ocr/: 33 file, 0,05 MiB. Git đang theo dõi đúng 107 ảnh (104,54 MiB), nhóm file gốc theo yêu cầu 21 file (0,34 MiB). Các nhóm có thể trùng nhau, không cộng tổng. Mỗi file có dung lượng, trạng thái tracked và đề xuất. Chưa di chuyển, chưa git rm --cached, chưa thêm ignore hoặc xóa trên đĩa. Bước 2 chờ người dùng duyệt; workflow studio-test.yml giữ nguyên. Chỉ thay tài liệu kiểm kê, không thêm test giả cho việc liệt kê.
+
+
+### Phát hiện bản dịch cũ
+Khi dịch lưu promptEnFor/overlayEnFor theo đúng bản Việt của lượt dịch. Bản Việt đổi thì cảnh báo vàng khi chọn Anh, warnings xuất có staleTranslation; vẫn dùng bản Anh cũ theo yêu cầu. Nút dịch chỉ lấy cảnh chưa dịch hoặc đã cũ, giữ cảnh khớp. Sửa promptEn/overlayEn bằng tay ghi nhận bản Việt tương ứng, không gọi AI. Bản dịch cũ thiếu dấu mốc được coi cần dịch lại. Test hành vi đỏ trước, 262/262 xanh; chưa kiểm chứng dịch với AI thật.

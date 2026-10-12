@@ -1,3 +1,4 @@
+import {translationIsStale} from './prompt-translation.mjs';
 import {sceneBible,bibleSceneCheck,BIBLE_FIELDS} from './bible-scene-tags.mjs';
 import {sceneCharacterRoster,rosterNames,characterIssue} from './scene-character.mjs';
 import {composeImagePrompt} from './character-bible.mjs';
@@ -26,7 +27,7 @@ export function scenePromptRows(channel,project) {
   const descriptions=[...new Set(present.map(name=>rosterDescription(lookup(characters,name))).filter(Boolean))];
   const character={...base,identity:hasRoster||Array.isArray(scene.characters)?descriptions.join(' '):base.identity};
   const background=rosterDescription(lookup(backgrounds,scene.background));
-  const translated=channel.promptLanguage==='en'&&scene.promptEn?.trim(),specific=translated?scene.promptEn:scene.prompt;const translationWarning=channel.promptLanguage==='en'&&!translated?'Chưa dịch cảnh '+(scene.index??scene.scene??scene.id??index+1):'';
+  const translated=channel.promptLanguage==='en'&&scene.promptEn?.trim(),specific=translated?scene.promptEn:scene.prompt;const translationWarning=channel.promptLanguage==='en'?(!translated?'Chưa dịch cảnh '+(scene.index??scene.scene??scene.id??index+1):translationIsStale(scene)?'Bản dịch cảnh '+(scene.index??scene.scene??scene.id??index+1)+' đã cũ, hãy dịch lại':''):'';
   const setting=[specific||scene.setting||scene.background||'',background||''].filter(Boolean).join(' ');
   const noCharacter=scene.noCharacter===true||(!main.length&&!character.identity);
   const number=scene.index??scene.scene??scene.id??index+1;
@@ -38,6 +39,7 @@ export function scenePromptRows(channel,project) {
   const bible=sceneBible(channel,project);if(bible){const validation=bibleSceneCheck(scene,bible,project.scenes.slice(0,index));checked.invalidTags=checked.invalidTags||validation.errors.length>0;checked.tagWarnings=validation.warnings;checked.bibleWarnings=validation.warnings.length>0;checked.tagErrors=validation.errors;}
   if(!bible&&Array.isArray(scene.tags)&&scene.tags.length){try{validateSceneTags([{index:number,tags:scene.tags,summary:''}],[{index:number}]);}catch{checked.invalidTags=true;}}
   const warnings=Object.keys(WARNING_MESSAGES).filter(key=>key==='coverageWarning'?Boolean(inspected.coverageWarning):Boolean(checked[key]));
+  if(channel.promptLanguage==='en'&&translationIsStale(scene))warnings.push('staleTranslation');
   const check_vi=sceneCheckVi(channel,project,scene);
   return {translationWarning,check_vi,prompt_vi:[scene.prompt||'',check_vi].filter(Boolean).join('\n'),scene:number,narration:scene.narration||'',image_prompt:prompt,animation_prompt:animationFor(project,number),overlay:translated?(scene.overlayEn||scene.overlay||''):scene.overlay||'',sfx,characters:scene.noCharacter===true?supplied.join(', '):present.join(', '),background:scene.background||'',tags:bible?BIBLE_FIELDS.flatMap(key=>Array.isArray(scene[key])?scene[key].map(tag=>`${key}:${tag}`):scene[key]?[`${key}:${scene[key]}`]:[]).join(', '):Array.isArray(scene.tags)?scene.tags.join(', '):'',warnings:warnings.join(', '),visual:scene.visual||'',characterError:issue||scene.characterError||'',tagErrors:checked.tagErrors||[],tagWarnings:checked.tagWarnings||[],prompt};
  });
