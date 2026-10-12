@@ -29,7 +29,7 @@ export function renderSceneCards(channel,project,{esc,btn}){
  let elapsed=0;const time=value=>{const seconds=Math.round(value);return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');};
  return scenePromptRows(channel,project).map((row,i)=>{
   const scene=project.scenes[i],duration=Math.max(0,Number(scene.duration)||Number(project.clipSeconds)||10),start=elapsed;elapsed+=duration;
-  const bible=sceneBible(channel,project),tags=bible?row.tags.split(', ').filter(Boolean):Array.isArray(scene.tags)?scene.tags:[],warnings=row.warnings.split(', ').filter(Boolean);
+  const bible=sceneBible(channel,project),tags=bible?row.tags.split(', ').filter(Boolean):Array.isArray(scene.tags)?scene.tags:[],warnings=row.warnings.split(', ').filter(flag=>flag&&flag!=='coverageWarning');
   let selectors=Array.from({length:3},(_,slot)=>{
    const value=tags[slot]||'',id=`scene-${i}-tag-${slot}`;
    const selected=options.replace(`value="${esc(value)}"`,`value="${esc(value)}" selected`);
