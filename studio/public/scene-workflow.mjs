@@ -25,6 +25,7 @@ export function validateSceneTags(items,windows){
 export function sceneNarration(project){return typeof project.script==='string'&&project.script.trim()?project.script:project.narration||'';}
 export function scenePlan(project){
  const narration=sceneNarration(project),seconds=Number(project.voiceSeconds)||Math.max(1,words(narration).length/150*60),ceiling=Number(project.clipSeconds)||8;
+ if(project.sceneTimingMode==='voice-fit'){if(project.fittedNarration!==words(narration).join(' ')||project.fittedVoiceSeconds!==seconds)throw Error('Lời kể hoặc thời lượng đã đổi sau khi căn voice. Cần căn lại cảnh.');const inspected=structuredClone(project);if(!validateSceneCoverage(inspected).complete)throw Error('Cảnh đã căn voice không còn phủ đủ lời kể.');return {count:project.scenes.length,windows:project.scenes.map((s,i)=>({index:i+1,narration:s.narration,duration:s.duration})),narration,seconds,ceiling,voiceFitted:true};}
  return {...sceneWindows(narration,seconds,ceiling,0,4),narration,seconds,ceiling};
 }
 export function validateSceneCoverage(project){
@@ -86,7 +87,7 @@ export async function regenerateScene(project,position,{generate,save,channel={}
  if(!Number.isInteger(position)||position<0||!project.scenes?.[position])throw Error('Không tìm thấy cảnh.');
  const plan=scenePlan(project),basis=JSON.stringify([plan.narration,plan.seconds,plan.ceiling]);
  if(project.sceneBasis&&project.sceneBasis!==basis)throw Error('Kịch bản hoặc thời lượng đã đổi. Không thể tạo lại với cửa sổ cũ.');
- const {windows}=sceneWindows(plan.narration,plan.seconds,plan.ceiling,position,1),old=project.scenes[position];
+ const windows=plan.voiceFitted?plan.windows.slice(position,position+1):sceneWindows(plan.narration,plan.seconds,plan.ceiling,position,1).windows,old=project.scenes[position];
  if(windows.length!==1||(old.index??old.scene??old.id??position+1)!==windows[0].index||old.narration!==windows[0].narration)throw Error('Lời kể cảnh không khớp cửa sổ kịch bản. Kiểm tra kịch bản và thời lượng trước khi tạo lại.');
  onProgress(`Đang tạo lại cảnh ${windows[0].index}`);
  const draft=structuredClone(project);draft.scenes=draft.scenes.slice(0,position);

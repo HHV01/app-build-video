@@ -1,3 +1,4 @@
+import {localizePromptVi} from './prompt-locale.mjs';
 import {translationIsStale} from './prompt-translation.mjs';
 import {sceneBible,bibleSceneCheck,BIBLE_FIELDS} from './bible-scene-tags.mjs';
 import {sceneCharacterRoster,rosterNames,characterIssue} from './scene-character.mjs';
@@ -32,10 +33,11 @@ export function scenePromptRows(channel,project) {
   const noCharacter=scene.noCharacter===true||(!main.length&&!character.identity);
   const number=scene.index??scene.scene??scene.id??index+1;
   const signSupported=/(?:bảng trắng|giơ bảng|cầm bảng|biển trắng|blank[ -](?:white[ -])?(?:sign|board)|hold(?:ing)?[^.]{0,25}(?:sign|placard))/iu.test([scene.visual,scene.prompt].filter(Boolean).join(' '));const tagPromptMismatch=scene.pose==='blank-sign'&&!signSupported;
-  const prompt=issue?'':composeImagePrompt({...scene,...(tagPromptMismatch?{pose:''}:{}),
+  let prompt=issue?'':composeImagePrompt({...scene,...(tagPromptMismatch?{pose:''}:{}),
    noCharacter,
    subject:noCharacter?(specific||scene.subject||''):'',setting:noCharacter?(background||(specific?'':scene.setting||scene.background||'')):setting,overlay:'',
   },character,channel.visualStyle||'');
+  if(channel.promptLanguage==='vi')prompt=localizePromptVi(prompt,base);
   const checked=inspected.scenes[index];checked.tagPromptMismatch=tagPromptMismatch;if(issue)checked.invalidCharacters=true;
   const bible=sceneBible(channel,project);if(bible){const validation=bibleSceneCheck(scene,bible,project.scenes.slice(0,index));checked.invalidTags=checked.invalidTags||validation.errors.length>0;checked.tagWarnings=validation.warnings;checked.bibleWarnings=validation.warnings.length>0;checked.tagErrors=validation.errors;}
   if(!bible&&Array.isArray(scene.tags)&&scene.tags.length){try{validateSceneTags([{index:number,tags:scene.tags,summary:''}],[{index:number}]);}catch{checked.invalidTags=true;}}

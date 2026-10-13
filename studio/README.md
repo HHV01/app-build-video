@@ -222,3 +222,7 @@ Chưa tạo đủ cảnh hiện một lần ở đầu trang: đã tạo X/Y, c�
 
 ### Thẻ nhân vật phải khớp mô tả cảnh
 Lượt combined gửi thêm nghĩa ngắn của pose/prop (không identity) để AI hiểu ID thẻ. Directive yêu cầu thiết kế hành động từ lời kể rồi chọn thẻ tương thích, visual/prompt nêu hành động đã chọn, không tự giơ bảng trắng hoặc vừa giơ bảng hai tay vừa chống cằm. Code phòng vệ: blank-sign thiếu căn cứ trong visual/prompt thì không ghép Pose giơ bảng, báo vàng tagPromptMismatch, dòng Kiểm tra bỏ dáng đó. State/thẻ gốc không sửa ngầm, bible không thay đổi, vẫn dùng composeImagePrompt duy nhất. Không tăng lượt AI. 264/264 test xanh gồm tái hiện prompt sai; chưa kiểm chứng hình vẽ với app ảnh thật hoặc bao quát mọi xung đột dáng.
+
+
+### Voice thật và prompt copy tiếng Việt
+WAV Đức có thời lượng PCM đo được 1.183,4 giây. Căn dự án Germany giữ 180 cảnh/prompt/lời kể, phân phối thời lượng theo tỷ lệ số từ, tổng đúng voice; đây là ước tính, chưa căn timestamp từng câu hoặc xác nhận voice đọc đủ script. sceneTimingMode voice-fit giữ kế hoạch và tạo lại từng cảnh đúng cửa sổ cũ; đổi script/thời lượng sẽ yêu cầu căn lại. Không thêm upload/tts/render. Prompt chọn Việt được bản địa hóa sau composeImagePrompt: khối schoolboy/Tích mẫu, nhãn và mô tả thẻ tiếng Việt; bible gốc giữ nguyên, không gọi AI thêm. Kiểm thử đỏ trước rồi 266/266 xanh; đã áp dụng dữ liệu Germany có backup. Chưa nghe/đối chiếu toàn WAV hoặc kiểm chứng hình tạo từ app ảnh.
