@@ -1,3 +1,4 @@
+import {voiceAlignmentStale} from './voice-align-integration.mjs';
 import {sceneClock} from './voice-timing.mjs';
 import {localizePromptVi} from './prompt-locale.mjs';
 import {translationIsStale} from './prompt-translation.mjs';
@@ -6,8 +7,8 @@ import {sceneCharacterRoster,rosterNames,characterIssue} from './scene-character
 import {composeImagePrompt} from './character-bible.mjs';
 import {animationFor,validateSceneCoverage,validateSceneTags,sceneNarration} from './scene-workflow.mjs';
 
-export const SCENE_COLUMNS=['scene','narration','image_prompt','animation_prompt','overlay','sfx','characters','background','tags','warnings','duration','start','end','prompt_vi'];
-export const WARNING_MESSAGES={durationExceeded:'Thời lượng cảnh vượt nhịp tối đa.',tagPromptMismatch:'Thẻ giơ bảng không có trong mô tả cảnh; đã bỏ dáng giơ bảng khi ghép prompt. Sửa thẻ hoặc mô tả để khớp.',bibleWarnings:'Lưu ý từ bible:',invalidCharacters:'Tên nhân vật ngoài roster; prompt ảnh bị khóa để tránh mất nhân vật.',invalidTags:'Thẻ ngoài menu hoặc thẻ chưa hợp lệ.',duplicateNarration:'Lời kể trùng với cảnh trước.',promptLong:'Prompt riêng dài hơn 80 từ.',coverageWarning:'Lời kể chưa phủ đủ hoặc sai thứ tự kịch bản.',emptyNarration:'Lời kể cảnh rỗng.',indexWarning:'Index cảnh không liên tục.'};
+export const SCENE_COLUMNS=['scene','narration','image_prompt','animation_prompt','overlay','sfx','characters','background','tags','warnings','duration','start','end','prompt_vi','timing_source'];
+export const WARNING_MESSAGES={voiceTimingStale:'Voice hoặc lời kể đã đổi; cần căn lại mốc cảnh.',durationExceeded:'Thời lượng cảnh vượt nhịp tối đa.',tagPromptMismatch:'Thẻ giơ bảng không có trong mô tả cảnh; đã bỏ dáng giơ bảng khi ghép prompt. Sửa thẻ hoặc mô tả để khớp.',bibleWarnings:'Lưu ý từ bible:',invalidCharacters:'Tên nhân vật ngoài roster; prompt ảnh bị khóa để tránh mất nhân vật.',invalidTags:'Thẻ ngoài menu hoặc thẻ chưa hợp lệ.',duplicateNarration:'Lời kể trùng với cảnh trước.',promptLong:'Prompt riêng dài hơn 80 từ.',coverageWarning:'Lời kể chưa phủ đủ hoặc sai thứ tự kịch bản.',emptyNarration:'Lời kể cảnh rỗng.',indexWarning:'Index cảnh không liên tục.'};
 
 // Presentation only: the sole composer is the supplied character-bible function.
 export function scenePromptRows(channel,project) {
@@ -20,7 +21,7 @@ export function scenePromptRows(channel,project) {
  const lookup=(rows,name)=>rows.find(c=>[c.name,c.id].some(v=>v&&String(v).normalize('NFC').toLowerCase()===String(name).normalize('NFC').toLowerCase()));
  let elapsed=0;let wordCursor=0;const sfxValid=project.scriptSfxBasis===String(sceneNarration(project)).trim().split(/\s+/).filter(Boolean).join(' ');
  return (project.scenes||[]).map((scene,index)=>{
-  const startSeconds=elapsed,duration=Number(scene.duration)||Number(project.clipSeconds)||8;elapsed+=duration;
+  const aligned=project.sceneTimingMode==='voice-aligned',startSeconds=aligned&&Number.isFinite(scene.start)?scene.start:elapsed,duration=Number(scene.duration)||Number(project.clipSeconds)||8;elapsed=aligned&&Number.isFinite(scene.end)?scene.end:startSeconds+duration;
   const end=wordCursor+String(scene.narration||'').trim().split(/\s+/).filter(Boolean).length;const fixedSfx=sfxValid?(project.scriptSfx||[]).filter(item=>item.word>=wordCursor&&item.word<end).map(item=>item.text):[];wordCursor=end;const sfx=[...new Set([scene.sfx||'',...fixedSfx].filter(Boolean))].join(' | ');
   const hasRoster=Boolean(project.roster||channel.characters||project.mainCharacters);
   const supplied=Array.isArray(scene.characters)?scene.characters:[];
@@ -40,13 +41,13 @@ export function scenePromptRows(channel,project) {
    subject:noCharacter?(specific||scene.subject||''):'',setting:noCharacter?(background||(specific?'':scene.setting||scene.background||'')):setting,overlay:'',
   },character,channel.visualStyle||'');
   if(channel.promptLanguage==='vi')prompt=localizePromptVi(prompt,base);
-  const checked=inspected.scenes[index];checked.tagPromptMismatch=tagPromptMismatch;checked.durationExceeded=duration>(Number(project.clipSeconds)||8)+1e-8;if(issue)checked.invalidCharacters=true;
+  const checked=inspected.scenes[index];checked.tagPromptMismatch=tagPromptMismatch;checked.voiceTimingStale=voiceAlignmentStale(project);checked.durationExceeded=duration>(Number(project.clipSeconds)||8)+.5+1e-8;if(issue)checked.invalidCharacters=true;
   const bible=sceneBible(channel,project);if(bible){const validation=bibleSceneCheck(scene,bible,project.scenes.slice(0,index));checked.invalidTags=checked.invalidTags||validation.errors.length>0;checked.tagWarnings=validation.warnings;checked.bibleWarnings=validation.warnings.length>0;checked.tagErrors=validation.errors;}
   if(!bible&&Array.isArray(scene.tags)&&scene.tags.length){try{validateSceneTags([{index:number,tags:scene.tags,summary:''}],[{index:number}]);}catch{checked.invalidTags=true;}}
   const warnings=Object.keys(WARNING_MESSAGES).filter(key=>key==='coverageWarning'?Boolean(inspected.coverageWarning):Boolean(checked[key]));
   if(channel.promptLanguage==='en'&&translationIsStale(scene))warnings.push('staleTranslation');
   const check_vi=sceneCheckVi(channel,project,tagPromptMismatch?{...scene,pose:''}:scene);
-  return {duration,start:sceneClock(startSeconds),end:sceneClock(elapsed),durationWarning:checked.durationExceeded?'Cảnh '+number+' dài '+duration.toFixed(1).replace('.',',')+' s, vượt nhịp '+(Number(project.clipSeconds)||8)+' s':'',translationWarning,check_vi,prompt_vi:[scene.prompt||'',check_vi].filter(Boolean).join('\n'),scene:number,narration:scene.narration||'',image_prompt:prompt,animation_prompt:animationFor(project,number),overlay:translated?(scene.overlayEn||scene.overlay||''):scene.overlay||'',sfx,characters:scene.noCharacter===true?supplied.join(', '):present.join(', '),background:scene.background||'',tags:bible?BIBLE_FIELDS.flatMap(key=>Array.isArray(scene[key])?scene[key].map(tag=>`${key}:${tag}`):scene[key]?[`${key}:${scene[key]}`]:[]).join(', '):Array.isArray(scene.tags)?scene.tags.join(', '):'',warnings:warnings.join(', '),visual:scene.visual||'',characterError:issue||scene.characterError||'',tagErrors:checked.tagErrors||[],tagWarnings:checked.tagWarnings||[],prompt};
+  return {timing_source:aligned?(scene.timing_source||'words'):'words',duration,start:(aligned&&scene.timingStartEstimated?'~':'')+sceneClock(startSeconds,aligned?3:0),end:(aligned&&scene.timingEndEstimated?'~':'')+sceneClock(elapsed,aligned?3:0),durationWarning:checked.durationExceeded?'Cảnh '+number+' dài '+duration.toFixed(1).replace('.',',')+' s, vượt nhịp '+(Number(project.clipSeconds)||8)+' s':'',translationWarning,check_vi,prompt_vi:[scene.prompt||'',check_vi].filter(Boolean).join('\n'),scene:number,narration:scene.narration||'',image_prompt:prompt,animation_prompt:animationFor(project,number),overlay:translated?(scene.overlayEn||scene.overlay||''):scene.overlay||'',sfx,characters:scene.noCharacter===true?supplied.join(', '):present.join(', '),background:scene.background||'',tags:bible?BIBLE_FIELDS.flatMap(key=>Array.isArray(scene[key])?scene[key].map(tag=>`${key}:${tag}`):scene[key]?[`${key}:${scene[key]}`]:[]).join(', '):Array.isArray(scene.tags)?scene.tags.join(', '):'',warnings:warnings.join(', '),visual:scene.visual||'',characterError:issue||scene.characterError||'',tagErrors:checked.tagErrors||[],tagWarnings:checked.tagWarnings||[],prompt};
  });
 }
 export function sceneText(row,format='txt'){

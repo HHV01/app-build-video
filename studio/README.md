@@ -238,3 +238,15 @@ Chuẩn hóa ID dạng chuỗi, status OK/pass/needs_fix, null hoặc thiếu tr
 
 ### Căn lại voice từ giao diện
 Bước Cảnh và prompt có Thời lượng voice thật và Căn cảnh theo voice thật. Nhận mm:ss (19:36 = 1176), h:mm:ss (1:19:36 = 4776, không phải 1176) và số giây thập phân; preview ngay khi gõ, đầu vào rác không lưu. Khi đã có cảnh, ô giây cũ bị khóa; nút căn gọi fitScenesToVoice không AI, giữ narration/prompt/index. Chỉ căn được khi các cảnh phủ đủ lời kể; nếu lời kể đã sửa và không còn khớp, cần sửa lại lời kể hoặc cảnh trước, không giả vờ đã khớp. Báo tổng cũ → mới/chênh lệch, số cảnh vượt nhịp, chỉ số và dài nhất. Cảnh dài có durationExceeded và cờ vàng; không tự chia. CSV/TXT/Markdown thêm duration/start/end trước prompt_vi để prompt_vi vẫn cuối; duration giữ số thật, mốc mm:ss cộng dồn. 276/276 test xanh; chưa kiểm chứng khớp từng câu với SRT hoặc chạy tay launcher.
+
+
+### Căn mốc cảnh bằng file voice — xử lý tại trình duyệt
+Bên cạnh ô thời lượng có Tải voice (mp3, wav, m4a). AudioContext giải mã ở 8000 Hz và trộn mono; chặn file trên 200 MB/không giải mã được, gợi ý file chỉ có giọng nói. File, byte âm thanh và samples không được đưa vào API/state hay gửi đến AI; chỉ tên/kích thước/ngày sửa và mốc đã tính lưu trong dự án. Chọn file sẽ căn tự động, không cần tạo lại cảnh. Tổng thời lượng gồm im lặng đầu/cuối lấy từ detectPauses.duration; timeline cảnh bắt đầu ở speechStart và kết thúc speechEnd.
+
+Hai file voice-align.mjs và voice-align.test.mjs được chép nguyên byte từ bản cung cấp, SHA256 khớp; không thay logic. Lớp tích hợp lấy anchorable từ dấu kết câu (. ? ! … :) sau khi bỏ ngoặc/dấu nháy cuối. total chỉ đếm ranh giới đủ điều kiện neo, không tính ranh giới cuối file. Nếu alignScenes trả ends=null, lớp tích hợp dùng fitScenesToVoice hiện có làm fallback theo số từ, matched=0 và báo ước lượng. Nhãn pauses/words suy ra từ mốc khớp tâm ngắt nghỉ; điểm đầu/cuối file là mốc detector cố định. Cảnh nội suy có ~ trên mốc, mm:ss.mmm khi căn âm thanh.
+
+Hiện Khớp matched/total ranh giới theo ngắt nghỉ; dưới 60% hoặc không có ranh giới neo thì cảnh báo vàng Voice ít ngắt nghỉ hoặc có nhạc nền, mốc cảnh chỉ là ước lượng. Mode voice-aligned lưu basis lời kể/các cửa sổ/voice; thay lời kể, thời lượng hoặc source thì báo căn lại và khóa hoàn tất. Giải mã file mới lỗi giữ mốc cũ, có cảnh báo. Căn lại bằng số giây chuyển về voice-fit và bỏ mốc pause cũ. Lời kể, prompt và thẻ giữ nguyên; approved bước cảnh bỏ để xem lại. Nhịp tối đa dùng dung sai 0,5 giây, không tự chia. Xuất CSV/TXT/Markdown/Copy tất cả lấy mốc mới; thêm timing_source ở cuối, không đổi thứ tự 14 cột cũ.
+
+Test hành vi dựng âm thanh nhẹ tại chỗ, decode giả lập, chặn network, giữ nội dung, fallback, stale voice/script, xuất timing và dung sai; test đỏ trước. Chưa chạy giải mã/đối chiếu file voice thật trong trình duyệt, chưa xác minh mốc bằng phụ đề SRT.
+
+Nghiệm thu cuối: 290/290 test xanh. SHA256 hai bản chép local khớp file Downloads cung cấp. Không thêm route upload/AI hoặc thay file bible/preset.

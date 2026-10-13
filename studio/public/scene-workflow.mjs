@@ -1,3 +1,4 @@
+import {voiceAlignmentStale} from './voice-align-integration.mjs';
 import {sceneWindows,compactSceneContext,validateAnimations} from '../production.mjs';
 import {rosterNames,characterIssue} from './scene-character.mjs';
 import {sceneBible,bibleMenu,validateBibleBatch,BIBLE_FIELDS} from './bible-scene-tags.mjs';
@@ -25,6 +26,7 @@ export function validateSceneTags(items,windows){
 export function sceneNarration(project){return typeof project.script==='string'&&project.script.trim()?project.script:project.narration||'';}
 export function scenePlan(project){
  const narration=sceneNarration(project),seconds=Number(project.voiceSeconds)||Math.max(1,words(narration).length/150*60),ceiling=Number(project.clipSeconds)||8;
+ if(project.sceneTimingMode==='voice-aligned'){if(voiceAlignmentStale(project))throw Error('Lời kể hoặc voice đã đổi. Cần căn lại bằng file voice.');const inspected=structuredClone(project);if(!validateSceneCoverage(inspected).complete)throw Error('Cảnh không còn phủ đủ lời kể; cần căn lại.');return {count:project.scenes.length,windows:project.scenes.map((s,i)=>({index:i+1,narration:s.narration,duration:s.duration,start:s.start,end:s.end,timing_source:s.timing_source,timingStartEstimated:s.timingStartEstimated,timingEndEstimated:s.timingEndEstimated})),narration,seconds,ceiling,voiceFitted:true};}
  if(project.sceneTimingMode==='voice-fit'){if(project.fittedNarration!==words(narration).join(' ')||project.fittedVoiceSeconds!==seconds)throw Error('Lời kể hoặc thời lượng đã đổi sau khi căn voice. Cần căn lại cảnh.');const inspected=structuredClone(project);if(!validateSceneCoverage(inspected).complete)throw Error('Cảnh đã căn voice không còn phủ đủ lời kể.');return {count:project.scenes.length,windows:project.scenes.map((s,i)=>({index:i+1,narration:s.narration,duration:s.duration})),narration,seconds,ceiling,voiceFitted:true};}
  return {...sceneWindows(narration,seconds,ceiling,0,4),narration,seconds,ceiling};
 }
