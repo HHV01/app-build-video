@@ -1,5 +1,6 @@
 export const AI_TOKEN_BUDGET = {
   scriptReview: 1800,
+  sceneReview: 1400,
   sceneTags: 600,
   rosterExtras: 1200,
   groups: 2500,
