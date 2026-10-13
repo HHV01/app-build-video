@@ -285,3 +285,7 @@ Hiện Khớp matched/total ranh giới theo ngắt nghỉ; dưới 60% hoặc k
 Test hành vi dựng âm thanh nhẹ tại chỗ, decode giả lập, chặn network, giữ nội dung, fallback, stale voice/script, xuất timing và dung sai; test đỏ trước. Chưa chạy giải mã/đối chiếu file voice thật trong trình duyệt, chưa xác minh mốc bằng phụ đề SRT.
 
 Nghiệm thu cuối: 290/290 test xanh. SHA256 hai bản chép local khớp file Downloads cung cấp. Không thêm route upload/AI hoặc thay file bible/preset.
+
+
+### Một prompt ảnh để copy
+Phần chính mỗi thẻ chỉ hiện Prompt ảnh hoàn chỉnh (phong cách + nhân vật + mô tả cảnh) và nút Copy prompt hoàn chỉnh. Prompt riêng/bản Anh để sửa và Copy cảnh đầy đủ chuyển vào Chỉnh nâng cao. Không đổi nội dung prompt, cách ghép hoặc state; không gọi AI. Test hành vi render đỏ trước rồi xanh.
