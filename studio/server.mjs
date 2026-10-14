@@ -12,7 +12,9 @@ import {compactSceneContext,validateAnimations} from './production.mjs';
 import {rosterExtrasContext,validateRosterExtras} from './public/roster.mjs';
 import { withModelFallback, normalizeFallbackModels, isJSONGenerationFailure,getAIStatus } from './model-fallback.mjs';
 import http from 'node:http';
-import { readFile, writeFile, mkdir, rename, stat, rm } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
+import os from 'node:os';
+import { readFile, writeFile, mkdir, rename, readdir, stat, rm } from 'node:fs/promises';
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,6 +25,9 @@ import { createNicheAPI,normalizeShelfChecks } from './niche-api.mjs';
 import { createAssetStore } from './assets.mjs';
 import { tokenBudget,parseRetryAfter,ratePacingMs } from './server-lib.mjs';
 import { normalizeScriptProjects } from './public/script-workflow.mjs';
+import { chromium } from 'playwright-core';
+import { wanAvailable, generateWanClip } from './wan-client.mjs';
+import { stageHtml, validateHtmlScene } from './html-scenes.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const publicRoot = path.join(root, 'studio', 'public');
@@ -282,6 +287,217 @@ const nicheAPI = createNicheAPI({
   },
 });
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json' };
+// ---------------------------------------------------------------- DỰNG VIDEO
+// Ảnh + zoom/pan là luồng chính (FFmpeg local, không tốn token AI).
+// html-video cho chữ/số liệu, Wan local chỉ bật ở cảnh cần nhân vật cử động.
+const ffmpegBundled = path.join(root, 'tools', 'ffmpeg', 'bin', process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
+const ffprobeBundled = path.join(root, 'tools', 'ffmpeg', 'bin', process.platform === 'win32' ? 'ffprobe.exe' : 'ffprobe');
+// Ưu tiên ffmpeg kèm repo (Windows); máy khác dùng ffmpeg/ffprobe trong PATH.
+const ffmpegBin = existsSync(ffmpegBundled) ? ffmpegBundled : 'ffmpeg';
+const ffprobeBin = existsSync(ffprobeBundled) ? ffprobeBundled : 'ffprobe';
+let ffmpegOkCache = null;
+async function ffmpegAvailable() {
+  if (ffmpegOkCache !== null) return ffmpegOkCache;
+  try { await runTool(ffmpegBin, ['-version'], 10000); await runTool(ffprobeBin, ['-version'], 10000); ffmpegOkCache = true; }
+  catch { ffmpegOkCache = false; }
+  return ffmpegOkCache;
+}
+let ffmpegVersionCache = null;
+function runTool(tool, args, timeoutMs = 300000) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(tool, args, { windowsHide: true });
+    let out = '', err = '';
+    let killed = false;
+    const timer = setTimeout(() => { killed = true; child.kill(); }, timeoutMs);
+    child.stdout.on('data', d => { out += d; });
+    child.stderr.on('data', d => { err += d; });
+    child.on('error', e => { clearTimeout(timer); reject(e); });
+    child.on('close', code => {
+      clearTimeout(timer);
+      if (killed) return reject(Object.assign(new Error('FFmpeg quá thời gian. Giảm số cảnh hoặc độ phân giải.'), { status: 504 }));
+      if (code !== 0) return reject(Object.assign(new Error(`FFmpeg lỗi ${code}: ${(err || out).slice(-400)}`), { status: 500 }));
+      resolve(out || err);
+    });
+  });
+}
+async function ffmpegVersion() {
+  if (ffmpegVersionCache !== null) return ffmpegVersionCache;
+  try {
+    const v = await runTool(ffmpegBin, ['-version'], 10000);
+    ffmpegVersionCache = String(v).split('\n')[0].slice(0, 120);
+  } catch { ffmpegVersionCache = ''; }
+  return ffmpegVersionCache;
+}
+let chromePathCache = null;
+function htmlExecutable() {
+  if (chromePathCache !== null) return chromePathCache;
+  const candidates = [
+    process.env.CHROME_PATH,
+    path.join(os.homedir(), 'AppData', 'Local', 'ms-playwright', 'chromium-1248', 'chrome-win64', 'chrome.exe'),
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+  ].filter(Boolean);
+  chromePathCache = candidates.find(f => { try { return existsSync(f); } catch { return false; } }) || null;
+  return chromePathCache;
+}
+// Ghi cảnh chữ/số liệu thành clip: Chromium offline ghi hình đúng duration,
+// rồi ép về chuẩn dựng chung 1280x720/30fps như mọi đoạn khác.
+async function renderHtmlSegment(html, duration, tmp) {
+  const exe = htmlExecutable();
+  if (!exe) throw failure('Studio chưa thấy Chromium/Chrome để dựng cảnh HTML. Cài Chrome hoặc Playwright chromium.', 501);
+  const checked = validateHtmlScene({ html, duration });
+  const seg = path.join(tmp, `html-${randomUUID()}.mp4`);
+  const dir = path.join(tmp, `html-rec-${randomUUID()}`);
+  await mkdir(dir, { recursive: true });
+  let browser;
+  try {
+    browser = await chromium.launch({ executablePath: exe });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, recordVideo: { dir, size: { width: 1280, height: 720 } } });
+    const page = await ctx.newPage();
+    await page.route('**/*', route => {
+      const u = route.request().url();
+      return /^https?:/i.test(u) ? route.abort() : route.continue();
+    });
+    await page.setContent(stageHtml(checked.html), { waitUntil: 'load' });
+    try { await page.evaluate(() => document.fonts?.ready, null, { timeout: 10000 }); } catch {}
+    await page.waitForTimeout(Math.round(checked.duration * 1000));
+    await ctx.close();
+    let webm = null;
+    try { const vp = await page.video().path(); if (vp && existsSync(vp)) webm = vp; } catch {}
+    if (!webm) {
+      const files = (await readdir(dir)).filter(f => f.endsWith('.webm'));
+      if (files.length) webm = path.join(dir, files[0]);
+    }
+    if (!webm) throw failure('Không ghi được clip HTML.');
+    await runTool(ffmpegBin, ['-y', '-i', webm, '-r', '30', '-vf', 'scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,setsar=1,fps=30', '-an', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-t', String(checked.duration), seg], 180000);
+    return { file: seg };
+  } finally {
+    await browser?.close().catch(() => {});
+  }
+}
+function parseRenderDataURL(dataURL, prefixes, maxBytes, label) {
+  if (typeof dataURL !== 'string' || !dataURL.startsWith('data:')) throw failure(`${label} phải là data URL.`);
+  const m = dataURL.match(/^data:([^;,]+)(?:;charset=[^;,]+)?;base64,(.*)$/);
+  if (!m) throw failure(`${label} không đúng định dạng base64.`);
+  if (!prefixes.some(p => m[1] === p || m[1].startsWith(p))) throw failure(`${label} sai định dạng (nhận ${m[1]}).`);
+  const bytes = Buffer.from(m[2], 'base64');
+  if (!bytes.length) throw failure(`${label} rỗng.`);
+  if (bytes.length > maxBytes) throw failure(`${label} vượt ${(maxBytes / 1024 / 1024).toFixed(0)} MB. Giảm kích thước file.`);
+  return { mime: m[1], bytes };
+}
+function resolveRenderInput(value, prefixes, maxBytes, label, prefix) {
+  // Ảnh/voice có thể là data URL hoặc file đã lưu qua /api/assets (scene.image, voiceData).
+  if (typeof value === 'string' && value.startsWith('/api/assets/')) {
+    const asset = assets.read(value, prefix);
+    if (asset.bytes.length > maxBytes) throw failure(`${label} vượt ${(maxBytes / 1024 / 1024).toFixed(0)} MB. Giảm kích thước file.`);
+    return { mime: asset.mime, bytes: asset.bytes };
+  }
+  return parseRenderDataURL(value, prefixes, maxBytes, label);
+}
+async function probeSeconds(file) {
+  const out = await runTool(ffprobeBin, ['-v', 'error', '-print_format', 'json', '-show_format', file], 30000);
+  const seconds = Number(JSON.parse(out).format?.duration);
+  if (!Number.isFinite(seconds) || seconds <= 0) throw failure('Không đọc được thời lượng file âm thanh.');
+  return seconds;
+}
+// Dựng MP4 từ ảnh từng cảnh + voice: mỗi ảnh giữ đúng duration ở 1280x720,
+// nối lại rồi mux voice (aac), cắt theo bên ngắn hơn (-shortest).
+// Wan cho cảnh cần nhân vật cử động: chạy lần lượt trên GPU, duyệt động tác
+// bằng mắt sau khi có clip. Cảnh thường dùng ảnh để tiết kiệm thời gian.
+async function generateWanScene(w) {
+  const motion = String(w?.motionPrompt || '').trim();
+  if (!motion) throw failure('Nhập mô tả chuyển động cho cảnh Wan.');
+  if (motion.length > 2000) throw failure('Mô tả chuyển động tối đa 2000 ký tự.');
+  if (w?.image == null) throw failure('Cảnh Wan cần ảnh khởi đầu. Nhập ảnh cảnh trước.');
+  const img = resolveRenderInput(w.image, ['image/png', 'image/jpeg', 'image/webp'], 12 * 1024 * 1024, 'Ảnh khởi đầu', 'data:image');
+  const duration = w?.durationSeconds == null ? 2 : Number(w.durationSeconds);
+  const width = w?.width == null ? 640 : Number(w.width);
+  const height = w?.height == null ? 352 : Number(w.height);
+  if (!(await wanAvailable())) throw failure('Chưa nối được ComfyUI Wan ở 127.0.0.1:8188. Mở ComfyUI (node Wan22ImageToVideoLatent + model wan2.2) rồi thử lại.', 503);
+  const clip = await generateWanClip({ imageBytes: img.bytes, imageExt: img.mime.includes('png') ? 'png' : 'jpg', positive: motion, negative: w?.negative, width, height, durationSeconds: duration });
+  const stored = await assets.put(`data:video/mp4;base64,${clip.bytes.toString('base64')}`);
+  return { url: stored.url, duration: clip.duration, width: clip.width, height: clip.height, fps: clip.fps, frames: clip.frames };
+}
+async function renderVideo(b) {
+  const scenes = b?.scenes;
+  if (!Array.isArray(scenes) || !scenes.length || scenes.length > 50) throw failure('Cần 1–50 cảnh để dựng.');
+  const parsed = scenes.map((s, i) => {
+    const kind = s?.kind || s?.buildKind || 'image';
+    if (!['image', 'html', 'wan'].includes(kind)) throw failure(`Cảnh ${i + 1} sai loại dựng (chọn image, html hoặc wan).`);
+    if (kind === 'html') {
+      let checked;
+      try {
+        checked = validateHtmlScene({ html: s?.html ?? s?.htmlSnippet, duration: s?.duration });
+      } catch (e) {
+        throw Object.assign(new Error(e.message), { status: 400 });
+      }
+      return { kind, duration: checked.duration, html: checked.html, dropped: false };
+    }
+    const duration = Number(s?.duration);
+    if (!Number.isFinite(duration) || duration < 0.5 || duration > 30) throw failure(`Cảnh ${i + 1} cần thời lượng 0,5–30 giây.`);
+    if (kind === 'wan') {
+      const raw = s?.clip ?? null;
+      // Cảnh Wan chưa tạo clip được bỏ qua và đếm vào droppedScenes để dựng lại sau.
+      if (raw == null) return { kind, duration, dropped: true };
+      return { kind, duration, clip: resolveRenderInput(raw, ['video/'], 50 * 1024 * 1024, `Clip Wan cảnh ${i + 1}`, 'data:video'), dropped: false };
+    }
+    const raw = s?.image ?? null;
+    // Cảnh chưa nhập ảnh được bỏ qua và đếm vào droppedScenes để dựng lại sau.
+    if (raw == null) return { kind, duration, dropped: true };
+    return { kind, duration, img: resolveRenderInput(raw, ['image/png', 'image/jpeg', 'image/webp'], 6 * 1024 * 1024, `Ảnh cảnh ${i + 1}`, 'data:image'), dropped: false };
+  });
+  if (b?.voice == null) throw failure('Thiếu voice để ghép.');
+  const voice = resolveRenderInput(b.voice, ['audio/'], 12 * 1024 * 1024, 'Voice', 'data:audio');
+  const rendered = parsed.filter(s => !s.dropped);
+  if (!rendered.length) throw failure('Chưa có nội dung cảnh nào. Nhập ảnh/HTML/clip từng cảnh trước khi dựng.');
+  if (!(await ffmpegAvailable())) throw failure('Studio chưa thấy ffmpeg. Cần tools/ffmpeg/bin/ffmpeg.exe và ffprobe (Windows) hoặc ffmpeg trong PATH.', 501);
+  const name = String(b?.name || 'video').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9-_]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'video';
+  const tmp = path.join(os.tmpdir(), `tich-render-${randomUUID()}`);
+  await mkdir(tmp, { recursive: true });
+  const SEG_VF = 'scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,setsar=1,fps=30';
+  try {
+    const segFiles = [];
+    for (const s of rendered) {
+      const seg = path.join(tmp, `seg${segFiles.length}.mp4`);
+      if (s.kind === 'html') {
+        const made = await renderHtmlSegment(s.html, s.duration, tmp);
+        await rename(made.file, seg);
+      } else if (s.kind === 'wan') {
+        const clipFile = path.join(tmp, `wan${segFiles.length}.mp4`);
+        await writeFile(clipFile, s.clip.bytes);
+        await runTool(ffmpegBin, ['-y', '-stream_loop', '3', '-t', String(s.duration), '-i', clipFile, '-vf', SEG_VF, '-an', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', '30', seg], 300000);
+      } else {
+        const ext = s.img.mime.includes('png') ? 'png' : s.img.mime.includes('webp') ? 'webp' : 'jpg';
+        const imgFile = path.join(tmp, `s${segFiles.length}.${ext}`);
+        await writeFile(imgFile, s.img.bytes);
+        await runTool(ffmpegBin, ['-y', '-loop', '1', '-t', String(s.duration), '-i', imgFile, '-vf', SEG_VF, '-an', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', '30', seg], 300000);
+      }
+      segFiles.push(seg);
+    }
+    const listFile = path.join(tmp, 'list.txt');
+    await writeFile(listFile, segFiles.map(f => `file '${f.replace(/'/g, "'\\''")}'`).join('\n'));
+    const videoOnly = path.join(tmp, 'video.mp4');
+    await runTool(ffmpegBin, ['-y', '-f', 'concat', '-safe', '0', '-i', listFile, '-c', 'copy', videoOnly], 300000);
+    const voiceExt = String(b?.voiceExt || 'mp3').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 8) || 'mp3';
+    const voiceFile = path.join(tmp, `voice.${voiceExt}`);
+    await writeFile(voiceFile, voice.bytes);
+    const outFile = path.join(tmp, 'out.mp4');
+    await runTool(ffmpegBin, ['-y', '-i', videoOnly, '-i', voiceFile, '-c:v', 'copy', '-c:a', 'aac', '-b:a', '128k', '-shortest', '-movflags', '+faststart', outFile], 300000);
+    const probeOut = await runTool(ffprobeBin, ['-v', 'error', '-print_format', 'json', '-show_format', '-show_streams', outFile], 30000);
+    const probe = JSON.parse(probeOut);
+    const duration = Number(probe.format?.duration);
+    const scenesSeconds = parsed.reduce((n, s) => n + s.duration, 0);
+    const voiceSeconds = await probeSeconds(voiceFile);
+    const data = await readFile(outFile);
+    const fileName = `${name}.mp4`;
+    const kinds = { image: 0, html: 0, wan: 0 };
+    for (const s of rendered) kinds[s.kind] += 1;
+    return { fileName, data: data.toString('base64'), sizeBytes: data.length, scenesSeconds, voiceSeconds, scenesRendered: rendered.length, droppedScenes: parsed.length - rendered.length, kinds, probe: { duration } };
+  } finally {
+    await rm(tmp, { recursive: true, force: true });
+  }
+}
 // ---------------------------------------------------------------- MEDIA
 // Ảnh và audio đến từ trình duyệt dưới dạng data URL; giải mã ra file thật trong thư mục tạm.
 const server = http.createServer(async (req, res) => {
@@ -373,12 +589,15 @@ const server = http.createServer(async (req, res) => {
       if (url.pathname === '/api/generate' && req.method === 'POST') return json(res, 200, await generate(await body(req)));
 
       // Năng lực máy: báo trước khi người dùng bấm nút mà không có công cụ.
-      if (url.pathname === '/api/capabilities' && req.method === 'GET') return json(res,200,{youtubeData:Boolean(settings.youtubeKey),ai:Boolean(env.OPENAI_API_KEY)});
+      if (url.pathname === '/api/capabilities' && req.method === 'GET') return json(res,200,{youtubeData:Boolean(settings.youtubeKey),ai:Boolean(env.OPENAI_API_KEY),ffmpeg:await ffmpegAvailable(),ffmpegVersion:await ffmpegVersion(),htmlVideo:Boolean(htmlExecutable()),wan:await wanAvailable()});
+      if (url.pathname === '/api/render' && req.method === 'POST') return json(res, 200, await renderVideo(await body(req)));
+      if (url.pathname === '/api/wan' && req.method === 'POST') return json(res, 200, await generateWanScene(await body(req)));
+      if (url.pathname === '/api/transcribe' && req.method === 'POST') { await body(req); throw failure('Studio chưa có nhận diện giọng local. Nhập file SRT từ app làm voice để lấy mốc từng câu.', 501); }
       return json(res, 404, { error: 'Không có API này.' });
     }
     if (req.method !== 'GET') return json(res, 405, { error: 'Method không được phép.' });
     // rx.mjs là nghiệp vụ dùng chung cho cả server lẫn trình duyệt.
-    const aliases = { '/sync.mjs':path.join(root,'studio','sync.mjs'), '/production.mjs': path.join(root, 'studio', 'production.mjs'), '/rx.mjs': path.join(root, 'studio', 'rx.mjs') };
+    const aliases = { '/sync.mjs':path.join(root,'studio','sync.mjs'), '/production.mjs': path.join(root, 'studio', 'production.mjs'), '/rx.mjs': path.join(root, 'studio', 'rx.mjs'), '/video-build.mjs': path.join(root, 'studio', 'video-build.mjs') };
     const requested = aliases[url.pathname] || path.resolve(publicRoot, '.' + (url.pathname === '/' ? '/index.html' : decodeURIComponent(url.pathname)));
     const base = aliases[url.pathname] ? path.dirname(requested) : publicRoot;
     const file = requested;

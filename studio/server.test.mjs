@@ -175,7 +175,12 @@ test('AI HTTP 503 switches model through gateway and retains primary setting',as
 
 test('E2 removed media routes return 404',async()=>{
  const s=await boot();try{
- for(const method of ['GET','POST'])for(const route of ['tts','image','image/generate','image/batch','transcribe','render','render/status','probe','youtube/connect','youtube/callback','youtube/publish'])assert.equal((await s.req('/api/'+route,method,method==='POST'?{}:undefined)).status,404,route+' '+method);
+ for(const method of ['GET','POST'])for(const route of ['tts','image','image/generate','image/batch','render/status','probe','youtube/connect','youtube/callback','youtube/publish'])assert.equal((await s.req('/api/'+route,method,method==='POST'?{}:undefined)).status,404,route+' '+method);
+ // render/transcribe đã triển khai theo flow dựng video: GET không hỗ trợ,
+ // POST đi qua validation thay vì 404.
+ for(const route of ['render','transcribe'])assert.equal((await s.req('/api/'+route,'GET')).status,404,route+' GET');
+ assert.equal((await s.req('/api/render','POST',{})).status,400,'render POST thiếu cảnh');
+ assert.equal((await s.req('/api/transcribe','POST',{})).status,501,'transcribe POST chưa có engine local');
  assert.equal((await s.req('/api/build/old')).status,404);
  assert.equal((await s.req('/api/state')).status,200);
  }finally{await s.stop();}
