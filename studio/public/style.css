@@ -15,3 +15,5 @@
 .scene-text{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65}
 .scene-entry{margin:18px 0}.scene-entry p{margin:8px 0}.scene-card .tag{margin:0 5px 6px 0}
 .scene-prompt-preview{padding:16px;border:1px solid var(--line);border-radius:10px;font-family:inherit;background:var(--bg)}
+.scene-image-preview{max-width:100%;border-radius:10px;border:1px solid var(--line);margin:8px 0}
+.build-panel .actions{flex-wrap:wrap}

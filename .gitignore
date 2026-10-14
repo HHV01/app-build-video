@@ -3,6 +3,7 @@ tmp/shorts-deps/
 tmp/shorts-build/
 tmp/chrome_profiles/
 __pycache__/
+node_modules/
 .env
 .env.local
 .studio-data/

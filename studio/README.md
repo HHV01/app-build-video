@@ -254,3 +254,18 @@ Nghiệm thu cuối: 290/290 test xanh. SHA256 hai bản chép local khớp file
 
 ### Một prompt ảnh để copy
 Phần chính mỗi thẻ chỉ hiện Prompt ảnh hoàn chỉnh (phong cách + nhân vật + mô tả cảnh) và nút Copy prompt hoàn chỉnh. Prompt riêng/bản Anh để sửa và Copy cảnh đầy đủ chuyển vào Chỉnh nâng cao. Không đổi nội dung prompt, cách ghép hoặc state; không gọi AI. Test hành vi render đỏ trước rồi xanh.
+
+### Dựng video từ voice + ảnh (flow chính)
+Kịch bản đã duyệt giữ trong dự án; voice và ảnh làm ở app ngoài rồi nhập lại.
+Bước Cảnh và prompt gom thành 4 chặng: Kịch bản + voice → Duyệt cảnh → Tạo/nhập hình → Xem trước + xuất.
+Nhập SRT từ app voice để lấy mốc từng câu (0 token); không có SRT mới cần xử lý audio local.
+Ảnh nhập từng cảnh (PNG/JPEG/WebP ≤10 MB, lưu qua /api/assets); cảnh thiếu ảnh được bỏ qua khi dựng và đếm droppedScenes.
+Xuất gói SRT/CSV/JSON bằng code; dựng MP4 bằng FFmpeg local (h264/aac 1280x720, cắt theo bên ngắn).
+POST /api/render nhận ảnh/voice dạng data URL hoặc /api/assets; GET /api/capabilities báo ffmpeg/ffmpegVersion.
+POST /api/transcribe trả 501 cho tới khi có engine local — nhập SRT thay thế.
+Đổi nhạc/phụ đề chỉ ghép lại; đổi ảnh/overlay/thời lượng mới dựng lại cảnh đó (sceneCacheKey).
+Cảnh chữ/số liệu dùng HTML: nhập đoạn HTML (chỉ CSS, không script, làm sạch + chặn mạng), Chromium local ghi hình offline 3–20 giây rồi ép chuẩn 1280x720/30fps.
+Cảnh cần nhân vật cử động dùng Wan local qua ComfyUI (node Wan22ImageToVideoLatent + model wan2.2, ~2 phút/clip 2s, chạy lần lượt, duyệt động tác bằng mắt).
+POST /api/wan nhận ảnh + mô tả chuyển động, trả clip MP4 lưu qua /api/assets; thiếu ComfyUI trả 503.
+Mỗi cảnh chọn 1 loại dựng (image/html/wan); /api/render dựng từng đoạn rồi nối, cảnh thiếu nội dung được bỏ qua (đếm droppedScenes), trả kèm kinds.
+GET /api/capabilities báo thêm htmlVideo/wan.
