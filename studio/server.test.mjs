@@ -451,3 +451,23 @@ test('scene review HTTP reads only scene text and returns grounded issues',async
 test('scene review retries format failure once without repeating successful batches',async()=>{const ctx={items:[{scene:1,narration:'Tích nói.',visual:'Tích đứng.',prompt:'Tích đứng.',check_vi:'Tích'}]};const h=await jsonFailureHarness((sent,n)=>({body:{choices:[{message:{content:JSON.stringify({checks:[{scene:1,status:n===1?'unknown':'ok',reason:'Khớp.'}]})},finish_reason:'stop'}]}}));try{const r=await h.server.req('/api/generate','POST',{action:'sceneReview',context:ctx});assert.equal(r.status,200,r.body.error);assert.equal(h.seen.length,2);assert.equal(r.body.output.checks[0].status,'ok');}finally{await h.stop();}});
 
 test('scene review normalizes array output without silently dropping checks',async()=>{const h=await jsonFailureHarness(()=>({body:{choices:[{message:{content:JSON.stringify([{scene:'1',status:'OK',reason:'Khớp.'}])},finish_reason:'stop'}]}}));try{const r=await h.server.req('/api/generate','POST',{action:'sceneReview',context:{items:[{scene:1,narration:'Tích nói.',visual:'Tích đứng.',prompt:'Tích đứng.',check_vi:'Tích'}]}});assert.equal(r.status,200,r.body.error);assert.equal(r.body.output.checks[0].status,'ok');assert.equal(h.seen.length,1);assert.equal(h.seen[0].temperature,0.1);assert.equal(h.seen[0].max_tokens,1400);}finally{await h.stop();}});
+
+
+test('editorial writing prompts develop the story and scope German notes to German topics',async()=>{
+ const gw=await promptGateway(),envFile=path.join(tempRoot,`env-editorial-${Date.now()}.env`);
+ await writeFile(envFile,`OPENAI_BASE_URL=${gw.url}\nOPENAI_API_KEY=test-key\n`);
+ const s=await boot({STUDIO_ENV_FILE:envFile});
+ try{
+  for(const action of ['outline','script']){
+   for(const topic of ['Cash flow for a small shop','Lịch sử nước Đức']){
+    const r=await s.req('/api/generate','POST',{action,context:{topic,targetWords:200,outlineFocus:{title:topic},scriptPart:{index:2,count:4},storyRoute:{beat:'complication',next:'Costs'}}});
+    assert.equal(r.status,200);
+    const prompt=gw.seen.at(-1).messages.map(m=>m.content).join(' ');
+    if(action==='script'){assert.match(prompt,/storyRoute/);assert.match(prompt,/Không lặp công thức/);assert.match(prompt,/không.*bịa|Không bịa/);}
+    else assert.match(prompt,/đường dây kể chuyện/);
+    if(topic.startsWith('Cash'))assert.doesNotMatch(prompt,/Bismarck|Điều 48|Weimar/);
+    else assert.match(prompt,/Weimar/);
+   }
+  }
+ }finally{await s.stop();await gw.stop();await rm(envFile,{force:true});}
+});

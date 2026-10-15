@@ -280,3 +280,9 @@ GET /api/capabilities báo thêm htmlVideo/wan.
 - Job đang chạy bị gián đoạn khi server khởi động lại phải dựng lại; cảnh đã cache được tái sử dụng. Job hoàn tất vẫn tải được sau khởi động lại.
 - Python: STUDIO_PYTHON chỉ đường dẫn Python có faster-whisper, av, numpy; ưu tiên .venv trong repo, sau đó môi trường cũ nếu có, cuối cùng Python trong PATH. STUDIO_WHISPER_CACHE cấu hình thư mục model (mặc định .studio-data/whisper-models). GPU cần torch/CUDA phù hợp; thiếu torch/CUDA sẽ thử CPU. Cài dependency: python -m pip install faster-whisper av numpy.
 - File audio tạm được dọn khi job voice hoàn tất hoặc lỗi; kết quả nhận diện được giữ để dùng lại. Dựng MP4 và căn voice local không gọi AI API.
+
+### Chất lượng kể chuyện khi tạo kịch bản mới
+
+Dàn ý mới đi theo câu hỏi trung tâm, tình huống, lựa chọn/cơ chế và hậu quả có chứng cứ. Mỗi phần viết nhận vị trí trong mạch kể và ý kế tiếp để tránh khởi động lại câu chuyện. Kiểm tra bằng code phát hiện phần trùng đáng kể với các trích đoạn gần nhất; dùng chung tối đa một lượt sửa với kiểm tra độ dài. Nếu vẫn trùng, giữ bản nháp và cảnh báo để duyệt. Đây là kiểm tra trùng văn bản, không thay thế đánh giá nội dung hoặc fact-check.
+
+Hướng dẫn riêng về Đức chỉ gửi cho chủ đề liên quan. Không đổi model, tự gọi API, sửa kịch bản đã lưu hoặc viết lại các phần đã hoàn tất. Tạo dàn ý/viết kịch bản bằng các nút hiện có để áp dụng; nguồn nghiên cứu và giọng kênh vẫn quyết định chất lượng đầu ra.

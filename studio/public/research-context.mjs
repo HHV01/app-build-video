@@ -37,6 +37,11 @@ export function scriptPartContext(c,p,part,index,count,parts=[]){
  ctx.researchSensory=String(ctx.researchSensory||'').slice(0,250);
  ctx.previousSummaries=ctx.previousSummaries.map(x=>x.slice(0,160));if(ctx.earlierSummary)ctx.earlierSummary=ctx.earlierSummary.slice(0,180);
  ctx.previousEnding=ctx.previousEnding.slice(-350);
+ const segment=Number(part.segment)||index+1,total=Number(part.segmentParts)||1,step=Number(part.segmentPart)||1;
+ const title=row=>String(row?.title||'').slice(0,70);
+ ctx.storyRoute={beat:total===1?'complete':step===1?'setup':step===total?'consequence':'complication',
+  previous:title(p.outline?.[segment-2]),next:title(p.outline?.[segment]),position:`${index+1}/${count}`};
+
  delete ctx.scriptPart.focus;
  const seen=new Set();for(const key of ['voice','hookPattern','structure']){if(ctx[key]&&seen.has(ctx[key]))delete ctx[key];else if(ctx[key])seen.add(ctx[key]);}
  return ctx;
