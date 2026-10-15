@@ -30,7 +30,7 @@ export function collectBuildScenes(project) {
 export function renderBuildPanel(p, rows, { esc, btn, caps = {}, voice = null, render = null } = {}) {
   const c = collectBuildScenes(p);
   const ffmpeg = Boolean(caps.ffmpeg);
-  const voiceName = voice?.name || (typeof p.voiceData === 'string' && p.voiceData ? 'voice đã lưu trong dự án' : '');
+  const voiceName = voice?.name || p.voiceFile?.name || (typeof p.voiceData === 'string' && p.voiceData ? 'voice đã lưu trong dự án' : '');
   const exceeded = c.items.filter((x) => x.duration > (Number(p.clipSeconds) || 8) + 0.5 + 1e-9).map((x) => x.index);
   const drift = p.voiceSeconds != null ? c.total - Number(p.voiceSeconds) : 0;
   const skipped = [...c.missingImages.map((i) => 'ảnh ' + i), ...c.missingHtml.map((i) => 'HTML ' + i), ...c.missingClips.map((i) => 'clip ' + i)];
@@ -42,7 +42,7 @@ export function renderBuildPanel(p, rows, { esc, btn, caps = {}, voice = null, r
     + (ffmpeg ? `<p class="muted tiny">FFmpeg sẵn sàng${caps.ffmpegVersion ? ' · ' + esc(caps.ffmpegVersion) : ''}.</p>` : '<div class="notice error">Studio chưa thấy ffmpeg. Cần tools/ffmpeg/bin/ffmpeg.exe (Windows) hoặc ffmpeg trong PATH.</div>')
     + (caps.htmlVideo ? '' : '<div class="notice warning">Chưa thấy Chromium/Chrome nên cảnh HTML chưa dựng được. Cài Chrome rồi tải lại.</div>')
     + (caps.wan ? '' : '<div class="notice warning">Chưa nối ComfyUI Wan (127.0.0.1:8188). Cảnh Wan cần tạo clip trước; cảnh khác vẫn dựng bình thường.</div>')
-    + `<div class="field"><label for="build-voice-file">Voice để ghép · MP3/WAV/M4A ≤12 MB</label><input id="build-voice-file" type="file" accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/mp4"><p class="muted tiny">${voiceName ? 'Đã chọn: ' + esc(voiceName) + (voice?.size ? ' · ' + Math.round(voice.size / 1024) + ' KB' : '') : 'Chưa chọn voice. File chỉ dùng lúc dựng, không lưu vào dự án.'}</p></div>`
+    + `<div class="field"><label for="build-voice-file">Voice để ghép · MP3/WAV/M4A ≤64 MB</label><input id="build-voice-file" type="file" accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/mp4"><p class="muted tiny">${voiceName ? 'Đã chọn: ' + esc(voiceName) + (voice?.size ? ' · ' + Math.round(voice.size / 1024) + ' KB' : '') : 'Chưa chọn voice. Voice được lưu trong dự án để dùng lại.'}</p></div>`
     + (exceeded.length ? `<div class="notice warning">Cảnh vượt nhịp: ${exceeded.join(', ')}.</div>` : '')
     + (p.voiceSeconds != null && Math.abs(drift) > 0.5 ? `<div class="notice warning">Tổng cảnh ${c.total.toFixed(1)}s lệch voice ${Number(p.voiceSeconds).toFixed(1)}s.</div>` : '')
     + (p.buildError ? `<div class="notice error">${esc(p.buildError)}</div>` : '')

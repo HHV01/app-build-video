@@ -11,6 +11,7 @@ import {tagMenu,validateSceneTags} from './public/scene-workflow.mjs';
 import {compactSceneContext,validateAnimations} from './production.mjs';
 import {rosterExtrasContext,validateRosterExtras} from './public/roster.mjs';
 import { withModelFallback, normalizeFallbackModels, isJSONGenerationFailure,getAIStatus } from './model-fallback.mjs';
+import {createVoiceJobs} from './voice-jobs.mjs';
 import http from 'node:http';
 import { spawn } from 'node:child_process';
 import os from 'node:os';
@@ -68,6 +69,7 @@ function atomicSave(name, value) {
 normalizeScriptProjects(state);
 const previousShelfState=JSON.stringify(state);normalizeShelfChecks(state);if(JSON.stringify(state)!==previousShelfState){state.revision++;await atomicSave('state.json',state);}
 const assets = createAssetStore(path.join(dataRoot,'assets'));
+const voiceJobs=createVoiceJobs({root,dataRoot,assets});
 // Migrate existing embedded media once, retaining the original state for recovery.
 const migratedState=structuredClone(state);
 const migratedRefs=await assets.externalize(migratedState);
@@ -90,7 +92,7 @@ function redact(text) {
 }
 async function body(req) {
   let size = 0, parts = [];
-  for await (const part of req) { size += part.length; if (size > 14 * 1024 * 1024) throw failure('Dữ liệu vượt 14 MB. Giảm số ảnh hoặc kích thước ảnh.', 413); parts.push(part); }
+  for await (const part of req) { size += part.length; if (size > 90 * 1024 * 1024) throw failure('Dữ liệu vượt 90 MB. Giảm số ảnh hoặc kích thước ảnh.', 413); parts.push(part); }
   try { return JSON.parse(Buffer.concat(parts).toString() || '{}'); } catch { throw failure('JSON không hợp lệ.'); }
 }
 async function upstream(url, options = {}, timeout = 60000) {
@@ -448,7 +450,7 @@ async function renderVideo(b) {
     return { kind, duration, img: resolveRenderInput(raw, ['image/png', 'image/jpeg', 'image/webp'], 6 * 1024 * 1024, `Ảnh cảnh ${i + 1}`, 'data:image'), dropped: false };
   });
   if (b?.voice == null) throw failure('Thiếu voice để ghép.');
-  const voice = resolveRenderInput(b.voice, ['audio/'], 12 * 1024 * 1024, 'Voice', 'data:audio');
+  const voice = resolveRenderInput(b.voice, ['audio/'], 64 * 1024 * 1024, 'Voice', 'data:audio');
   const rendered = parsed.filter(s => !s.dropped);
   if (!rendered.length) throw failure('Chưa có nội dung cảnh nào. Nhập ảnh/HTML/clip từng cảnh trước khi dựng.');
   if (!(await ffmpegAvailable())) throw failure('Studio chưa thấy ffmpeg. Cần tools/ffmpeg/bin/ffmpeg.exe và ffprobe (Windows) hoặc ffmpeg trong PATH.', 501);
@@ -514,6 +516,8 @@ const server = http.createServer(async (req, res) => {
         if (!STAGES.includes(stage)) throw failure('Không có bước khảo sát này.', 404);
         return json(res, 200, await nicheAPI.act(stage, await body(req)));
       }
+      if(url.pathname==='/api/voice-scenes'&&req.method==='POST'){const b=await body(req);const p=state.projects.find(p=>p.id===b.projectId);if(!p)throw failure('Không tìm thấy dự án.');return json(res,202,voiceJobs.start(p));}
+      if(url.pathname.startsWith('/api/voice-scenes/')&&req.method==='GET')return json(res,200,voiceJobs.get(url.pathname.split('/').pop()));
       if (url.pathname === '/api/assets' && req.method === 'POST') return json(res,200,await assets.put((await body(req)).data));
       if (url.pathname.startsWith('/api/assets/') && req.method === 'GET') {const asset=assets.read(url.pathname);res.writeHead(200,{'Content-Type':asset.mime,'Content-Length':asset.bytes.length,'X-Content-Type-Options':'nosniff','Cache-Control':'private, max-age=31536000, immutable'});return res.end(asset.bytes);}
       if (url.pathname === '/api/state' && req.method === 'GET') return json(res, 200, state);

@@ -26,6 +26,7 @@ export function validateSceneTags(items,windows){
 export function sceneNarration(project){return typeof project.script==='string'&&project.script.trim()?project.script:project.narration||'';}
 export function scenePlan(project){
  const narration=sceneNarration(project),seconds=Number(project.voiceSeconds)||Math.max(1,words(narration).length/150*60),ceiling=Number(project.clipSeconds)||8;
+ if(project.sceneTimingMode==='voice-words'){if(project.voiceWordBasis?.narration!==project.narration||project.voiceWordBasis?.voice!==project.voiceData||project.voiceWordBasis?.ceiling!==ceiling)throw Error('Kịch bản, voice hoặc nhịp cảnh đã đổi; hãy chia lại cảnh.');return {count:project.voiceWindows.length,windows:project.voiceWindows.map((s,i)=>({index:i+1,narration:s.narration,duration:s.duration,start:s.start,end:s.end,timing_source:'words'})),narration,seconds,ceiling,voiceFitted:true};}
  if(project.sceneTimingMode==='voice-aligned'){if(voiceAlignmentStale(project))throw Error('Lời kể hoặc voice đã đổi. Cần căn lại bằng file voice.');const inspected=structuredClone(project);if(!validateSceneCoverage(inspected).complete)throw Error('Cảnh không còn phủ đủ lời kể; cần căn lại.');return {count:project.scenes.length,windows:project.scenes.map((s,i)=>({index:i+1,narration:s.narration,duration:s.duration,start:s.start,end:s.end,timing_source:s.timing_source,timingStartEstimated:s.timingStartEstimated,timingEndEstimated:s.timingEndEstimated})),narration,seconds,ceiling,voiceFitted:true};}
  if(project.sceneTimingMode==='voice-fit'){if(project.fittedNarration!==words(narration).join(' ')||project.fittedVoiceSeconds!==seconds)throw Error('Lời kể hoặc thời lượng đã đổi sau khi căn voice. Cần căn lại cảnh.');const inspected=structuredClone(project);if(!validateSceneCoverage(inspected).complete)throw Error('Cảnh đã căn voice không còn phủ đủ lời kể.');return {count:project.scenes.length,windows:project.scenes.map((s,i)=>({index:i+1,narration:s.narration,duration:s.duration})),narration,seconds,ceiling,voiceFitted:true};}
  return {...sceneWindows(narration,seconds,ceiling,0,4),narration,seconds,ceiling};
@@ -34,7 +35,7 @@ export function validateSceneCoverage(project){
  const original=words(sceneNarration(project)),scenes=project.scenes||[],seen=new Set();let covered=0,position=0,ordered=true;
  for(const [i,scene] of scenes.entries()){
   const text=String(scene.narration||'').trim(),tokens=words(text),index=scene.index??scene.scene??scene.id??i+1;
-  scene.emptyNarration=!text;scene.duplicateNarration=Boolean(text&&seen.has(text));seen.add(text);
+  scene.emptyNarration=!text;scene.duplicateNarration=Boolean(text&&seen.has(text)&&(project.sceneTimingMode!=='voice-words'||tokens.some((t,j)=>t!==original[position+j])));seen.add(text);
   scene.promptLong=words(scene.prompt).length>80;scene.indexWarning=index!==i+1;
   if(tokens.some((t,j)=>t!==original[position+j]))ordered=false;
   position+=tokens.length;covered+=tokens.length;

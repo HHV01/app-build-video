@@ -24,7 +24,7 @@ export function createAssetStore(root) {
     const match=String(data).match(/^data:([^;,]+);base64,([A-Za-z0-9+/]+={0,2})$/);
     if(!match||!extensions[match[1]])throw fail('Chỉ lưu ảnh PNG/JPEG/WebP, âm thanh hoặc clip MP4 hỗ trợ.');
     const bytes=Buffer.from(match[2],'base64');
-    if(!bytes.length||bytes.length>10*1024*1024)throw fail('File rỗng hoặc vượt 10 MB.',413);
+    if(!bytes.length||bytes.length>(match[1].startsWith('audio/')?64:10)*1024*1024)throw fail('File rỗng hoặc vượt giới hạn (ảnh/clip 10 MB, voice 64 MB).',413);
     if(bytes.toString('base64').replace(/=+$/,'')!==match[2].replace(/=+$/,''))throw fail('Base64 không hợp lệ.');
     const ext=extensions[match[1]],name=`${createHash('sha256').update(bytes).digest('hex')}.${ext}`;
     await mkdir(root,{recursive:true});

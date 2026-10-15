@@ -21,7 +21,7 @@ export function scenePromptRows(channel,project) {
  const lookup=(rows,name)=>rows.find(c=>[c.name,c.id].some(v=>v&&String(v).normalize('NFC').toLowerCase()===String(name).normalize('NFC').toLowerCase()));
  let elapsed=0;let wordCursor=0;const sfxValid=project.scriptSfxBasis===String(sceneNarration(project)).trim().split(/\s+/).filter(Boolean).join(' ');
  return (project.scenes||[]).map((scene,index)=>{
-  const aligned=project.sceneTimingMode==='voice-aligned',startSeconds=aligned&&Number.isFinite(scene.start)?scene.start:elapsed,duration=Number(scene.duration)||Number(project.clipSeconds)||8;elapsed=aligned&&Number.isFinite(scene.end)?scene.end:startSeconds+duration;
+  const aligned=['voice-aligned','voice-words'].includes(project.sceneTimingMode),startSeconds=aligned&&Number.isFinite(scene.start)?scene.start:elapsed,duration=Number(scene.duration)||Number(project.clipSeconds)||8;elapsed=aligned&&Number.isFinite(scene.end)?scene.end:startSeconds+duration;
   const end=wordCursor+String(scene.narration||'').trim().split(/\s+/).filter(Boolean).length;const fixedSfx=sfxValid?(project.scriptSfx||[]).filter(item=>item.word>=wordCursor&&item.word<end).map(item=>item.text):[];wordCursor=end;const sfx=[...new Set([scene.sfx||'',...fixedSfx].filter(Boolean))].join(' | ');
   const hasRoster=Boolean(project.roster||channel.characters||project.mainCharacters);
   const supplied=Array.isArray(scene.characters)?scene.characters:[];
