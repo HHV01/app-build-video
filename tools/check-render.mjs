@@ -27,11 +27,11 @@ function run(tool, args, capture = 'stderr') {
 }
 
 const colors = ['0x1d4f3a', '0x7a2f2f', '0x24405e'];
-const durations = [4, 6, 8];
+const durations = [2, 2, 2];
 const scenes = [];
 for (let i = 0; i < colors.length; i += 1) {
   const file = path.join(tmp, `s${i}.png`);
-  await run(ffmpeg, ['-y', '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', `color=c=${colors[i]}:s=1280x720`, '-frames:v', '1', file]);
+  await run(ffmpeg, ['-y', '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', `color=c=${colors[i]}:s=1920x1080`, '-frames:v', '1', file]);
   scenes.push({ duration: durations[i], image: `data:image/png;base64,${fs.readFileSync(file).toString('base64')}` });
 }
 // Giọng giả: hai hậu tố A3 để có thật tiếng người nghe được trong file.
@@ -48,11 +48,22 @@ const res = await fetch(`${base}/api/render`, {
   headers: { 'Content-Type': 'application/json', 'X-Studio-Request': '1' },
   body: JSON.stringify({ scenes, voice: `data:audio/mpeg;base64,${fs.readFileSync(voice).toString('base64')}`, voiceExt: 'mp3', name: 'kiem-tra-dung' }),
 });
-const result = await res.json();
+let result = await res.json();
 if (!res.ok) { console.error('LỖI RENDER:', result.message || JSON.stringify(result).slice(0, 500)); process.exit(1); }
 
+if(res.status===202){
+ const id=result.id;let done=false;
+ for(let n=0;n<1200;n++){
+  const job=await (await fetch(`${base}/api/renders/${id}`)).json();
+  if(job.status==='error')throw Error(job.error);
+  if(job.status==='done'){result=job.result;done=true;break;}
+  await new Promise(r=>setTimeout(r,500));
+ }
+ if(!done)throw Error('Render timeout');
+}
+
 const out = path.join(tmp, result.fileName);
-fs.writeFileSync(out, Buffer.from(result.data, 'base64'));
+const download=await fetch(base+result.url);if(!download.ok)throw Error('Download failed');fs.writeFileSync(out,Buffer.from(await download.arrayBuffer()));
 console.log(`nhận về: ${result.fileName} · ${(result.sizeBytes / 1024).toFixed(0)} KB · ${result.scenesRendered} cảnh · bỏ ${result.droppedScenes}`);
 console.log(`ảnh ${result.scenesSeconds}s · voice ${result.voiceSeconds}s → cắt còn ${result.probe.duration}s`);
 
@@ -67,7 +78,7 @@ const checks = [
   ['có stream audio', Boolean(a)],
   ['codec video h264', v?.codec_name === 'h264'],
   ['codec audio aac', a?.codec_name === 'aac'],
-  ['khung hình 1280x720', v?.width === 1280 && v?.height === 720],
+  ['khung hình 1920x1080', v?.width === 1920 && v?.height === 1080],
   ['độ dài khớp chuẩn', Math.abs(dur - want) < 0.6],
   ['không vượt tổng ảnh', dur <= result.scenesSeconds + 0.3],
 ];

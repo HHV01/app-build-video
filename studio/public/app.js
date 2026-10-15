@@ -439,8 +439,19 @@ case 'align-srt-scenes':await run('Đang gắn mốc SRT…',async()=>{const mod
 case 'export-build-srt':await downloadBuildFile(c,p,'srt');break;
 case 'export-build-csv':await downloadBuildFile(c,p,'csv');break;
 case 'export-build-json':await downloadBuildFile(c,p,'json');break;
-case 'render-video':await run('Đang dựng MP4…',async()=>{const {items}=collectBuildScenes(p);const usable=items.filter(x=>x.duration>0);if(!usable.length)throw Error('Cần ít nhất một cảnh có thời lượng.');const voice=buildVoice?.dataURL||p.voiceData;if(!voice)throw Error('Chọn file voice ở bước 4 trước khi dựng.');const res=await api('/api/render','POST',{scenes:usable.map(({duration,kind,image,html,clip})=>({duration,kind,image,html,clip})),voice,voiceExt:p.voiceFile?.ext||'mp3',name:(p.topic||'video').slice(0,40)});rememberRender({name:res.fileName,data:res.data});p.buildResult={fileName:res.fileName,sizeKB:Math.round(res.sizeBytes/1024),duration:Number(res.probe.duration).toFixed(1),scenes:res.scenesRendered,dropped:res.droppedScenes};delete p.buildError;activity('Dựng MP4 '+res.fileName);});break;
-case 'download-rendered-mp4':{const r=lastRender();if(!r)return toast('Chưa có bản dựng trong phiên này.',true);downloadBinary(r.name,r.data);break;}
+case 'render-video':await run('Đang dựng MP4 1080p…',async()=>{
+  if(!p.renderJobId){const {items,readyCount,count}=collectBuildScenes(p);if(!count||readyCount!==count)throw Error('Cần đủ nội dung và thời lượng mọi cảnh trước khi dựng.');
+    const voice=buildVoice?.dataURL||p.voiceData;if(!voice)throw Error('Chọn voice trước khi dựng.');
+    const job=await api('/api/render','POST',{scenes:items.map(({duration,kind,image,html,clip})=>({duration,kind,image,html,clip})),voice,voiceExt:p.voiceFile?.ext||'mp3',name:(p.topic||'video').slice(0,40)});
+    p.renderJobId=job.id;await save();}
+  let job;
+  do{job=await api('/api/renders/'+p.renderJobId);const status=document.getElementById('render-progress');if(status)status.textContent=job.status==='queued'?'Đang chờ dựng…':`Đã xử lý ${job.progress?.completed||0}/${job.progress?.total||0} cảnh · dùng cache ${job.progress?.cacheHits||0}`;const label=document.getElementById('busy-label');if(label&&status)label.textContent=status.textContent;if(job.status==='error'){delete p.renderJobId;await save();throw Error(job.error);}
+    if(job.status!=='done')await new Promise(r=>setTimeout(r,1500));
+  }while(job.status!=='done');
+  const res=job.result;p.buildResult={fileName:res.fileName,sizeKB:Math.round(res.sizeBytes/1024),duration:Number(res.probe.duration).toFixed(1),scenes:res.scenesRendered,dropped:0,url:res.url,cacheHits:res.cacheHits};
+  delete p.renderJobId;delete p.buildError;activity('Dựng MP4 1080p '+res.fileName);
+});break;
+case 'download-rendered-mp4':{const url=p.buildResult?.url;if(url){const a=document.createElement('a');a.href=url;a.download=p.buildResult.fileName;a.click();break;}const r=lastRender();if(!r)return toast('Bản dựng cũ chưa lưu trên ổ đĩa. Hãy dựng lại.',true);downloadBinary(r.name,r.data);break;}
 case 'remove-scene-image':{const scene=p.scenes?.[Number(el.dataset.index)];if(!scene)break;delete scene.image;delete scene.imageName;p.done=false;p.approved=(p.approved||[]).filter(n=>n!==5);await save();render();break;}
 case 'generate-wan-clip':{const idx=Number(el.dataset.index),scene=p.scenes?.[idx];if(!scene)break;if(!scene.image){toast('Nhập ảnh cảnh trước để làm khung hình đầu cho Wan.',true);break;}if(!String(scene.motionPrompt||'').trim()){toast('Nhập mô tả chuyển động trước.',true);break;}await run('Đang tạo clip Wan (vài phút, chạy lần lượt)…',async()=>{const res=await api('/api/wan','POST',{image:scene.image,motionPrompt:scene.motionPrompt,durationSeconds:Math.min(8,Math.max(1,Math.round(Number(scene.duration)||2)))});scene.clip=res.url;scene.clipDuration=Number(res.duration.toFixed(2));p.done=false;p.approved=(p.approved||[]).filter(n=>n!==5);activity('Tạo clip Wan cảnh '+(scene.index??idx+1));toast('Clip Wan xong ('+res.duration.toFixed(1)+'s). Duyệt động tác rồi dựng — clip ngắn hơn cảnh sẽ lặp cho đủ.');});break;}
 case 'review-all-scenes':await run('Đang kiểm tra cảnh…',()=>reviewAllScenes(c,p,{generate,save,onProgress:text=>{document.querySelector('#busy-label').textContent=text;}}));break;

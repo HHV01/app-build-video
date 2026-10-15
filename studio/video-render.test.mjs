@@ -32,7 +32,20 @@ async function boot() {
       headers: { 'Content-Type': 'application/json', 'X-Studio-Request': '1' },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
-    return { status: r.status, body: await r.json() };
+    const data=await r.json();
+    if(route==='/api/render' && r.status===202){
+      for(let i=0;i<600;i++){
+        const job=await (await fetch(base+'/api/renders/'+data.id)).json();
+        if(job.status==='error')return {status:400,body:{error:job.error}};
+        if(job.status==='done'){
+          const download=await fetch(base+job.result.url);
+          assert.equal(download.status,200);
+          return {status:200,body:{...job.result,data:Buffer.from(await download.arrayBuffer()).toString('base64')}};
+        }
+        await new Promise(r=>setTimeout(r,100));
+      }throw Error('Render job timed out');
+    }
+    return {status:r.status,body:data};
   };
   return { base, req, async stop() { if (child.exitCode === null) { child.kill(); await once(child, 'exit'); } await rm(dir, { recursive: true, force: true }); } };
 }
@@ -72,15 +85,16 @@ test('dựng video: capabilities báo ffmpeg, render ảnh+voice ra MP4 h264/aac
         scenes.push({ duration: durations[i], image: `data:image/png;base64,${(await readFile(file)).toString('base64')}` });
       }
       const voiceFile = path.join(dir, 'voice.mp3');
-      await runTool(ffmpeg, ['-y', '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=220:duration=4', '-c:a', 'libmp3lame', '-q:a', '5', voiceFile]);
+      await runTool(ffmpeg, ['-y', '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=220:duration=5', '-c:a', 'libmp3lame', '-q:a', '5', voiceFile]);
       const res = await s.req('/api/render', 'POST', { scenes, voice: `data:audio/mpeg;base64,${(await readFile(voiceFile)).toString('base64')}`, voiceExt: 'mp3', name: 'kiem-tra' });
       assert.equal(res.status, 200, JSON.stringify(res.body).slice(0, 300));
       assert.match(res.body.fileName, /\.mp4$/);
       assert.ok(res.body.sizeBytes > 10000);
       assert.equal(res.body.scenesRendered, 2);
       assert.equal(res.body.droppedScenes, 0);
-      // Tổng ảnh 5s, voice 4s → cắt theo bên ngắn (4s).
-      assert.ok(Math.abs(res.body.probe.duration - 4) < 0.6, `probe ${res.body.probe.duration}`);
+      assert.deepEqual(res.body.size, { width: 1920, height: 1080 });
+      // Tổng ảnh và voice đều 5s; không cắt voice để che lỗi lệch cảnh.
+      assert.ok(Math.abs(res.body.probe.duration - 5) < 0.6, `probe ${res.body.probe.duration}`);
       const outFile = path.join(dir, 'out.mp4');
       await import('node:fs/promises').then((fs) => fs.writeFile(outFile, Buffer.from(res.body.data, 'base64')));
       const probeOut = await new Promise((resolve, reject) => {
@@ -95,17 +109,29 @@ test('dựng video: capabilities báo ffmpeg, render ảnh+voice ra MP4 h264/aac
       const a = info.streams.find((x) => x.codec_type === 'audio');
       assert.equal(v.codec_name, 'h264');
       assert.equal(a.codec_name, 'aac');
-      assert.equal(v.width, 1280);
-      assert.equal(v.height, 720);
+      assert.equal(v.width, 1920);
+      assert.equal(v.height, 1080);
       const drop = await s.req('/api/render', 'POST', { scenes: [{ duration: 2, image: scenes[0].image }, { duration: 2 }], voice: `data:audio/mpeg;base64,${(await readFile(voiceFile)).toString('base64')}`, voiceExt: 'mp3', name: 'thieu-anh' });
-      assert.equal(drop.status, 200);
-      assert.equal(drop.body.scenesRendered, 1);
-      assert.equal(drop.body.droppedScenes, 1);
+      assert.equal(drop.status, 400);
+      assert.match(drop.body.error,/thiếu nội dung/);
       const up = await s.req('/api/assets', 'POST', { data: scenes[0].image });
       assert.equal(up.status, 200);
-      const viaAsset = await s.req('/api/render', 'POST', { scenes: [{ duration: 2, image: up.body.url }], voice: `data:audio/mpeg;base64,${(await readFile(voiceFile)).toString('base64')}`, voiceExt: 'mp3', name: 'asset-url' });
+      const viaAsset = await s.req('/api/render', 'POST', { scenes: [{ duration: 5, image: up.body.url }], voice: `data:audio/mpeg;base64,${(await readFile(voiceFile)).toString('base64')}`, voiceExt: 'mp3', name: 'asset-url' });
       assert.equal(viaAsset.status, 200, JSON.stringify(viaAsset.body).slice(0, 200));
       assert.equal(viaAsset.body.droppedScenes, 0);
+      const cached=await s.req('/api/render','POST',{scenes,voice:`data:audio/mpeg;base64,${(await readFile(voiceFile)).toString('base64')}`,voiceExt:'mp3'});
+      assert.equal(cached.status,200,JSON.stringify(cached.body));
+      assert.equal(cached.body.cacheHits,2);
+      const drift=await s.req('/api/render','POST',{scenes:[{duration:2,image:scenes[0].image}],voice:`data:audio/mpeg;base64,${(await readFile(voiceFile)).toString('base64')}`});
+      assert.equal(drift.status,400);assert.match(drift.body.error,/lệch voice/);
+      const many=await s.req('/api/render','POST',{scenes:Array.from({length:51},()=>({duration:0.5,image:scenes[0].image})),voice:`data:audio/mpeg;base64,${(await readFile(voiceFile)).toString('base64')}`});
+      assert.match(many.body.error,/lệch voice/); // accepted >50, rejected only for timing
+      const longVoice=path.join(dir,'long.wav');
+      await runTool(ffmpeg,['-y','-hide_banner','-loglevel','error','-f','lavfi','-i','sine=frequency=220:duration=25.5',longVoice]);
+      const fiftyOne=await s.req('/api/render','POST',{scenes:Array.from({length:51},()=>({duration:0.5,image:scenes[0].image})),voice:`data:audio/wav;base64,${(await readFile(longVoice)).toString('base64')}`,voiceExt:'wav'});
+      assert.equal(fiftyOne.status,200,JSON.stringify(fiftyOne.body).slice(0,300));assert.equal(fiftyOne.body.scenesRendered,51);assert.equal(fiftyOne.body.cacheHits,50);assert.ok(Math.abs(fiftyOne.body.probe.duration-25.5)<0.15);
+
+
     } finally { await rm(dir, { recursive: true, force: true }); }
   } finally { await s.stop(); }
 });
@@ -122,6 +148,8 @@ test('dựng video: từ chối cảnh sai và thiếu voice; transcribe báo ch
     assert.equal(badHtml.status, 400);
     const noVoice = await s.req('/api/render', 'POST', { scenes: [{ duration: 2, image: tiny }] });
     assert.equal(noVoice.status, 400);
+    const badSize = await s.req('/api/render', 'POST', { scenes: [{ duration: 2, image: tiny }], voice: 'data:audio/mpeg;base64,AAA=', width: 100 });
+    assert.equal(badSize.status, 400);
     const tr = await s.req('/api/transcribe', 'POST', { audio: 'data:audio/mpeg;base64,AAA=', mimeType: 'audio/mpeg' });
     assert.equal(tr.status, 501);
     assert.match(tr.body.error, /SRT/);

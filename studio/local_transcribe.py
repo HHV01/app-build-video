@@ -17,7 +17,8 @@ args = parser.parse_args()
 if os.environ.get('STUDIO_WHISPER_CUDA') == '1':
     import torch
     torch_lib = str(Path(torch.__file__).parent / 'lib')
-    os.add_dll_directory(torch_lib)
+    if hasattr(os, 'add_dll_directory'):
+        os.add_dll_directory(torch_lib)
     os.environ['PATH'] = torch_lib + os.pathsep + os.environ['PATH']
 model = WhisperModel(args.model, device='cuda' if os.environ.get('STUDIO_WHISPER_CUDA') == '1' else 'cpu', compute_type='float16' if os.environ.get('STUDIO_WHISPER_CUDA') == '1' else 'int8', cpu_threads=4, download_root=args.cache)
 # Decode directly with PyAV: newer PyAV removed metadata_errors from av.open,

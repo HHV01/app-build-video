@@ -13,13 +13,15 @@ import {rosterExtrasContext,validateRosterExtras} from './public/roster.mjs';
 import { withModelFallback, normalizeFallbackModels, isJSONGenerationFailure,getAIStatus } from './model-fallback.mjs';
 import {createVoiceJobs} from './voice-jobs.mjs';
 import http from 'node:http';
+import {createRenderJobs} from './render-jobs.mjs';
+import {createReadStream} from 'node:fs';
 import { spawn } from 'node:child_process';
 import os from 'node:os';
-import { readFile, writeFile, mkdir, rename, readdir, stat, rm } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rename, readdir, stat, rm, copyFile } from 'node:fs/promises';
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { enrichVideos, normalizeImport, validateGroups, parseAIJSON, durationSeconds, median } from './core.mjs';
 import { blindTitles, groupCountGate, RULES, STAGES, videoMetadata } from './rx.mjs';
 import { createNicheAPI,normalizeShelfChecks } from './niche-api.mjs';
@@ -70,6 +72,7 @@ normalizeScriptProjects(state);
 const previousShelfState=JSON.stringify(state);normalizeShelfChecks(state);if(JSON.stringify(state)!==previousShelfState){state.revision++;await atomicSave('state.json',state);}
 const assets = createAssetStore(path.join(dataRoot,'assets'));
 const voiceJobs=createVoiceJobs({root,dataRoot,assets});
+const renderJobs=await createRenderJobs({directory:path.join(dataRoot,'renders'),render:renderVideo});
 // Migrate existing embedded media once, retaining the original state for recovery.
 const migratedState=structuredClone(state);
 const migratedRefs=await assets.externalize(migratedState);
@@ -312,7 +315,7 @@ function runTool(tool, args, timeoutMs = 300000) {
     let killed = false;
     const timer = setTimeout(() => { killed = true; child.kill(); }, timeoutMs);
     child.stdout.on('data', d => { out += d; });
-    child.stderr.on('data', d => { err += d; });
+    child.stderr.on('data', d => { err = (err + d).slice(-16000); });
     child.on('error', e => { clearTimeout(timer); reject(e); });
     child.on('close', code => {
       clearTimeout(timer);
@@ -344,8 +347,8 @@ function htmlExecutable() {
   return chromePathCache;
 }
 // Ghi cảnh chữ/số liệu thành clip: Chromium offline ghi hình đúng duration,
-// rồi ép về chuẩn dựng chung 1280x720/30fps như mọi đoạn khác.
-async function renderHtmlSegment(html, duration, tmp) {
+// rồi ép về chuẩn dựng chung (mặc định 1920x1080/30fps) như mọi đoạn khác.
+async function renderHtmlSegment(html, duration, tmp, { width = 1920, height = 1080 } = {}) {
   const exe = htmlExecutable();
   if (!exe) throw failure('Studio chưa thấy Chromium/Chrome để dựng cảnh HTML. Cài Chrome hoặc Playwright chromium.', 501);
   const checked = validateHtmlScene({ html, duration });
@@ -354,14 +357,14 @@ async function renderHtmlSegment(html, duration, tmp) {
   await mkdir(dir, { recursive: true });
   let browser;
   try {
-    browser = await chromium.launch({ executablePath: exe });
-    const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, recordVideo: { dir, size: { width: 1280, height: 720 } } });
+    browser = await chromium.launch({ executablePath: exe, headless:true, timeout:20000 });
+    const ctx = await browser.newContext({ viewport: { width, height }, recordVideo: { dir, size: { width, height } } });
     const page = await ctx.newPage();
     await page.route('**/*', route => {
       const u = route.request().url();
       return /^https?:/i.test(u) ? route.abort() : route.continue();
     });
-    await page.setContent(stageHtml(checked.html), { waitUntil: 'load' });
+    await page.setContent(stageHtml(checked.html, { width, height }), { waitUntil: 'load' });
     try { await page.evaluate(() => document.fonts?.ready, null, { timeout: 10000 }); } catch {}
     await page.waitForTimeout(Math.round(checked.duration * 1000));
     await ctx.close();
@@ -372,7 +375,7 @@ async function renderHtmlSegment(html, duration, tmp) {
       if (files.length) webm = path.join(dir, files[0]);
     }
     if (!webm) throw failure('Không ghi được clip HTML.');
-    await runTool(ffmpegBin, ['-y', '-i', webm, '-r', '30', '-vf', 'scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,setsar=1,fps=30', '-an', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-t', String(checked.duration), seg], 180000);
+    await runTool(ffmpegBin, ['-y', '-i', webm, '-r', '30', '-vf', `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},setsar=1,fps=30`, '-an', '-c:v', 'libx264', '-preset', 'fast', '-crf', '18', '-threads', '2', '-pix_fmt', 'yuv420p', '-t', String(checked.duration), seg], 180000);
     return { file: seg };
   } finally {
     await browser?.close().catch(() => {});
@@ -403,7 +406,8 @@ async function probeSeconds(file) {
   if (!Number.isFinite(seconds) || seconds <= 0) throw failure('Không đọc được thời lượng file âm thanh.');
   return seconds;
 }
-// Dựng MP4 từ ảnh từng cảnh + voice: mỗi ảnh giữ đúng duration ở 1280x720,
+// Dựng MP4 từ ảnh từng cảnh + voice: mỗi ảnh giữ đúng duration ở khung hình
+// chuẩn (mặc định 1920x1080),
 // nối lại rồi mux voice (aac), cắt theo bên ngắn hơn (-shortest).
 // Wan cho cảnh cần nhân vật cử động: chạy lần lượt trên GPU, duyệt động tác
 // bằng mắt sau khi có clip. Cảnh thường dùng ảnh để tiết kiệm thời gian.
@@ -421,9 +425,24 @@ async function generateWanScene(w) {
   const stored = await assets.put(`data:video/mp4;base64,${clip.bytes.toString('base64')}`);
   return { url: stored.url, duration: clip.duration, width: clip.width, height: clip.height, fps: clip.fps, frames: clip.frames };
 }
-async function renderVideo(b) {
+function validateRenderRequest(b) {
+  if(!Array.isArray(b?.scenes)||!b.scenes.length||b.scenes.length>1000)throw failure('Cần 1–1000 cảnh để dựng.');
+  if((b.width!=null&&Number(b.width)!==1920)||(b.height!=null&&Number(b.height)!==1080))throw failure('Video luôn xuất 1920 × 1080 (1080p).');
+  if(!b.voice)throw failure('Thiếu voice để ghép.');
+  b.scenes.forEach((s,i)=>{
+    const kind=s?.kind||s?.buildKind||'image';
+    if(!['image','html','wan'].includes(kind))throw failure(`Cảnh ${i+1} sai loại dựng.`);
+    if(kind==='html'){try{validateHtmlScene({html:s?.html??s?.htmlSnippet,duration:s?.duration});}catch(e){throw failure(e.message);}}
+    else {
+      if(!Number.isFinite(Number(s.duration))||Number(s.duration)<0.5||Number(s.duration)>30)throw failure(`Cảnh ${i+1} cần thời lượng 0,5–30 giây.`);
+      if(kind==='image'?!s.image:!s.clip)throw failure(`Cảnh ${i+1} thiếu nội dung; cần nhập đủ để giữ khớp voice.`);
+    }
+  });
+}
+async function renderVideo(b, progress = () => {}) {
+  if ((b?.width != null && Number(b.width)!==1920) || (b?.height != null && Number(b.height)!==1080)) throw failure('Video luôn xuất 1920 × 1080 (1080p).');
   const scenes = b?.scenes;
-  if (!Array.isArray(scenes) || !scenes.length || scenes.length > 50) throw failure('Cần 1–50 cảnh để dựng.');
+  if (!Array.isArray(scenes) || !scenes.length || scenes.length > 1000) throw failure('Cần 1–1000 cảnh để dựng.');
   const parsed = scenes.map((s, i) => {
     const kind = s?.kind || s?.buildKind || 'image';
     if (!['image', 'html', 'wan'].includes(kind)) throw failure(`Cảnh ${i + 1} sai loại dựng (chọn image, html hoặc wan).`);
@@ -440,62 +459,82 @@ async function renderVideo(b) {
     if (!Number.isFinite(duration) || duration < 0.5 || duration > 30) throw failure(`Cảnh ${i + 1} cần thời lượng 0,5–30 giây.`);
     if (kind === 'wan') {
       const raw = s?.clip ?? null;
-      // Cảnh Wan chưa tạo clip được bỏ qua và đếm vào droppedScenes để dựng lại sau.
-      if (raw == null) return { kind, duration, dropped: true };
-      return { kind, duration, clip: resolveRenderInput(raw, ['video/'], 50 * 1024 * 1024, `Clip Wan cảnh ${i + 1}`, 'data:video'), dropped: false };
+      // Không bỏ cảnh: thiếu clip sẽ làm lệch voice.
+      if (raw == null) throw failure(`Cảnh ${i + 1} thiếu nội dung; cần nhập đủ trước khi dựng để giữ khớp voice.`);
+      return { kind, duration, clip: raw, dropped: false };
     }
     const raw = s?.image ?? null;
-    // Cảnh chưa nhập ảnh được bỏ qua và đếm vào droppedScenes để dựng lại sau.
-    if (raw == null) return { kind, duration, dropped: true };
-    return { kind, duration, img: resolveRenderInput(raw, ['image/png', 'image/jpeg', 'image/webp'], 6 * 1024 * 1024, `Ảnh cảnh ${i + 1}`, 'data:image'), dropped: false };
+    // Không bỏ cảnh thiếu ảnh.
+    if (raw == null) throw failure(`Cảnh ${i + 1} thiếu nội dung; cần nhập đủ trước khi dựng để giữ khớp voice.`);
+    return { kind, duration, img: raw, dropped: false };
   });
   if (b?.voice == null) throw failure('Thiếu voice để ghép.');
   const voice = resolveRenderInput(b.voice, ['audio/'], 64 * 1024 * 1024, 'Voice', 'data:audio');
   const rendered = parsed.filter(s => !s.dropped);
   if (!rendered.length) throw failure('Chưa có nội dung cảnh nào. Nhập ảnh/HTML/clip từng cảnh trước khi dựng.');
+  const VW = 1920, VH = 1080;
   if (!(await ffmpegAvailable())) throw failure('Studio chưa thấy ffmpeg. Cần tools/ffmpeg/bin/ffmpeg.exe và ffprobe (Windows) hoặc ffmpeg trong PATH.', 501);
   const name = String(b?.name || 'video').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9-_]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'video';
   const tmp = path.join(os.tmpdir(), `tich-render-${randomUUID()}`);
   await mkdir(tmp, { recursive: true });
-  const SEG_VF = 'scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,setsar=1,fps=30';
+  const SEG_VF = `scale=${VW}:${VH}:force_original_aspect_ratio=increase,crop=${VW}:${VH},setsar=1,fps=30`;
   try {
+    const voiceExt = String(b?.voiceExt || 'mp3').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 8) || 'mp3';
+    const voiceFile = path.join(tmp, `voice.${voiceExt}`);
+    await writeFile(voiceFile, voice.bytes);
+    const voiceSeconds = await probeSeconds(voiceFile);
+    const scenesSeconds = parsed.reduce((n,s)=>n+s.duration,0);
+    if(Math.abs(scenesSeconds-voiceSeconds)>0.5) throw failure(`Tổng cảnh lệch voice ${(scenesSeconds-voiceSeconds).toFixed(2)} giây; cần căn lại trước khi dựng.`);
+    const cacheRoot=path.join(dataRoot,'render-cache');
+    await mkdir(cacheRoot,{recursive:true});
+    // Round cumulative boundaries, not each scene independently, to avoid drift on long videos.
+    let seconds=0,frames=0;
+    for(const scene of rendered){seconds+=scene.duration;const next=Math.round(seconds*30);scene.duration=(next-frames)/30;frames=next;}
     const segFiles = [];
-    for (const s of rendered) {
+    let cacheHits=0;
+    for (const original of rendered) {
+      const s={...original};
+      if(s.kind==='image')s.img=resolveRenderInput(s.img,['image/png','image/jpeg','image/webp'],6*1024*1024,'Ảnh cảnh','data:image');
+      if(s.kind==='wan')s.clip=resolveRenderInput(s.clip,['video/'],50*1024*1024,'Clip cảnh','data:video');
       const seg = path.join(tmp, `seg${segFiles.length}.mp4`);
+      const hash=createHash('sha256').update('1080p-v1-crf18-fast-30fps').update(await ffmpegVersion()).update(String(s.duration)).update(s.kind).update(s.html || s.img?.bytes || s.clip?.bytes).digest('hex');
+      const cached=path.join(cacheRoot,hash+'.mp4');
+      if(existsSync(cached)){await copyFile(cached,seg);cacheHits++;segFiles.push(seg);progress({completed:segFiles.length,total:rendered.length,cacheHits});continue;}
       if (s.kind === 'html') {
-        const made = await renderHtmlSegment(s.html, s.duration, tmp);
+        const made = await renderHtmlSegment(s.html, s.duration, tmp, { width: VW, height: VH });
         await rename(made.file, seg);
       } else if (s.kind === 'wan') {
         const clipFile = path.join(tmp, `wan${segFiles.length}.mp4`);
         await writeFile(clipFile, s.clip.bytes);
-        await runTool(ffmpegBin, ['-y', '-stream_loop', '3', '-t', String(s.duration), '-i', clipFile, '-vf', SEG_VF, '-an', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', '30', seg], 300000);
+        await runTool(ffmpegBin, ['-y', '-stream_loop', '-1', '-t', String(s.duration), '-i', clipFile, '-vf', SEG_VF, '-an', '-c:v', 'libx264', '-preset', 'fast', '-crf', '18', '-threads', '2', '-pix_fmt', 'yuv420p', '-r', '30', seg], 300000);
       } else {
         const ext = s.img.mime.includes('png') ? 'png' : s.img.mime.includes('webp') ? 'webp' : 'jpg';
         const imgFile = path.join(tmp, `s${segFiles.length}.${ext}`);
         await writeFile(imgFile, s.img.bytes);
-        await runTool(ffmpegBin, ['-y', '-loop', '1', '-t', String(s.duration), '-i', imgFile, '-vf', SEG_VF, '-an', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', '30', seg], 300000);
+        await runTool(ffmpegBin, ['-y', '-loop', '1', '-t', String(s.duration), '-i', imgFile, '-vf', SEG_VF, '-an', '-c:v', 'libx264', '-preset', 'fast', '-crf', '18', '-threads', '2', '-pix_fmt', 'yuv420p', '-r', '30', seg], 300000);
       }
-      segFiles.push(seg);
+      const cacheTemp=cached+'.'+randomUUID()+'.tmp';
+      await copyFile(seg,cacheTemp);await rename(cacheTemp,cached);
+      segFiles.push(seg);progress({completed:segFiles.length,total:rendered.length,cacheHits});
     }
     const listFile = path.join(tmp, 'list.txt');
     await writeFile(listFile, segFiles.map(f => `file '${f.replace(/'/g, "'\\''")}'`).join('\n'));
     const videoOnly = path.join(tmp, 'video.mp4');
     await runTool(ffmpegBin, ['-y', '-f', 'concat', '-safe', '0', '-i', listFile, '-c', 'copy', videoOnly], 300000);
-    const voiceExt = String(b?.voiceExt || 'mp3').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 8) || 'mp3';
-    const voiceFile = path.join(tmp, `voice.${voiceExt}`);
-    await writeFile(voiceFile, voice.bytes);
     const outFile = path.join(tmp, 'out.mp4');
-    await runTool(ffmpegBin, ['-y', '-i', videoOnly, '-i', voiceFile, '-c:v', 'copy', '-c:a', 'aac', '-b:a', '128k', '-shortest', '-movflags', '+faststart', outFile], 300000);
+    await runTool(ffmpegBin, ['-y', '-i', videoOnly, '-i', voiceFile, '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', outFile], 300000);
     const probeOut = await runTool(ffprobeBin, ['-v', 'error', '-print_format', 'json', '-show_format', '-show_streams', outFile], 30000);
     const probe = JSON.parse(probeOut);
     const duration = Number(probe.format?.duration);
-    const scenesSeconds = parsed.reduce((n, s) => n + s.duration, 0);
-    const voiceSeconds = await probeSeconds(voiceFile);
-    const data = await readFile(outFile);
+    const videoStream=probe.streams.find(s=>s.codec_type==='video');
+    if(videoStream?.width!==1920 || videoStream?.height!==1080 || Math.abs(duration-voiceSeconds)>0.5) throw failure('Bản dựng không đạt kiểm tra 1080p hoặc thời lượng.',500);
+    const sizeBytes=(await stat(outFile)).size;
+    const saved=path.join(dataRoot,'renders',randomUUID()+'.mp4');
+    await mkdir(path.dirname(saved),{recursive:true});await copyFile(outFile,saved);
     const fileName = `${name}.mp4`;
     const kinds = { image: 0, html: 0, wan: 0 };
     for (const s of rendered) kinds[s.kind] += 1;
-    return { fileName, data: data.toString('base64'), sizeBytes: data.length, scenesSeconds, voiceSeconds, scenesRendered: rendered.length, droppedScenes: parsed.length - rendered.length, kinds, probe: { duration } };
+    return { fileName, file: saved, sizeBytes, cacheHits, scenesSeconds, voiceSeconds, scenesRendered: rendered.length, droppedScenes: parsed.length - rendered.length, kinds, size: { width: VW, height: VH }, probe: { duration } };
   } finally {
     await rm(tmp, { recursive: true, force: true });
   }
@@ -594,7 +633,16 @@ const server = http.createServer(async (req, res) => {
 
       // Năng lực máy: báo trước khi người dùng bấm nút mà không có công cụ.
       if (url.pathname === '/api/capabilities' && req.method === 'GET') return json(res,200,{youtubeData:Boolean(settings.youtubeKey),ai:Boolean(env.OPENAI_API_KEY),ffmpeg:await ffmpegAvailable(),ffmpegVersion:await ffmpegVersion(),htmlVideo:Boolean(htmlExecutable()),wan:await wanAvailable()});
-      if (url.pathname === '/api/render' && req.method === 'POST') return json(res, 200, await renderVideo(await body(req)));
+      const renderMatch=url.pathname.match(/^\/api\/renders\/([a-f0-9-]{36})(\/download)?$/);
+      if(renderMatch && req.method==='GET') {
+        const job=await renderJobs.get(renderMatch[1]);
+        if(!renderMatch[2])return json(res,200,job);
+        if(job.status!=='done')throw failure('Bản dựng chưa hoàn tất.',409);
+        const file=await renderJobs.file(job),info=await stat(file);
+        res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':info.size,'Content-Disposition':`attachment; filename="${job.result.fileName}"`,'Cache-Control':'no-store'});
+        const stream=createReadStream(file);stream.on('error',()=>res.destroy());res.on('close',()=>stream.destroy());stream.pipe(res);return;
+      }
+      if (url.pathname === '/api/render' && req.method === 'POST') {const input=await body(req);validateRenderRequest(input);return json(res,202,await renderJobs.start(input));}
       if (url.pathname === '/api/wan' && req.method === 'POST') return json(res, 200, await generateWanScene(await body(req)));
       if (url.pathname === '/api/transcribe' && req.method === 'POST') { await body(req); throw failure('Studio chưa có nhận diện giọng local. Nhập file SRT từ app làm voice để lấy mốc từng câu.', 501); }
       return json(res, 404, { error: 'Không có API này.' });

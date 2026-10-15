@@ -259,13 +259,24 @@ Phần chính mỗi thẻ chỉ hiện Prompt ảnh hoàn chỉnh (phong cách +
 Kịch bản đã duyệt giữ trong dự án; voice và ảnh làm ở app ngoài rồi nhập lại.
 Bước Cảnh và prompt gom thành 4 chặng: Kịch bản + voice → Duyệt cảnh → Tạo/nhập hình → Xem trước + xuất.
 Nhập SRT từ app voice để lấy mốc từng câu (0 token); không có SRT mới cần xử lý audio local.
-Ảnh nhập từng cảnh (PNG/JPEG/WebP ≤10 MB, lưu qua /api/assets); cảnh thiếu ảnh được bỏ qua khi dựng và đếm droppedScenes.
-Xuất gói SRT/CSV/JSON bằng code; dựng MP4 bằng FFmpeg local (h264/aac 1280x720, cắt theo bên ngắn).
+Ảnh nhập từng cảnh (PNG/JPEG/WebP ≤10 MB, lưu qua /api/assets); cảnh thiếu ảnh sẽ chặn dựng để giữ khớp voice.
+Xuất gói SRT/CSV/JSON bằng code; dựng MP4 bằng FFmpeg local (h264/aac cố định 1920x1080, kiểm tra khớp thời lượng voice).
 POST /api/render nhận ảnh/voice dạng data URL hoặc /api/assets; GET /api/capabilities báo ffmpeg/ffmpegVersion.
 POST /api/transcribe trả 501 cho tới khi có engine local — nhập SRT thay thế.
 Đổi nhạc/phụ đề chỉ ghép lại; đổi ảnh/overlay/thời lượng mới dựng lại cảnh đó (sceneCacheKey).
-Cảnh chữ/số liệu dùng HTML: nhập đoạn HTML (chỉ CSS, không script, làm sạch + chặn mạng), Chromium local ghi hình offline 3–20 giây rồi ép chuẩn 1280x720/30fps.
+Cảnh chữ/số liệu dùng HTML: nhập đoạn HTML (chỉ CSS, không script, làm sạch + chặn mạng), Chromium local ghi hình offline 3–20 giây rồi ép chuẩn khung dựng/30fps.
 Cảnh cần nhân vật cử động dùng Wan local qua ComfyUI (node Wan22ImageToVideoLatent + model wan2.2, ~2 phút/clip 2s, chạy lần lượt, duyệt động tác bằng mắt).
 POST /api/wan nhận ảnh + mô tả chuyển động, trả clip MP4 lưu qua /api/assets; thiếu ComfyUI trả 503.
-Mỗi cảnh chọn 1 loại dựng (image/html/wan); /api/render dựng từng đoạn rồi nối, cảnh thiếu nội dung được bỏ qua (đếm droppedScenes), trả kèm kinds.
+Mỗi cảnh chọn 1 loại dựng (image/html/wan); /api/render dựng từng đoạn rồi nối, cảnh thiếu nội dung sẽ chặn dựng, kết quả có kinds và URL tải MP4.
 GET /api/capabilities báo thêm htmlVideo/wan.
+
+
+### Dựng video 1080p và voice local
+
+- MP4 cố định 1920 × 1080, 30 FPS, H.264 CRF 18/preset fast và AAC 192 kbps. Không hỗ trợ xuất 720p.
+- Cần đủ nội dung mọi cảnh (tối đa 1000); tổng thời lượng phải khớp voice trong 0,5 giây. Không bỏ cảnh thiếu ảnh/clip.
+- POST /api/render trả 202 và mã job; GET /api/renders/:id trả tiến trình; kết quả có URL tải MP4 trực tiếp. Mỗi lần chỉ chạy một bản dựng, tối đa 5 job chờ/chạy.
+- MP4 và metadata lưu tại .studio-data/renders; cache cảnh ở .studio-data/render-cache. Giữ cache để lần dựng sau chỉ xử lý cảnh đổi. Cache và video lưu trên ổ đĩa, chưa tự xóa bản cũ.
+- Job đang chạy bị gián đoạn khi server khởi động lại phải dựng lại; cảnh đã cache được tái sử dụng. Job hoàn tất vẫn tải được sau khởi động lại.
+- Python: STUDIO_PYTHON chỉ đường dẫn Python có faster-whisper, av, numpy; ưu tiên .venv trong repo, sau đó môi trường cũ nếu có, cuối cùng Python trong PATH. STUDIO_WHISPER_CACHE cấu hình thư mục model (mặc định .studio-data/whisper-models). GPU cần torch/CUDA phù hợp; thiếu torch/CUDA sẽ thử CPU. Cài dependency: python -m pip install faster-whisper av numpy.
+- File audio tạm được dọn khi job voice hoàn tất hoặc lỗi; kết quả nhận diện được giữ để dùng lại. Dựng MP4 và căn voice local không gọi AI API.
