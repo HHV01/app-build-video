@@ -1,9 +1,10 @@
+import {scriptTargetOrZero} from '../production.mjs';
 export const TICH_BRAND=Object.freeze({channel:'Tích Thông Thái',presenter:'Tích',tagline:'Chuyện quen. Góc nhìn lạ.'});
 const plain=s=>String(s||'').normalize('NFD').replace(/\p{M}/gu,'').toLowerCase().replace(/đ/g,'d').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
 export function tichBrand(channel={}){return plain(channel.name)==='tich thong thai'?{...TICH_BRAND}:null;}
 export function finalizeScriptMetadata(channel,project){
  const tokens=String(project.narration||'').trim().split(/\s+/).filter(Boolean);
- project.scriptMetrics={wordCount:tokens.length,method:'whitespace',estimatedMinutes:tokens.length/150,wordsPerMinute:150,timing:'estimate',verification:'research-context-only'};
+ project.scriptMetrics={wordCount:tokens.length,targetWords:scriptTargetOrZero(project),targetSource:project.targetWords!=null&&String(project.targetWords).trim()!==''?'words':'minutes',method:'whitespace',estimatedMinutes:tokens.length/150,wordsPerMinute:150,timing:'estimate',verification:'research-context-only'};
  if(!tichBrand(channel))return;
  const start=plain(tokens.slice(0,180).join(' ')),end=plain(tokens.slice(-220).join(' '));
  const warnings=[];

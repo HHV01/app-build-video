@@ -1,9 +1,11 @@
+import {scriptTarget} from '../production.mjs';
+import {ensureScriptLength} from './script-length.mjs';
 import {reviewContext,validateScriptReview,locateReviewQuote} from './script-review.mjs';
 import {finalizeScriptMetadata} from './script-policy.mjs';
 const normalize=s=>String(s).normalize('NFC').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
 const count=s=>String(s||'').trim().split(/\s+/).filter(Boolean).length;
 const signature=value=>{const text=JSON.stringify(value);let h=2166136261;for(const ch of text)h=Math.imul(h^ch.charCodeAt(0),16777619);return text.length+':'+(h>>>0).toString(16);};
-const inputs=(c,p)=>[c.name,c.language,c.angle,c.audience,c.identity,c.openingPlan,c.closingPlan,p.topic,p.outline,p.minutes,p.researchFacts,p.claims,p.researchSummary,p.researchTimeline,p.researchCast,p.researchSensory,p.packaging?.[p.selectedPackaging||0]?.title,p.openingHook];
+const inputs=(c,p)=>[c.name,c.language,c.angle,c.audience,c.identity,c.openingPlan,c.closingPlan,p.topic,p.outline,p.minutes,p.targetWords,p.researchFacts,p.claims,p.researchSummary,p.researchTimeline,p.researchCast,p.researchSensory,p.packaging?.[p.selectedPackaging||0]?.title,p.openingHook];
 export const proofIsCurrent=(c,p)=>p.scriptQuality?.status==='passed'&&p.scriptQuality.basis===signature([inputs(c,p),p.narration]);
 
 export function localScriptProblems(text){
@@ -38,25 +40,27 @@ function editsFor(text,review,ctx,protectedText){
 
 // Stage generated text separately. Only an all-good full review can publish it.
 export async function buildProofedScript(c,p,{write,generate,save,onProgress=()=>{}}){
+ scriptTarget(p);
  const basis=signature(inputs(c,p));
  if(p.scriptProofDraft?.basis!==basis)delete p.scriptProofDraft;
  if(!p.scriptProofDraft){
   const candidate=structuredClone(p);
   const saveDraft=async()=>{for(const key of ['scriptDraft','planDraft']){if(candidate[key])p[key]=structuredClone(candidate[key]);else delete p[key];}await save();};
   await write(candidate,saveDraft);
-  p.scriptProofDraft={basis,narration:candidate.narration,editorNotes:candidate.editorNotes||[],warnings:candidate.scriptWarnings||[],sfxSegments:[...(candidate.planResult?.opening||[]),...(candidate.planResult?.closing||[])].filter(x=>x.source.sfx).map(x=>({text:x.text||x.source.text,sfx:x.source.sfx})),protectedText:[...(candidate.planResult?.opening||[]),...(candidate.planResult?.closing||[])].filter(x=>['fixed','template'].includes(x.source.kind)).map(x=>x.text||x.source.text).filter(Boolean)};
+  p.scriptProofDraft={basis,narration:candidate.narration,editorNotes:candidate.editorNotes||[],warnings:candidate.scriptWarnings||[],sections:candidate.scriptSections||[],sfxSegments:[...(candidate.planResult?.opening||[]),...(candidate.planResult?.closing||[])].filter(x=>x.source.sfx).map(x=>({text:x.text||x.source.text,sfx:x.source.sfx})),protectedText:[...(candidate.planResult?.opening||[]),...(candidate.planResult?.closing||[])].filter(x=>['fixed','template'].includes(x.source.kind)).map(x=>x.text||x.source.text).filter(Boolean)};
   await save();
  }
  const draft=p.scriptProofDraft;
  try{
   for(let attempt=0;attempt<3;attempt++){
    onProgress(`Đang duyệt toàn bộ kịch bản · lượt ${attempt+1}/3`);
+   await ensureScriptLength(c,p,draft,{generate,save,onProgress});
    const candidate={...p,narration:draft.narration,reviewFull:true,scriptWarnings:[]};
    finalizeScriptMetadata(c,candidate);
    const local=localScriptProblems(draft.narration),ctx=reviewContext(c,candidate);ctx.localChecks.problems=local;
    if(ctx.scope!=='full'||ctx.coveragePercent!==100)throw Error('Cần đọc đủ toàn bài trước khi hoàn tất.');
    const review=validateScriptReview(await generate('scriptReview',ctx),ctx);
-   const target=Math.round(Number(p.minutes)*150),lengthOK=!target||Math.abs(count(draft.narration)-target)<=target*.05;
+   const target=scriptTarget(p),lengthOK=!target||Math.abs(count(draft.narration)-target)<=target*.05;
    const clean=review.overall==='ready'&&review.issues.length===0&&review.rubric.every(x=>x.verdict==='good')&&!local.length&&!(candidate.scriptWarnings||[]).some(x=>/thiếu|tagline|Cần duyệt|còn lặp/.test(x))&&lengthOK;
    draft.review=review;draft.problems=[...local,...(!lengthOK?['Độ dài chưa đạt mục tiêu ±5%.']:[])];await save();
    if(clean){
@@ -71,7 +75,7 @@ export async function buildProofedScript(c,p,{write,generate,save,onProgress=()=
    }
    if(attempt===2||!review.issues.length)throw Error('Bản nháp chưa đạt: còn lỗi lặp, độ rõ nghĩa, cấu trúc hoặc độ dài. Chưa xuất thành lời dẫn hoàn chỉnh.');
    const next=editsFor(draft.narration,review,ctx,draft.protectedText||[]);
-   if(target&&Math.abs(count(next)-target)>target*.05)throw Error('Gợi ý sửa làm lệch độ dài yêu cầu; giữ bản nháp để chỉnh tiếp.');
+   if(count(next)>target*1.05)throw Error('Gợi ý sửa vượt mục tiêu số từ; giữ bản nháp để chỉnh tiếp.');
    draft.narration=next;await save();
   }
  }catch(e){draft.error=e.message;await save();throw e;}

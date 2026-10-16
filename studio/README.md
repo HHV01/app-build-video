@@ -296,3 +296,12 @@ Hướng dẫn riêng về Đức chỉ gửi cho chủ đề liên quan. Không
 - Chỉ thay narration đã hoàn tất khi cả 5 tiêu chí good, không còn issue, kiểm tra local/nhận diện kênh đạt và số từ trong ±5% mục tiêu. API lỗi, còn vấn đề hoặc quá giới hạn một lượt duyệt thì giữ bản nháp, không công bố hoàn tất. Đây là cổng biên tập, không bảo đảm tuyệt đối về ngữ nghĩa hay thay đối chiếu nguồn.
 - Bản nháp lỗi có thể sửa ngay tại ô nháp rồi bấm tiếp tục; bản hoàn tất chỉnh tay dùng “Duyệt lời dẫn hiện tại”. Sửa lời dẫn hoặc đầu vào làm kết quả duyệt hết hiệu lực. Bản đã duyệt chưa đổi không gọi lại API khi bấm duyệt.
 - Giới hạn lượt duyệt hiện tại: tối đa 50.000 ký tự/60 khối văn bản; vượt giới hạn sẽ dừng, không tự chuyển sang đọc mẫu và tuyên bố đã kiểm toàn bài.
+
+
+### Mục tiêu số từ trực tiếp và bổ sung nội dung thiếu
+
+Nhập “Số từ mục tiêu” ở Chủ đề hoặc Dàn ý và kịch bản (100–20.000, đơn vị ngăn cách bằng khoảng trắng). Nếu có, mục tiêu này ưu tiên hơn số phút; để trống giữ cách tính theo phút. Ví dụ 5.000 từ chỉ hoàn tất trong khoảng 4.750–5.250 từ, không giao bản 2.000 từ như bản hoàn chỉnh.
+
+Dàn ý và cả hai đường viết dùng cùng ngân sách; lời mở/kết cố định cũng tính vào tổng. Các lượt viết nhỏ (thường tối đa 400 từ) và tự lưu. Bản thiếu sau khi viết hoặc sau khi sửa câu được bổ sung vào thân bài theo phần còn ít nội dung, giữ mở/kết và phần đã viết. Đoạn mới phát triển bối cảnh/cơ chế/diễn biến/ví dụ từ chứng cứ supported, không đổi thành tóm tắt hoặc bù bằng lặp ý. Sau bổ sung phải đọc lại toàn bài trước khi công bố.
+
+Bổ sung chỉ chạy khi dưới ngưỡng 95%; tối đa 32 lượt bổ sung cho mỗi lần bấm, có lưu tiếp từng lượt. Thiếu nguồn, lặp nội dung, thêm số liệu chưa có trong chứng cứ, lỗi API hoặc vượt giới hạn duyệt toàn bài thì giữ nháp và báo cần tiếp tục. Không cắt bớt tự động khi vượt ngưỡng 105%. Không đổi giới hạn duyệt 50.000 ký tự/60 khối hiện có.

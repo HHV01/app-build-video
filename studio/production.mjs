@@ -1,9 +1,14 @@
-export function scriptPlan(outline, minutes, wpm=150, maxWords=220) {
+export function scriptTarget(project={},wpm=150){
+  const explicit=project.targetWords!=null&&String(project.targetWords).trim()!=='';
+  if(explicit){const target=Number(project.targetWords);if(!Number.isInteger(target)||target<100||target>20000)throw Error('Số từ mục tiêu phải là số nguyên từ 100 đến 20.000.');return target;}
+  const duration=Number(project.minutes);if(!Number.isFinite(duration)||duration<=0||duration>60)throw Error('Thời lượng phải lớn hơn 0 và không quá 60 phút.');return Math.round(duration*wpm);
+}
+export function scriptTargetOrZero(project={}){try{return scriptTarget(project);}catch{return 0;}}
+export function scriptPlan(outline, minutes, wpm=150, maxWords=220, targetWords=null) {
   if(!Array.isArray(outline)||!outline.length)throw Error('Cần dàn ý trước.');
-  const duration=Number(minutes);
-  if(!Number.isFinite(duration)||duration<=0||duration>60)throw Error('Thời lượng phải lớn hơn 0 và không quá 60 phút.');
+
   if(!Number.isFinite(maxWords)||maxWords<100||maxWords>600)throw Error('Ngân sách mỗi lượt không hợp lệ.');
-  const target=Math.round(duration*wpm), weights=outline.map(s=>Number(s.share)>0?Number(s.share):1/outline.length), sum=weights.reduce((a,b)=>a+b,0);
+  const target=scriptTarget({minutes,targetWords},wpm), weights=outline.map(s=>Number(s.share)>0?Number(s.share):1/outline.length), sum=weights.reduce((a,b)=>a+b,0);
   let assigned=0;const plan=[];
   outline.forEach((focus,i)=>{const count=i===outline.length-1?target-assigned:Math.floor(target*weights[i]/sum);assigned+=count;const chunks=Math.max(1,Math.ceil(count/maxWords));for(let j=0;j<chunks;j++){const words=Math.floor(count*(j+1)/chunks)-Math.floor(count*j/chunks);if(words)plan.push({focus,targetWords:words,segment:i+1,segmentPart:j+1,segmentParts:chunks});}});
   return plan;

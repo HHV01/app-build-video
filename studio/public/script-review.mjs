@@ -1,3 +1,4 @@
+import {scriptTargetOrZero} from '../production.mjs';
 import {repeatedParts} from './script-quality.mjs';
 import {researchRows} from './research-context.mjs';
 export const REVIEW_CRITERIA={hook:'Mở đầu / Hook',flow:'Mạch kể',clarity:'Dễ hiểu',novelty:'Thông tin mới / lặp ý',ending:'Kết thúc'};
@@ -14,7 +15,7 @@ export function reviewContext(c,p){
  const text=p.narration?.trim();if(!text)throw Error('Hoàn thiện lời kể trước khi đánh giá.');if(text.length>50000)throw Error('Kịch bản quá dài cho một lượt đánh giá.');const all=blocks(text);if(all.length>60)throw Error('Có quá nhiều đoạn cho một lượt đánh giá.');
  const full=p.reviewFull===true||text.length<=7000,budget=Math.max(50,Math.floor(5600/Math.max(1,all.length-2)));
  const paragraphs=all.map((row,i)=>({index:row.index,text:full?row.text:extract(row.text,i===0||i===all.length-1?650:budget)}));const shown=paragraphs.reduce((n,x)=>n+x.text.replaceAll('\n[…]\n','').length,0);
- return sanitizeReviewContext({title:p.packaging?.[p.selectedPackaging||0]?.title||p.topic,angle:c.angle,audience:c.audience,language:c.language,scope:full?'full':'sampled',coveragePercent:full?100:Math.round(shown/all.reduce((n,x)=>n+x.text.length,0)*100),paragraphs,facts:[...researchRows(p.researchFacts,'facts'),...researchRows(p.claims,'facts')],localChecks:{words:words(text),targetWords:Math.round(Number(p.minutes||0)*150),repeatedPairs:repeatedParts(currentScriptParts(p))}});
+ return sanitizeReviewContext({title:p.packaging?.[p.selectedPackaging||0]?.title||p.topic,angle:c.angle,audience:c.audience,language:c.language,scope:full?'full':'sampled',coveragePercent:full?100:Math.round(shown/all.reduce((n,x)=>n+x.text.length,0)*100),paragraphs,facts:[...researchRows(p.researchFacts,'facts'),...researchRows(p.claims,'facts')],localChecks:{words:words(text),targetWords:scriptTargetOrZero(p),repeatedPairs:repeatedParts(currentScriptParts(p))}});
 }
 function basis(c,p){const text=JSON.stringify([p.narration,p.reviewFull===true,p.topic,p.packaging?.[p.selectedPackaging||0]?.title,c.angle,c.audience,c.language,p.minutes,p.researchFacts,p.claims]);let a=2166136261,b=5381;for(const ch of text){a=Math.imul(a^ch.charCodeAt(0),16777619);b=Math.imul(b,33)^ch.charCodeAt(0);}return text.length+':'+(a>>>0).toString(16)+':'+(b>>>0).toString(16);}
 export const reviewIsCurrent=(c,p)=>Boolean(p.scriptReview&&p.scriptReview.basis===basis(c,p));
