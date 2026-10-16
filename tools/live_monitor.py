@@ -35,7 +35,7 @@ def main():
 
         clear_screen()
         print("\033[96m" + "=" * 80 + "\033[0m")
-        print("\033[92m  🎬 BẢNG ĐIỀU KHIỂN & THEO DÕI CÀY VIEW YOUTUBE ĐA TRÌNH DUYỆT (6 BROWSERS)\033[0m")
+        print("\033[92m  🎬 BẢNG ĐIỀU KHIỂN & THEO DÕI CÀY VIEW YOUTUBE ĐA TRÌNH DUYỆT (10 BROWSERS)\033[0m")
         print("\033[96m" + "=" * 80 + "\033[0m")
 
         # Network Status
@@ -59,7 +59,7 @@ def main():
 
         # Workers Status
         workers = status_data.get("workers", [])
-        print("  \033[97;1m🖥️ TIẾN ĐỘ 6 TRÌNH DUYỆT TRÊN DESKTOP 2:\033[0m")
+        print("  \033[97;1m🖥️ TIẾN ĐỘ 10 TRÌNH DUYỆT TRÊN DESKTOP 2:\033[0m")
         if workers:
             for w in workers:
                 short_title = (w.get("title", "")[:26] + '..') if len(w.get("title", "")) > 26 else w.get("title", "")

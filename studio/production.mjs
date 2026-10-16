@@ -4,7 +4,7 @@ export function scriptTarget(project={},wpm=150){
   const duration=Number(project.minutes);if(!Number.isFinite(duration)||duration<=0||duration>60)throw Error('Thời lượng phải lớn hơn 0 và không quá 60 phút.');return Math.round(duration*wpm);
 }
 export function scriptTargetOrZero(project={}){try{return scriptTarget(project);}catch{return 0;}}
-export function scriptPlan(outline, minutes, wpm=150, maxWords=220, targetWords=null) {
+export function scriptPlan(outline, minutes, wpm=150, maxWords=320, targetWords=null) {
   if(!Array.isArray(outline)||!outline.length)throw Error('Cần dàn ý trước.');
 
   if(!Number.isFinite(maxWords)||maxWords<100||maxWords>600)throw Error('Ngân sách mỗi lượt không hợp lệ.');

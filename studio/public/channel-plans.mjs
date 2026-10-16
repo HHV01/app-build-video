@@ -32,7 +32,7 @@ export function assemblePlannedScript(p){
 const evidence=p=>(Array.isArray(p.researchFacts)?p.researchFacts:[]).filter(x=>x.status==='supported').slice(0,3).map(x=>({claim:String(x.claim||'').slice(0,300)}));
 export async function writeChannelScript(c,p,{generate,save,onProgress=()=>{}}){
  validatePlan(c.openingPlan||[]);validatePlan(c.closingPlan||[]);
- const batchWords=p.planDraft?.batchWords||(p.planDraft?220:400),base=scriptPlan(p.outline,p.minutes,150,batchWords,p.targetWords),target=base.reduce((n,x)=>n+x.targetWords,0),basis=JSON.stringify([c.openingPlan,c.closingPlan,c.identity,p.topic,p.outline,p.minutes,p.targetWords,p.researchFacts,openingHookFor(p)]);
+ const batchWords=p.planDraft?.batchWords||(p.planDraft?320:400),base=scriptPlan(p.outline,p.minutes,150,batchWords,p.targetWords),target=base.reduce((n,x)=>n+x.targetWords,0),basis=JSON.stringify([c.openingPlan,c.closingPlan,c.identity,p.topic,p.outline,p.minutes,p.targetWords,p.researchFacts,openingHookFor(p)]);
  if(p.planDraft?.basis!==basis)p.planDraft={basis,batchWords,basePlan:structuredClone(base),opening:[],closing:[],body:[],notes:[],warnings:[]};const draft=p.planDraft;
  const outlineTitles=(p.outline||[]).slice(0,12).map(x=>String(x.title||'').slice(0,80)),selectedTitle=String(p.packaging?.[p.selectedPackaging||0]?.title||p.topic||'').slice(0,300);
  const segment=async(row,side)=>{

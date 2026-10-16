@@ -26,6 +26,16 @@ export function collectBuildScenes(project) {
   return { items, missing: missingImages, missingImages, missingHtml, missingClips, kinds, clipsReady: items.filter((x) => x.kind === 'wan' && x.clip).length, readyCount: readyItems.length, withImage: items.filter((x) => x.image).length, count: items.length, total };
 }
 
+// Đoán số cảnh từ tên file ảnh: "scene-001.png" -> 0, "canh 12.jpg" -> 11.
+// Lấy cụm số CUỐI (scene-12-v2 chịu thua, báo lại để gắn tay). Ngoài hạn -> -1.
+export function matchSceneIndex(filename, sceneCount) {
+  const base = String(filename || '').split(/[\\/]/).pop().replace(/\.[^.]+$/, '');
+  const groups = base.match(/\d+/g);
+  if (!groups) return -1;
+  const n = Number(groups[groups.length - 1]);
+  if (!Number.isInteger(n) || n < 1 || n > sceneCount) return -1;
+  return n - 1;
+}
 export function renderBuildPanel(p, rows, { esc, btn, caps = {}, voice = null, render = null } = {}) {
   const c = collectBuildScenes(p);
   const ffmpeg = Boolean(caps.ffmpeg);

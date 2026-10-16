@@ -112,3 +112,6 @@ docs/REPO_CLEANUP_REVIEW_20261012.full.local.md
 /tools/v_4_CocCoc.png
 /tools/v_5_Chrome1.png
 /tools/v_6_Chrome2.png
+# Build artifacts local: MP4, anh render, prompt xuat ra — khong commit
+outputs/
+*.bak

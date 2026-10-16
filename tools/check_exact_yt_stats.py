@@ -68,24 +68,28 @@ def query_page_html(video_id):
     }
 
 if __name__ == "__main__":
-    vid = "OC4aGfMpViU"
+    vids = [
+        {"id": "v--oP2aezgI", "name": "Video 1 (Tôi Mất 6 Năm Mới Thấy Tiền...)"},
+        {"id": "OC4aGfMpViU", "name": "Video 2 (MILO – Vì sao phát miễn phí...)"}
+    ]
     print("=" * 65)
     print("🔍 ĐANG TRUY VẤN DỮ LIỆU GỐC TRỰC TIẾP TỪ HỆ THỐNG YOUTUBE...")
     print("=" * 65)
     
-    try:
-        api_data = query_innertube(vid)
-        html_data = query_page_html(vid)
+    for item in vids:
+        vid = item["id"]
+        try:
+            api_data = query_innertube(vid)
+            html_data = query_page_html(vid)
 
-        print(f"🎬 Video: {api_data.get('title')}")
-        print(f"📺 Kênh phát: {api_data.get('author')}")
-        print(f"⏱️ Thời lượng: {api_data.get('lengthSeconds')} giây (~9 phút 21 giây)")
-        print(f"🔗 URL: https://www.youtube.com/watch?v={vid}")
-        print("-" * 65)
-        print(f"📊 LƯỢT XEM CHÍNH THỨC TRÊN YOUTUBE:")
-        print(f"   👉 Số lượt xem chính xác (Innertube Backend): {api_data.get('viewCount')} lượt xem")
-        if html_data.get("simple_views"):
-            print(f"   👉 Hiển thị trên giao diện web: {html_data.get('simple_views')}")
-        print("=" * 65)
-    except Exception as e:
-        print("Lỗi truy vấn:", e)
+            print(f"🎬 {item['name']}")
+            print(f"📺 Tiêu đề: {api_data.get('title')}")
+            print(f"🔗 URL: https://www.youtube.com/watch?v={vid}")
+            print(f"📊 LƯỢT XEM CHÍNH THỨC TRÊN YOUTUBE:")
+            print(f"   👉 Innertube Backend: {api_data.get('viewCount')} lượt xem")
+            if html_data.get("simple_views"):
+                print(f"   👉 Hiển thị giao diện web: {html_data.get('simple_views')}")
+            print("-" * 65)
+        except Exception as e:
+            print(f"Lỗi truy vấn {vid}:", e)
+    print("=" * 65)

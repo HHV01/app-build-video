@@ -27,7 +27,7 @@ async function boot(env = {},seed={}) {
   const base = `http://localhost:${port}`;
   for (let i = 0; i < 200; i++) {
     if (child.exitCode !== null) throw Error(`server chết khi khởi động: ${stderr}`);
-    try { await fetch(`${base}/api/state`); break; } catch { await new Promise(r => setTimeout(r, 50)); }
+    try { await fetch(`${base}/api/state`); break; } catch { await new Promise(r => setTimeout(r, 15)); }
   }
   const req = async (route, method = 'GET', body) => {
     const r = await fetch(base + route, {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { renderBuildPanel, collectBuildScenes, lastRender, rememberRender } from './build-panel.mjs';
+import { renderBuildPanel, collectBuildScenes, lastRender, rememberRender, matchSceneIndex } from './build-panel.mjs';
 
 const esc = String;
 const btn = (t, a, c = '', e = '') => `<button data-action="${a}" class="${c}" ${e}>${t}</button>`;
@@ -45,4 +45,15 @@ test('ghi nhớ bản dựng trong phiên để tải lại', () => {
   assert.equal(lastRender().name, 'a.mp4');
   rememberRender(null);
   assert.equal(lastRender(), null);
+});
+
+test('doan so canh tu ten file anh', () => {
+  assert.equal(matchSceneIndex('scene-001.png', 143), 0);
+  assert.equal(matchSceneIndex('canh 12.jpg', 143), 11);
+  assert.equal(matchSceneIndex('143.webp', 143), 142);
+  assert.equal(matchSceneIndex('Tich-scene-7.PNG', 143), 6);
+  assert.equal(matchSceneIndex('intro.png', 143), -1);
+  assert.equal(matchSceneIndex('scene-0.png', 143), -1);
+  assert.equal(matchSceneIndex('scene-200.png', 143), -1);
+  assert.equal(matchSceneIndex('', 143), -1);
 });
