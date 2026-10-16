@@ -1,3 +1,4 @@
+import {brandPartIssues} from './script-policy.mjs';
 const normalize=s=>String(s||'').normalize('NFC').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
 const keywords=s=>new Set(normalize(s).split(' ').filter(w=>!['kiểm','tra','cần','xác','nhận','lại','của','vào','ở','khi','năm','the','of','nguồn','tên'].includes(w)));
 export function filterEditorNotes(notes=[],sourceNames=[]) {
@@ -28,14 +29,15 @@ export async function writeCheckedPart(generate,context,{tolerance=.25}={}) {
  let result=clean(await generate(context));
  if(!result.narration)throw Error('AI chưa trả lời kể; phần đã viết được giữ để tiếp tục.');
  const off=r=>Math.abs(wordCount(r.narration)-context.targetWords)>context.targetWords*tolerance;
- const duplicate=repeatedNarration(result.narration,context);
- if(off(result)||duplicate){
+ const duplicate=repeatedNarration(result.narration,context),brandIssues=brandPartIssues(result.narration,context);
+ if(off(result)||duplicate||brandIssues.length){
   const correction={...context,...(off(result)?{lengthCorrection:`Viết ${wordCount(result.narration)<context.targetWords?'dài hơn':'ngắn hơn'}: mục tiêu ${context.targetWords} từ, lần trước ${wordCount(result.narration)} từ. Chỉ sửa phần đang viết.`}:{}),
    ...(duplicate?{editorialCorrection:'Phần trước bị lặp đáng kể với previousEnding/previousSummaries. Viết tiếp insight/story của outlineFocus bằng chi tiết hoặc hệ quả mới có chứng cứ; không đổi từ để kể lại cùng ý, không thêm sự kiện không có nguồn.'}:{})};
+  if(brandIssues.length)correction.editorialCorrection=[correction.editorialCorrection,...brandIssues,'Giữ đúng targetWords; chỉ sửa phần hiện tại.'].filter(Boolean).join(' ');
   result=clean(await generate(correction));
   if(!result.narration)throw Error('AI chưa trả lời kể sau khi chỉnh; phần đã lưu được giữ nguyên.');
  }
- const warnings=[];
+ const warnings=brandPartIssues(result.narration,context).map(issue=>'Cần duyệt: '+issue);
  if(Math.abs(wordCount(result.narration)-context.targetWords)>context.targetWords*.05)warnings.push(`Phần vẫn lệch độ dài: ${wordCount(result.narration)}/${context.targetWords} từ; giữ nội dung để tránh gọi lại khi chỉ lệch nhẹ.`);
  if(repeatedNarration(result.narration,context))warnings.push('Phần còn lặp với nội dung trước; cần duyệt trước khi làm voice.');
  return {...result,...(warnings.length?{warning:warnings.join(' ')}:{})};

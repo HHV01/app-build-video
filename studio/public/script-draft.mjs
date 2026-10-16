@@ -1,3 +1,4 @@
+import {finalizeScriptMetadata} from './script-policy.mjs';
 import {scriptPlan} from '../production.mjs';
 import {researchContext,scriptPartContext,legacyScriptPartContext} from './research-context.mjs';
 import {filterEditorNotes,writeCheckedPart} from './script-quality.mjs';
@@ -21,6 +22,7 @@ export async function writeOutlineScript(c,p,{generate,save,onProgress=()=>{}}){
   if(p.narration)p.previousNarration=p.narration;
   p.scriptParts=[...draft.parts];p.scriptWarnings=draft.warnings||[];p.narration=draft.parts.join('\n\n');
   p.editorNotes=filterEditorNotes(draft.notes,(p.sources||[]).map(s=>s.title||s.name||'').filter(Boolean));
+  finalizeScriptMetadata(c,p);
   p.approved=(p.approved||[]).filter(x=>x<3);p.rosterReviewed=false;p.rosterConfirmed=false;delete p.scriptDraft;await save();
  }catch(e){if(p.scriptDraft===draft){draft.error=e.message;await save();}throw e;}
  return p.narration;

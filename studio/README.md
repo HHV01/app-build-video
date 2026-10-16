@@ -286,3 +286,13 @@ GET /api/capabilities báo thêm htmlVideo/wan.
 Dàn ý mới đi theo câu hỏi trung tâm, tình huống, lựa chọn/cơ chế và hậu quả có chứng cứ. Mỗi phần viết nhận vị trí trong mạch kể và ý kế tiếp để tránh khởi động lại câu chuyện. Kiểm tra bằng code phát hiện phần trùng đáng kể với các trích đoạn gần nhất; dùng chung tối đa một lượt sửa với kiểm tra độ dài. Nếu vẫn trùng, giữ bản nháp và cảnh báo để duyệt. Đây là kiểm tra trùng văn bản, không thay thế đánh giá nội dung hoặc fact-check.
 
 Hướng dẫn riêng về Đức chỉ gửi cho chủ đề liên quan. Không đổi model, tự gọi API, sửa kịch bản đã lưu hoặc viết lại các phần đã hoàn tất. Tạo dàn ý/viết kịch bản bằng các nút hiện có để áp dụng; nguồn nghiên cứu và giọng kênh vẫn quyết định chất lượng đầu ra.
+
+
+### Prompt Tích Thông Thái và duyệt trước khi hoàn tất
+
+- Khi viết mới cho kênh Tích Thông Thái: hook rồi giới thiệu Tích/mời theo dõi ngắn; kết giải đáp, câu hỏi bình luận, lời mời đăng ký và tagline “Chuyện quen. Góc nhìn lạ.”. Các đoạn fixed/template do người dùng đặt vẫn giữ nguyên.
+- Số từ đếm theo khoảng trắng; thời lượng đọc là ước tính 150 từ/phút. Nguồn phải có nội dung trong Research; không tự tra web hoặc nhận đã fact-check. Tiêu đề và ghi chú tách khỏi narration theo flow hiện có.
+- Viết từng phần vẫn tối đa một lượt sửa. Khi đủ bản nháp, app đọc toàn bài bằng scriptReview, sửa các trích đoạn có lỗi và duyệt lại: tối đa hai vòng sửa/ba lượt duyệt mỗi lần bấm. Bước này có dùng thêm token; không dùng review trích đoạn để duyệt đạt toàn bài.
+- Chỉ thay narration đã hoàn tất khi cả 5 tiêu chí good, không còn issue, kiểm tra local/nhận diện kênh đạt và số từ trong ±5% mục tiêu. API lỗi, còn vấn đề hoặc quá giới hạn một lượt duyệt thì giữ bản nháp, không công bố hoàn tất. Đây là cổng biên tập, không bảo đảm tuyệt đối về ngữ nghĩa hay thay đối chiếu nguồn.
+- Bản nháp lỗi có thể sửa ngay tại ô nháp rồi bấm tiếp tục; bản hoàn tất chỉnh tay dùng “Duyệt lời dẫn hiện tại”. Sửa lời dẫn hoặc đầu vào làm kết quả duyệt hết hiệu lực. Bản đã duyệt chưa đổi không gọi lại API khi bấm duyệt.
+- Giới hạn lượt duyệt hiện tại: tối đa 50.000 ký tự/60 khối văn bản; vượt giới hạn sẽ dừng, không tự chuyển sang đọc mẫu và tuyên bố đã kiểm toàn bài.

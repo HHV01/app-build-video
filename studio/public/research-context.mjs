@@ -1,3 +1,4 @@
+import {tichBrand} from './script-policy.mjs';
 // Only evaluated research is passed to writing; uncertain evidence is never assertable.
 export function researchRows(value,kind) {
  if(Array.isArray(value))return value;if(typeof value!=='string'||!value.trim())return [];
@@ -26,6 +27,7 @@ export function legacyScriptPartContext(c,p,part,index,count,parts=[]) {
 
 export function scriptPartContext(c,p,part,index,count,parts=[]){
  const ctx=legacyScriptPartContext(c,p,part,index,count,parts);
+ const brand=tichBrand(c);if(brand){ctx.channelBrand=brand;ctx.openingCTA=index===0&&!c.openingPlan?.length;ctx.includeCTA=index===count-1&&!c.closingPlan?.length;}
  const evidenceKeys=['claim','value','status','sourceId','assertable'];
  const pick=(row,keys)=>Object.fromEntries(keys.filter(k=>row[k]!==undefined).map(k=>[k,row[k]]));
  for(const key of ['researchFacts','claims','openingEvidence'])if(ctx[key])ctx[key]=ctx[key].map(x=>pick(x,evidenceKeys));
