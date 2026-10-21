@@ -15,3 +15,8 @@ test('timeout switches, success runs once and disabling has no backup',async()=>
  const r=await withModelFallback('a',['b'],async m=>{if(m==='a')throw Object.assign(Error('timeout'),{upstreamStatus:0});return {output:{}};});assert.equal(r.fallback.used,true);
  let calls=0;await withModelFallback('a',[],async()=>{calls++;return {model:'a'};});assert.equal(calls,1);
 });
+
+test('HTTP 413 is reported as request size, not model overload',async()=>{
+ const {aiErrorReason}=await import('./model-fallback.mjs');
+ assert.equal(aiErrorReason({upstreamStatus:413}),'request_too_large');
+});

@@ -20,3 +20,34 @@ test('review display shows concrete prioritized fixes and stale/sample limitatio
 });
 
 test('quote locator selects the exact substring after long paragraph chunk boundaries',()=>{const narration=('word '.repeat(450)+'TARGET phrase').trim(),project={narration},ctx=reviewContext({},project),row=ctx.paragraphs.find(x=>x.text.includes('TARGET'));const at=locateReviewQuote(project,{paragraph:row.index,quote:'TARGET phrase'});assert.equal(narration.slice(at,at+13),'TARGET phrase');});
+
+test('full review is bounded, resumes saved batches and still covers every paragraph',async()=>{
+ const {reviewInBatches}=await import('./public/script-review.mjs');
+ const ctx={...reviewContext(c,p()),scope:'full',coveragePercent:100,paragraphs:Array.from({length:12},(_,i)=>({index:i+1,text:('đoạn '+i+' ').repeat(180)}))};
+ const cache={},seen=[];let fail=true;
+ const generate=async(action,input)=>{seen.push(input);assert.ok(input.paragraphs.reduce((n,x)=>n+x.text.length,0)<=7000);if(seen.length===3&&fail)throw Error('offline');return {overall:'ready',summary:'Ổn',strengths:[],issues:[],rubric:Object.keys((await import('./public/script-review.mjs')).REVIEW_CRITERIA).map(criterion=>({criterion,verdict:'good',reason:'Ổn'}))};};
+ await assert.rejects(reviewInBatches(ctx,{generate,cache,save:async()=>{}}),/offline/);
+ const completed=seen.slice(0,2).map(x=>JSON.stringify(x));fail=false;seen.length=0;
+ const result=await reviewInBatches(ctx,{generate,cache,save:async()=>{}});
+ assert.equal(result.coveragePercent,100);assert.equal(result.overall,'ready');
+ assert.ok(seen.every(x=>!completed.includes(JSON.stringify(x))));
+ const all=[...completed.map(JSON.parse),...seen].flatMap(x=>x.paragraphs);
+ for(const row of ctx.paragraphs)assert.ok(all.some(x=>x.index===row.index&&x.text===row.text));
+});
+
+test('batched review keeps concrete late issues and invalidates cached checks after edits',async()=>{
+ const {reviewInBatches,REVIEW_CRITERIA}=await import('./public/script-review.mjs');
+ const ctx={...reviewContext(c,p()),scope:'full',coveragePercent:100,paragraphs:Array.from({length:10},(_,i)=>({index:i+1,text:('nội dung '+i+' ').repeat(140)}))};
+ const cache={};let calls=0;
+ const generate=async(action,input)=>{
+  calls++;const result={overall:'ready',summary:'Đã kiểm tra',strengths:[],issues:[],rubric:Object.keys(REVIEW_CRITERIA).map(criterion=>({criterion,verdict:'good',reason:'Ổn'}))};
+  if(input.reviewStage==='detail'&&input.paragraphs.some(x=>x.index===10)){
+   result.overall='revise';result.rubric.find(x=>x.criterion==='clarity').verdict='fix';
+   result.issues=[{priority:'high',paragraph:10,quote:'nội dung 9',why:'Thiếu ý chính.',suggestion:'Làm rõ.',rewrite:'Ý chính cần làm rõ'}];
+  }
+  return result;
+ };
+ const first=await reviewInBatches(ctx,{generate,cache});assert.equal(first.overall,'revise');assert.equal(first.issues[0].paragraph,10);assert.equal(first.rubric.find(x=>x.criterion==='clarity').verdict,'fix');
+ const done=calls;await reviewInBatches(ctx,{generate,cache});assert.equal(calls,done);
+ ctx.paragraphs[0].text+=' mới';await reviewInBatches(ctx,{generate,cache});assert(calls>done);
+});

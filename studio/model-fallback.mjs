@@ -26,6 +26,7 @@ export function aiErrorReason(e){
   if(us===402)return 'credit';
   if(us===404)return 'model_not_found';
   if(us===429)return 'quota';
+  if(us===413)return 'request_too_large';
   if(e?.status===428)return 'missing_key';
   return 'overload';
 }

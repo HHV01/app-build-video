@@ -305,3 +305,9 @@ Nhập “Số từ mục tiêu” ở Chủ đề hoặc Dàn ý và kịch b�
 Dàn ý và cả hai đường viết dùng cùng ngân sách; lời mở/kết cố định cũng tính vào tổng. Các lượt viết nhỏ (thường tối đa 400 từ) và tự lưu. Bản thiếu sau khi viết hoặc sau khi sửa câu được bổ sung vào thân bài theo phần còn ít nội dung, giữ mở/kết và phần đã viết. Đoạn mới phát triển bối cảnh/cơ chế/diễn biến/ví dụ từ chứng cứ supported, không đổi thành tóm tắt hoặc bù bằng lặp ý. Sau bổ sung phải đọc lại toàn bài trước khi công bố.
 
 Bổ sung chỉ chạy khi dưới ngưỡng 95%; tối đa 32 lượt bổ sung cho mỗi lần bấm, có lưu tiếp từng lượt. Thiếu nguồn, lặp nội dung, thêm số liệu chưa có trong chứng cứ, lỗi API hoặc vượt giới hạn duyệt toàn bài thì giữ nháp và báo cần tiếp tục. Không cắt bớt tự động khi vượt ngưỡng 105%. Không đổi giới hạn duyệt 50.000 ký tự/60 khối hiện có.
+
+### Duyệt kịch bản dài theo lô (2026-10-21)
+- Bản nháp dài được kiểm tra mạch kể bằng trích đoạn tổng thể, sau đó đọc đủ từng đoạn theo lô tối đa 6.000 ký tự. Bài ngắn giữ một lượt duyệt.
+- Lưu kết quả từng lô theo đúng nội dung đầu vào; bấm tiếp tục sẽ bỏ qua lô đã duyệt. Đổi nội dung sẽ làm mất hiệu lực kết quả cũ.
+- Chỉ công nhận lời dẫn hoàn chỉnh sau khi duyệt và kiểm độ dài đạt. Không cần dựng lại dàn ý khi lỗi ở bước duyệt.
+- HTTP 413 được phân loại là yêu cầu quá lớn, không còn gọi là quá tải model. Lô nhỏ giảm kích thước mỗi yêu cầu, không bảo đảm tránh mọi hạn mức của nhà cung cấp.

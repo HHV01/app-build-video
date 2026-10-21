@@ -289,3 +289,10 @@ Nghiệm thu cuối: 290/290 test xanh. SHA256 hai bản chép local khớp file
 
 ### Một prompt ảnh để copy
 Phần chính mỗi thẻ chỉ hiện Prompt ảnh hoàn chỉnh (phong cách + nhân vật + mô tả cảnh) và nút Copy prompt hoàn chỉnh. Prompt riêng/bản Anh để sửa và Copy cảnh đầy đủ chuyển vào Chỉnh nâng cao. Không đổi nội dung prompt, cách ghép hoặc state; không gọi AI. Test hành vi render đỏ trước rồi xanh.
+
+### 2026-10-21 — Khắc phục bản nháp kẹt ở lượt duyệt toàn bài
+- Tái hiện bằng mock: yêu cầu duyệt dài cần chia lô, lô lỗi phải tiếp tục được mà không đọc lại lô đã thành công. Test đỏ trước khi thêm hàm duyệt theo lô.
+- Thêm lượt xem tổng thể và các lượt đọc chi tiết, giữ nguyên số đoạn để câu trích vẫn định vị chính xác. Cảnh báo chi tiết không yêu cầu thân bài có mở/kết riêng.
+- Kết quả lưu theo nội dung, giữ bản chính đến khi kiểm tra đạt; giữ cơ chế sửa câu và kiểm lại độ dài.
+- Test đỏ xác nhận 413 bị gọi nhầm overload; sửa thành request_too_large.
+- Chưa kiểm chứng chất lượng biên tập bằng AI thật; không chạy lại hay ghi đè dự án người dùng.

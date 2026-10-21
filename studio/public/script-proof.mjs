@@ -1,6 +1,6 @@
 import {scriptTarget} from '../production.mjs';
 import {ensureScriptLength} from './script-length.mjs';
-import {reviewContext,validateScriptReview,locateReviewQuote} from './script-review.mjs';
+import {reviewContext,reviewInBatches,locateReviewQuote} from './script-review.mjs';
 import {finalizeScriptMetadata} from './script-policy.mjs';
 const normalize=s=>String(s).normalize('NFC').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
 const count=s=>String(s||'').trim().split(/\s+/).filter(Boolean).length;
@@ -59,7 +59,7 @@ export async function buildProofedScript(c,p,{write,generate,save,onProgress=()=
    finalizeScriptMetadata(c,candidate);
    const local=localScriptProblems(draft.narration),ctx=reviewContext(c,candidate);ctx.localChecks.problems=local;
    if(ctx.scope!=='full'||ctx.coveragePercent!==100)throw Error('Cần đọc đủ toàn bài trước khi hoàn tất.');
-   const review=validateScriptReview(await generate('scriptReview',ctx),ctx);
+   draft.reviewBatches||={};const review=await reviewInBatches(ctx,{generate,cache:draft.reviewBatches,save,onProgress});
    const target=scriptTarget(p),lengthOK=!target||Math.abs(count(draft.narration)-target)<=target*.05;
    const clean=review.overall==='ready'&&review.issues.length===0&&review.rubric.every(x=>x.verdict==='good')&&!local.length&&!(candidate.scriptWarnings||[]).some(x=>/thiếu|tagline|Cần duyệt|còn lặp/.test(x))&&lengthOK;
    draft.review=review;draft.problems=[...local,...(!lengthOK?['Độ dài chưa đạt mục tiêu ±5%.']:[])];await save();

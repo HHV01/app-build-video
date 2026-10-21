@@ -30,9 +30,9 @@ test('a 2000-word draft grows to the requested range by insertion and is fully r
  const original=prose(2000),p={minutes:1,targetWords:5000,narration:'OLD',outline,researchFacts};let additions=0,reviews=0;const saved=[];
  await buildProofedScript({},p,{write:async candidate=>{candidate.narration=original;},save:async()=>saved.push(p.narration),generate:async(action,ctx)=>{
   if(action==='script'){additions++;assert(ctx.expansion);assert(ctx.targetWords<=400);assert.equal(ctx.includeCTA,false);assert(ctx.researchFacts.some(x=>x.assertable));return {narration:prose(ctx.targetWords,'thêm',additions*1000)};}
-  reviews++;assert.equal(ctx.scope,'full');assert.equal(ctx.localChecks.targetWords,5000);return ready();
+  reviews++;assert.equal(ctx.scope,'sampled');assert(ctx.paragraphs.reduce((n,x)=>n+x.text.length,0)<=7000);assert.equal(ctx.localChecks.targetWords,5000);return ready();
  }});
- assert(count(p.narration)>=4750&&count(p.narration)<=5250);assert(additions>=7);assert.equal(reviews,1);assert(proofIsCurrent({},p));assert(saved.slice(0,-1).every(x=>x==='OLD'));assert(p.narration.startsWith(original.slice(0,200)));assert(p.narration.endsWith(original.slice(-200)));
+ assert(count(p.narration)>=4750&&count(p.narration)<=5250);assert(additions>=7);assert(reviews>1);assert(proofIsCurrent({},p));assert(saved.slice(0,-1).every(x=>x==='OLD'));assert(p.narration.startsWith(original.slice(0,200)));assert(p.narration.endsWith(original.slice(-200)));
 });
 
 test('an editorial cut below the lower bound triggers replenishment then a fresh full review',async()=>{
@@ -41,7 +41,7 @@ test('an editorial cut below the lower bound triggers replenishment then a fresh
   if(action==='script'){additions++;return {narration:prose(ctx.targetWords,'bổ',10000)};}
   reviews++;const review=ready();if(reviews===1){review.overall='revise';review.issues=[{priority:'medium',paragraph:1,quote:ctx.paragraphs[0].text.split(' ').slice(0,20).join(' '),why:'Câu khó hiểu.',suggestion:'Viết rõ.',rewrite:'Rõ.'}];}return review;
  }});
- assert.equal(additions,1);assert.equal(reviews,2);assert(count(p.narration)>=4750);assert(proofIsCurrent({},p));
+ assert.equal(additions,1);assert(reviews>2);assert(count(p.narration)>=4750);assert(proofIsCurrent({},p));
 });
 
 test('lack of evidence or failed expansion cannot turn a short draft into a finished script',async()=>{
