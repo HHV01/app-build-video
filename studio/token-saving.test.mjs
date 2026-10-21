@@ -30,3 +30,12 @@ test('writing pacer spaces calls according to actual provider token limit, witho
  const {createAIPacer}=await import('./public/ai-pacer.mjs');let time=1000;const sleeps=[],ticks=[];const p=createAIPacer({now:()=>time,sleep:async ms=>{sleeps.push(ms);time+=ms;}});
  p.schedule(12000);await p.wait(ms=>ticks.push(ms));assert.equal(time,13000);assert(sleeps.every(ms=>ms<=1000));assert(ticks[0]===12000);await p.wait(()=>assert.fail('no extra wait'));
 });
+
+test('writing carries bounded whole-story memory and treats outline claims as unverified plans',async()=>{
+ const {scriptPartContext}=await import('./public/research-context.mjs');
+ const parts=Array.from({length:14},(_,i)=>`Ý mới thứ ${i}: chi tiết độc lập ${i}. Hệ quả đã được giải thích ${i}.`);
+ const p={topic:'Ai Cập',outline:[{title:'Vận chuyển'},{title:'Đo đạc'}],researchFacts:[{claim:'Vận chuyển có chứng cứ',status:'supported',sourceId:'s1'}]};
+ const ctx=scriptPartContext({},p,{focus:{title:'Đo đạc',story:'Một tuyên bố chưa được xác minh'},segment:2,segmentPart:2,segmentParts:3,targetWords:300},14,20,parts);
+ assert.equal(ctx.outlineIsEvidence,false);assert.equal(ctx.evidencePolicy.assertOnlySupported,true);assert.ok(ctx.storyLedger.some(x=>x.part===1));assert.ok(ctx.storyLedger.some(x=>x.part===14));assert(JSON.stringify(ctx.storyLedger).length<=2600);
+ const seen=[];await (async input=>{seen.push(structuredClone(input));})(ctx);assert.equal(seen[0].storyRoute.beat,'complication');assert.doesNotMatch(JSON.stringify(seen),/PRIVATE_RAW/);
+});

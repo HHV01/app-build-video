@@ -471,3 +471,13 @@ test('editorial writing prompts develop the story and scope German notes to Germ
   }
  }finally{await s.stop();await gw.stop();await rm(envFile,{force:true});}
 });
+
+test('editorial review accepts long comments without changing exact repairs and sees missing evidence',async()=>{
+ const output={overall:'revise',summary:'Nhận xét chi tiết. '.repeat(60),strengths:[],rubric:['hook','flow','clarity','novelty','ending'].map(criterion=>({criterion,verdict:'watch',reason:'Lý do chi tiết. '.repeat(40)})),issues:[{priority:'high',paragraph:'1',quote:'Mỏ đá cách 800 km.',why:'Thiếu nguồn. '.repeat(40),suggestion:'Kiểm tra chứng cứ.',rewrite:'Cần phân biệt nguồn gốc từng loại đá.'}]};
+ const h=await jsonFailureHarness(()=>({body:{choices:[{message:{content:JSON.stringify(output)},finish_reason:'stop'}]}}));
+ try{
+  const r=await h.server.req('/api/generate','POST',{action:'scriptReview',context:{paragraphs:[{index:1,text:'Mỏ đá cách 800 km.'}],evidenceStatus:{supported:0,sourceCount:0},research:'PRIVATE_RAW'}});
+  assert.equal(r.status,200,r.body.error);assert(r.body.output.summary.length<=500);assert.equal(r.body.output.issues[0].quote,output.issues[0].quote);assert.equal(r.body.output.issues[0].rewrite,output.issues[0].rewrite);assert.equal(h.seen.length,1);
+  const user=JSON.parse(h.seen[0].messages[1].content.split('Dữ liệu dự án:\n').at(-1));assert.equal(user.evidenceStatus.status,'missing');assert.equal(user.evidenceStatus.outlineIsEvidence,false);assert.doesNotMatch(JSON.stringify(h.seen),/PRIVATE_RAW/);
+ }finally{await h.stop();}
+});

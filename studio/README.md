@@ -311,3 +311,9 @@ Bổ sung chỉ chạy khi dưới ngưỡng 95%; tối đa 32 lượt bổ sung
 - Lưu kết quả từng lô theo đúng nội dung đầu vào; bấm tiếp tục sẽ bỏ qua lô đã duyệt. Đổi nội dung sẽ làm mất hiệu lực kết quả cũ.
 - Chỉ công nhận lời dẫn hoàn chỉnh sau khi duyệt và kiểm độ dài đạt. Không cần dựng lại dàn ý khi lỗi ở bước duyệt.
 - HTTP 413 được phân loại là yêu cầu quá lớn, không còn gọi là quá tải model. Lô nhỏ giảm kích thước mỗi yêu cầu, không bảo đảm tránh mọi hạn mức của nhà cung cấp.
+
+### Chất lượng bản nháp và kiểm tra chứng cứ (2026-10-21)
+- Lượt duyệt tự rút gọn phần nhận xét dài; câu trích và câu thay thế vẫn kiểm nguyên văn, không cắt để hợp thức hóa. Lỗi định dạng thử lại đúng một lần theo lô; lỗi quota/mạng không tự nhân lượt gọi.
+- Bước kịch bản báo rõ nếu Research chưa có fact/claim `supported`, hoặc dự án thuộc kênh chưa đặt tên và chưa áp dụng mở–kết Tích. Không tự đổi kênh hay tự chèn lời nhận diện.
+- Context viết có danh sách ý đã kể trên toàn bài (tối đa 24 mục, dung lượng nhỏ), nhấn rõ dàn ý chưa phải chứng cứ. AI phải dùng fact/claim supported, không phát triển chi tiết kỹ thuật suy đoán để đủ từ.
+- Lượt duyệt được báo tình trạng chứng cứ; kết quả biên tập không thay việc xác minh nguồn. Bản đủ số từ vẫn có thể chưa sẵn sàng thu âm.

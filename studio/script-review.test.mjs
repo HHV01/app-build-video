@@ -51,3 +51,25 @@ test('batched review keeps concrete late issues and invalidates cached checks af
  const done=calls;await reviewInBatches(ctx,{generate,cache});assert.equal(calls,done);
  ctx.paragraphs[0].text+=' mới';await reviewInBatches(ctx,{generate,cache});assert(calls>done);
 });
+
+test('long editorial comments normalize safely but quotations and rewrites stay exact',()=>{
+ const ctx=reviewContext(c,p()),result=output(ctx);result.summary='Giải thích. '.repeat(70);result.rubric[0].reason='Cần sửa. '.repeat(70);result.issues[0].why='Lý do. '.repeat(90);result.issues[0].paragraph='2';
+ const normalized=validateScriptReview(result,ctx);assert(normalized.summary.length<=500);assert(normalized.rubric[0].reason.length<=280);assert(normalized.issues[0].why.length<=300);assert.equal(normalized.issues[0].quote,result.issues[0].quote);assert.equal(normalized.issues[0].rewrite,result.issues[0].rewrite);
+ const invalid=structuredClone(result);invalid.issues[0].quote='Câu AI tự bịa';assert.throws(()=>validateScriptReview(invalid,ctx),/trích/);
+ invalid.issues[0].quote=result.issues[0].quote;invalid.issues[0].rewrite=Array(81).fill('từ').join(' ');assert.throws(()=>validateScriptReview(invalid,ctx),/80/);
+});
+
+test('review format failure retries once and never retries quota failures',async()=>{
+ const {reviewInBatches}=await import('./public/script-review.mjs');const ctx=reviewContext(c,p());let calls=0;
+ const result=await reviewInBatches(ctx,{generate:async()=>{if(++calls===1)return {...output(ctx),summary:null};return output(ctx);}});
+ assert.equal(calls,2);assert.equal(result.overall,'revise');
+ calls=0;await assert.rejects(reviewInBatches(ctx,{generate:async()=>{calls++;throw Object.assign(Error('quota'),{status:429});}}),/quota/);assert.equal(calls,1);
+ calls=0;await assert.rejects(reviewInBatches(ctx,{generate:async()=>{calls++;throw Object.assign(Error('Nhận xét sai'),{status:422});}}),/2 lần/);assert.equal(calls,2);
+});
+
+test('missing research and missing channel configuration are explicit without promoting an outline to evidence',()=>{
+ const project=p();project.outline=[{story:'AI khẳng định mỏ đá 800 km.'}];project.sources=[];
+ const ctx=reviewContext({},project);assert.equal(ctx.evidenceStatus.supported,0);assert.equal(ctx.evidenceStatus.status,'missing');assert.equal(ctx.evidenceStatus.sourceCount,0);assert.equal(ctx.evidenceStatus.outlineIsEvidence,false);
+ const html=renderScriptReview({},project,{esc:x=>String(x),btn:()=>''});assert.match(html,/chứng cứ.*supported/i);assert.match(html,/chưa.*tên|chưa.*mở.*kết/i);
+ project.researchFacts=[{claim:'Chứng cứ được người dùng kiểm.',sourceId:'s1',status:'supported'}];assert.equal(reviewContext({},project).evidenceStatus.supported,1);
+});

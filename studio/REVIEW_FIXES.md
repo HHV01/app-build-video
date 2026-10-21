@@ -296,3 +296,10 @@ Phần chính mỗi thẻ chỉ hiện Prompt ảnh hoàn chỉnh (phong cách +
 - Kết quả lưu theo nội dung, giữ bản chính đến khi kiểm tra đạt; giữ cơ chế sửa câu và kiểm lại độ dài.
 - Test đỏ xác nhận 413 bị gọi nhầm overload; sửa thành request_too_large.
 - Chưa kiểm chứng chất lượng biên tập bằng AI thật; không chạy lại hay ghi đè dự án người dùng.
+
+### 2026-10-21 — Đối chiếu bản 5.035 từ và sửa lỗi duyệt
+- Đọc dự án kim tự tháp: đo 5.035 từ theo khoảng trắng, 5.021 sau bỏ dấu câu đứng riêng, 30 đoạn. Không nguồn/fact supported; kênh chưa tên, không openingPlan/closingPlan. Bản dài còn là nháp, lời dẫn chính trống.
+- Không coi dữ kiện do dàn ý sinh ra là đã kiểm chứng. Thêm evidenceStatus vào context duyệt và cảnh báo trong UI; bổ sung bộ nhớ ý đã viết vào context từng phần để giảm lặp giữa các lô.
+- Test đỏ trước cho nhận xét dài, paragraph dạng chuỗi số, giữ nguyên quote/rewrite, retry đúng một lần, không retry quota, cảnh báo thiếu chứng cứ/kênh và bộ nhớ xuyên suốt bài.
+- Nhận xét/giải thích dài được rút gọn; quote/rewrite sai vẫn bị chặn. HTTP mock kiểm prompt whitelist và kết quả chuẩn hóa.
+- Không chạy AI thật, không sửa nội dung dự án, không tự nhận bản nháp đã đủ tốt để thu âm.

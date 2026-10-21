@@ -66,6 +66,11 @@ export function scriptPartContext(c,p,part,index,count,parts=[]){
  ctx.storyRoute={beat:total===1?'complete':step===1?'setup':step===total?'consequence':'complication',
   previous:title(p.outline?.[segment-2]),next:title(p.outline?.[segment]),position:`${index+1}/${count}`};
 
+
+ ctx.outlineIsEvidence=false;
+ ctx.evidencePolicy={assertOnlySupported:true,missing:![...ctx.researchFacts,...ctx.claims].some(x=>x.assertable)};
+ const positions=parts.length<=24?parts.map((_,i)=>i):Array.from({length:24},(_,i)=>Math.round(i*(parts.length-1)/23));
+ ctx.storyLedger=positions.map(i=>({part:i+1,covered:(cachedSummarize(parts[i]).slice(0,45)+' … '+parts[i].trim().slice(-20)).trim()}));
  delete ctx.scriptPart.focus;
  const seen=new Set();for(const key of ['voice','hookPattern','structure']){if(ctx[key]&&seen.has(ctx[key]))delete ctx[key];else if(ctx[key])seen.add(ctx[key]);}
  return ctx;
