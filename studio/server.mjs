@@ -8,6 +8,14 @@ import {sanitizeReviewContext,validateScriptReview} from './public/script-review
 import {TASK_TIERS,selectTaskModels,createUsageCounter} from './task-tiers.mjs';
 import {schemas} from './generate-schemas.mjs';
 const aiUsage=createUsageCounter();
+function configuredAIProviders(){
+  return [
+    ['deepseek',aiKeys.deepseek||env.DEEPSEEK_API_KEY],
+    ['xai',aiKeys.xai||env.XAI_API_KEY],
+    ['gemini',aiKeys.gemini||env.GEMINI_API_KEY],
+    ['groq',aiKeys.groq||env.GROQ_API_KEY||aiKeys.groqBackup||env.GROQ_BACKUP_API_KEY],
+  ].filter(([,key])=>Boolean(key)).map(([provider])=>provider);
+}
 import {resolveAIConnection,sendAICompletion,updatedAIKeys,checkDeepSeekBalance} from './ai-providers.mjs';
 import {planSegmentContext,validatePlanSegmentOutput} from './public/channel-plans.mjs';
 import {bibleFromMenu,bibleMenu,validateBibleBatch} from './public/bible-scene-tags.mjs';
@@ -123,7 +131,7 @@ async function upstream(url, options = {}, timeout = 60000) {
   return value;
 }
 async function ai(prompt, schema, maxTokens = 700,action='test') {
-  const chain=selectTaskModels(settings,action);
+  const chain=selectTaskModels(settings,action,configuredAIProviders());
   return withModelFallback(chain.primary,action==='scriptReview'?[]:chain.backups,async (model,{signal,timeoutMs})=>{
   let strictJSON=true,outputBudget=maxTokens;
   for(let attempt=0;attempt<(action==='scriptReview'?1:2);attempt++){

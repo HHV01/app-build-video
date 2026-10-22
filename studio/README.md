@@ -136,7 +136,7 @@ Giới hạn đầu ra là giới hạn của một lượt gọi, không phải
 
 ## Gemini, Grok, Groq và DeepSeek API trực tiếp
 1. Mở Kết nối API, dán khóa của dịch vụ bạn có rồi bấm Lưu. Grok là xAI, khác Groq.
-2. Studio tự tải danh sách model, tự chọn model phù hợp và thêm vào dự phòng (tối đa 3). Không cần bấm kiểm tra từng bước.
+2. Studio tự tải danh sách model, tự chọn model phù hợp và thêm vào dự phòng (tối đa 3). Khóa đã lưu trước đó cũng được tự thêm vào chuỗi khi khởi động; không cần chọn tay từng model.
 3. Muốn đổi model chính hoặc model việc nhẹ thì bấm nút tương ứng trong thẻ dịch vụ. Mọi thay đổi được lưu ngay.
 4. DeepSeek có thêm nút Kiểm tra số dư; số dư chỉ hiển thị, không lưu vào cấu hình.
 Khóa nằm trong `.studio-data/ai-keys.json`, bị Git bỏ qua; GET settings chỉ trả trạng thái đã cấu hình. Để trống giữ khóa cũ. API trực tiếp gọi Google/xAI/Groq/DeepSeek, không đi qua OmniRoute. Model ghi `gemini/tên-model`, `xai/tên-model`, `groq/tên-model` hoặc `deepseek/tên-model`. DeepSeek dùng `response_format: json_object`; nội dung rỗng được coi là lỗi JSON để thử lại không dùng response_format, rồi mới chuyển model. Model suy luận của DeepSeek bỏ `reasoning_content` và không gửi tham số sampling/JSON không hỗ trợ.
