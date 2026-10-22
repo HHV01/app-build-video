@@ -80,7 +80,8 @@ export async function withModelFallback(primary,backups,execute,options={}){
         const status=e.upstreamStatus??e.status;
         const reason=aiErrorReason(e);
         attempts.push({model,status,reason});
-        if([429,402,403].includes(status)){
+        const restful=[429,402,403,500,502,503,504].includes(status)&&!isJSONGenerationFailure(e)&&e.outputTruncated!==true;
+        if(restful){
           const providerWait=status===429&&Number.isFinite(e.retryAfterMs)&&e.retryAfterMs>0;
           cooldowns.set(model,{until:nowFn()+(providerWait?e.retryAfterMs:MODEL_COOLDOWN_MS),status,reason,...(providerWait?{providerWait:true}:{})});
         }
