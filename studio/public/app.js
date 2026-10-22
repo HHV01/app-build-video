@@ -426,13 +426,17 @@ case 'choose-packaging':p.selectedPackaging=Number(el.dataset.index);p.thumbnail
 case 'add-source':if(!p.sourceDraftName?.trim()||!p.sourceDraftText?.trim())return toast('Nhập tên và nội dung nguồn.',true);p.sources.push({id:'source-'+uid(),name:p.sourceDraftName,url:p.sourceDraftUrl||'',text:p.sourceDraftText});p.sourceDraftName='';p.sourceDraftText='';p.sourceDraftUrl='';await save();render();toast('Đã thêm nguồn.');break;
 case 'remove-source':{const id=el.dataset.id;if(!p.sources?.length)return;removeResearchSource(p,id);await save();render();toast('Đã xoá nguồn; phát biểu liên quan cần đối chiếu lại.');break;}
 case 'auto-research':await run('Đang nghiên cứu nguồn trên web…',async()=>{
+  p.researchError='';p.researchNeedsManual=false;p.researchAttempts=[];
+  try{
   if(!p.researchAutoJobId){const started=await api('/api/research/auto','POST',{projectId:p.id,refresh:Boolean(p.researchAutoResult)});p.researchAutoJobId=started.id;await save();}
   let job;do{job=await api('/api/research/auto/'+p.researchAutoJobId);const label=document.getElementById('busy-label'),status=document.getElementById('research-auto-progress');if(label)label.textContent=job.message||'Đang nghiên cứu…';if(status)status.textContent=job.message||'';
-    if(job.status==='error'){delete p.researchAutoJobId;await save();throw Error(job.error);}
+    if(job.status==='error'){delete p.researchAutoJobId;p.researchError=job.error;p.researchNeedsManual=job.canAddSources===true;p.researchAttempts=job.searchAttempts||[];await save();throw Error(job.error);}
     if(job.status!=='done')await new Promise(resolve=>setTimeout(resolve,1500));
   }while(job.status!=='done');
-  try{applyAutoResearch(p,c,job.result);}catch(e){delete p.researchAutoJobId;await save();throw e;}await save();activity('Đã tìm và đối chiếu nguồn Research');
+  try{applyAutoResearch(p,c,job.result);p.researchAttempts=job.result?.search?.attempts||[];}catch(e){delete p.researchAutoJobId;p.researchError=e.message;await save();throw e;}await save();activity('Đã tìm và đối chiếu nguồn Research');
+  }catch(e){if(!p.researchError){p.researchError=e.message;p.researchNeedsManual=e.status===428||/Bước tìm web cần Gemini hoặc Grok|Hết hạn mức tìm web/.test(e.message||'');await save();}throw e;}
 });break;
+case 'open-manual-sources':{const details=document.querySelector('#manual-sources');if(details)details.open=true;const input=document.querySelector('[data-bind="project.sourceDraftName"]');if(input){input.focus();input.scrollIntoView({block:'center'});}break;}
 case 'research':if(!p.sources.length)return toast('Thêm ít nhất một nguồn có nội dung.',true);await run('Đang đối chiếu claim với nguồn…',async()=>{const result=await generate('research',projectContext(c,p));p.claims=result.claims||[];p.researchQuestions=result.questions||[];p.researchSummary=result.summary||'';p.researchTimeline=result.timeline||[];p.researchFacts=result.facts||[];p.researchSensory=result.sensory||'';p.researchCast=result.cast||[];p.researchAngles=result.angles||[];});break;
 case 'outline':await run('Đang dựng khung câu chuyện…',async()=>{const result=await generate('outline',projectContext(c,p));if(!result.segments?.length)throw new Error('AI chưa trả dàn ý.');p.outline=result.segments;});break;
 case 'script':await generateScript();break;

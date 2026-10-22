@@ -31,14 +31,16 @@ export async function createAutoResearch({directory,call,audit,fetchPage=fetchPu
  const file=id=>path.join(directory,id+'.json');
  async function persist(job){const temp=file(job.id)+'.tmp';await writeFile(temp,JSON.stringify(job));await rename(temp,file(job.id));}
  async function start(input,connection,{refresh=false}={}){
-  const basis=createHash('sha256').update(JSON.stringify([input,connection.provider,connection.model])).digest('hex');
+  const connections=Array.isArray(connection)?connection:[connection];
+  const basis=createHash('sha256').update(JSON.stringify([input,connections.map(item=>[item.provider,item.model])])).digest('hex');
   const active=[...jobs.values()].find(j=>j.basis===basis&&['queued','running'].includes(j.status));if(active)return {id:active.id};
   if(!refresh){try{const old=JSON.parse(await readFile(file('cache-'+basis),'utf8'));if(old.status==='done'&&Date.now()-Date.parse(old.completedAt)<86400000)return {id:old.id};}catch{}}
   if(pending>=3)throw Object.assign(Error('Đang có nhiều tác vụ Research; chờ tác vụ hiện tại hoàn tất.'),{status:429});
-  const job={id:randomUUID(),basis,status:'queued',message:'Đang chờ nghiên cứu…',provider:connection.provider,model:connection.model};jobs.set(job.id,job);pending++;await persist(job);
+  const job={id:randomUUID(),basis,status:'queued',message:'Đang chờ nghiên cứu…',provider:connections[0].provider,model:connections[0].model};jobs.set(job.id,job);pending++;await persist(job);
   queue=queue.then(async()=>{try{
    job.status='running';job.message='Đang tìm nguồn trên web…';await persist(job);
-   const found=await search(connection,JSON.stringify({topic:input.topic,title:input.title,angle:input.angle}),call);job.suggestions=found.suggestions;
+   const found=await search(connections,JSON.stringify({topic:input.topic,title:input.title,angle:input.angle}),call);job.suggestions=found.suggestions;
+   if(found.search){job.provider=found.search.provider;job.model=found.search.model;job.searchAttempts=found.search.attempts||[];}
    const read=[],unread=[];for(let i=0;i<Math.min(6,found.links.length);i+=2){
     job.message=`Đang đọc nguồn ${i+1}–${Math.min(i+2,found.links.length,6)}…`;
     const batch=await Promise.all(found.links.slice(i,i+2).map(async link=>{try{const page=await fetchPage(link.url),article=extractSource(page.html,input.topic);return {id:'web-'+createHash('sha256').update(page.url).digest('hex').slice(0,16),name:article.title||link.title,url:page.url,text:article.text,autoResearch:true,excerpt:true,retrievedAt:new Date().toISOString()};}catch(e){unread.push({url:link.url,note:'Không đọc được nội dung text; không dùng làm chứng cứ.'});return null;}}));
@@ -49,9 +51,9 @@ export async function createAutoResearch({directory,call,audit,fetchPage=fetchPu
    if(distinct.length<2)throw Object.assign(Error('Chưa đọc được nội dung từ ít nhất hai miền nguồn. Hãy thêm nguồn thủ công hoặc thử lại; dữ liệu cũ được giữ nguyên.'),{status:422});
    const sources=[...input.sources,...distinct.slice(0,4)];job.message='Đang đối chiếu phát biểu với trích đoạn nguồn…';
    const output=await audit(input,sources);const result=normalizeAutoResearch(output,sources);
-   job.result={...result,sources:sources.filter(x=>x.autoResearch),unread,input,provider:connection.provider,model:connection.model,checkedAt:new Date().toISOString()};job.status='done';job.message='Đã đối chiếu trích đoạn; cần xem các điểm chưa rõ.';job.completedAt=new Date().toISOString();
+   job.result={...result,sources:sources.filter(x=>x.autoResearch),unread,input,provider:job.provider,model:job.model,search:{provider:job.provider,model:job.model,attempts:job.searchAttempts||[]},checkedAt:new Date().toISOString()};job.status='done';job.message='Đã đối chiếu trích đoạn; cần xem các điểm chưa rõ.';job.completedAt=new Date().toISOString();
    await writeFile(file('cache-'+basis),JSON.stringify(job));
-  }catch(e){job.status='error';job.error=cleanError(e);job.message=job.error;}finally{pending--;await persist(job);jobs.delete(job.id);}}).catch(()=>{jobs.delete(job.id);});
+  }catch(e){job.status='error';job.error=cleanError(e);job.message=job.error;job.canAddSources=e.canAddSources===true;if(Array.isArray(e.attempts))job.searchAttempts=e.attempts;if(e.code)job.code=e.code;}finally{pending--;await persist(job);jobs.delete(job.id);}}).catch(()=>{jobs.delete(job.id);});
   return {id:job.id};
  }
  async function get(id){if(!/^[a-f0-9-]{36}$/.test(id))throw Object.assign(Error('Mã tác vụ Research không hợp lệ.'),{status:400});const active=jobs.get(id);if(active)return active;const job=JSON.parse(await readFile(file(id),'utf8'));if(['running','queued'].includes(job.status)){job.status='error';job.error='Studio đã khởi động lại. Bấm nghiên cứu tự động để chạy lại.';}return job;}

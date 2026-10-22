@@ -134,16 +134,19 @@ Nếu model báo `Failed to validate JSON` (HTTP 400), Studio thử lại đúng
 
 Giới hạn đầu ra là giới hạn của một lượt gọi, không phải thông báo hết hạn mức tài khoản. Khi model báo finish_reason=length, Studio không nhận lời kể bị cắt: thử lại tối đa một lần với ngân sách đầu ra tăng có giới hạn (script 2.000 → 4.000), rồi chuyển model theo cấu hình dự phòng. Các lượt bình thường giữ ngân sách cũ.
 
-## Gemini và Grok API trực tiếp
-1. Mở Kết nối API, nhập khóa Gemini và/hoặc Grok (xAI), bấm Lưu khóa riêng cho từng dịch vụ. Grok khác Groq.
-2. Bấm Tải danh sách model ở mỗi dịch vụ; chọn model theo quyền của khóa.
-3. Bấm Dùng làm model chính. Nếu đã chọn model và lưu khóa dịch vụ còn lại, model đó được điền làm dự phòng. Bấm Lưu cấu hình; chọn API trực tiếp.
-4. Bấm Kiểm tra AI, rồi trở lại dự án và Tiếp tục viết script.
-Khóa nằm trong `.studio-data/ai-keys.json`, bị Git bỏ qua; GET settings chỉ trả trạng thái đã cấu hình. Để trống giữ khóa cũ. API trực tiếp gọi Google/xAI, không đi qua OmniRoute. Model ghi `gemini/tên-model` hoặc `xai/tên-model`. Lỗi khóa/quyền không tự chuyển; timeout/quota/quá tải và lỗi JSON/đầu ra dùng cơ chế dự phòng có giới hạn.
-Endpoint theo tài liệu chính thức: https://ai.google.dev/gemini-api/docs/openai và https://docs.x.ai/developers/model-capabilities/legacy/chat-completions.
+## Gemini, Grok, Groq và DeepSeek API trực tiếp
+1. Mở Kết nối API, dán khóa của dịch vụ bạn có rồi bấm Lưu. Grok là xAI, khác Groq.
+2. Studio tự tải danh sách model, tự chọn model phù hợp và thêm vào dự phòng (tối đa 3). Không cần bấm kiểm tra từng bước.
+3. Muốn đổi model chính hoặc model việc nhẹ thì bấm nút tương ứng trong thẻ dịch vụ. Mọi thay đổi được lưu ngay.
+4. DeepSeek có thêm nút Kiểm tra số dư; số dư chỉ hiển thị, không lưu vào cấu hình.
+Khóa nằm trong `.studio-data/ai-keys.json`, bị Git bỏ qua; GET settings chỉ trả trạng thái đã cấu hình. Để trống giữ khóa cũ. API trực tiếp gọi Google/xAI/Groq/DeepSeek, không đi qua OmniRoute. Model ghi `gemini/tên-model`, `xai/tên-model`, `groq/tên-model` hoặc `deepseek/tên-model`. DeepSeek dùng `response_format: json_object`; nội dung rỗng được coi là lỗi JSON để thử lại không dùng response_format, rồi mới chuyển model. Model suy luận của DeepSeek bỏ `reasoning_content` và không gửi tham số sampling/JSON không hỗ trợ.
+Endpoint theo tài liệu chính thức: https://ai.google.dev/gemini-api/docs/openai, https://docs.x.ai/developers/model-capabilities/legacy/chat-completions, https://console.groq.com/docs/openai và https://api-docs.deepseek.com.
 
 ## Dự phòng linh hoạt
-Thiếu khóa, 401/402/403/404 và lỗi dịch vụ có thể chuyển model; 400/422 sai yêu cầu dừng ngay (JSON/cắt dở được thử lại). Model 429/402/403 nghỉ 10 phút; nếu tất cả nghỉ, thử model hết nghỉ sớm nhất. Mỗi model tối đa 30 giây khi có dự phòng, cả chuỗi 90 giây. Banner hiển thị model thay thế và trạng thái nghỉ; GET /api/ai/status không trả khóa.
+Thiếu khóa, 401/402/403/404, 5xx và timeout có thể chuyển model; 400/422 sai yêu cầu dừng ngay (JSON/cắt dở được thử lại). Model 429/402/403/5xx nghỉ 10 phút; nếu tất cả nghỉ, thử model hết nghỉ sớm nhất. Mỗi model tối đa 30 giây khi có dự phòng, cả chuỗi 90 giây. Banner hiển thị model thay thế và trạng thái nghỉ; GET /api/ai/status không trả khóa.
+
+## Tìm nguồn web có dự phòng
+Bước tìm web chỉ dùng Gemini hoặc Grok (DeepSeek/Groq không có công cụ này). `researchConnection` trả danh sách ứng viên theo thứ tự model đã chọn, rồi bổ sung dịch vụ có khóa. Lỗi 429/402/403/401/404/428/5xx hoặc timeout thì thử ứng viên kế; lỗi yêu cầu sai dừng ngay; ứng viên đang nghỉ bị bỏ qua đến hết giờ. Nếu mọi ứng viên đều hết hạn mức, giao diện báo rõ và mở thẳng Tự thêm nguồn, giữ nguyên dữ liệu đã có. Bước đọc nguồn/đối chiếu vẫn dùng chuỗi model thường (gồm DeepSeek).
 
 ## Việc nhẹ/nặng và thống kê phiên
 Model cho việc nhẹ để trống thì dùng model chính; khi có model nhẹ, dùng chuỗi dự phòng riêng (tối đa 3). Việc nhẹ: thẻ/cảnh/chuyển động/nhóm/bản sắc/góc kể/nhân vật. Việc nặng: research/dàn ý/script/ý tưởng/chủ đề/thumbnail/đoạn mở-kết. Tiền tố gateway/ đi qua gateway và chỉ bỏ tiền tố đầu; gemini/, xai/ hoặc grok/ gọi trực tiếp. Tên không tiền tố giữ aiMode cũ. Bảng tiêu thụ ghi usage thực trả về, số lượt và chuyển model, trong bộ nhớ phiên, không lưu prompt.
