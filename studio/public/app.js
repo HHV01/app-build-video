@@ -411,7 +411,7 @@ case 'auto-pipeline':await run('Chạy tự động từ chủ đề…',()=>run
 case 'open-project':{const pr=state.projects.find(x=>x.id===el.dataset.id);go(`channel/${pr.channelId}/workshop/${pr.id}/${pr.step}`);break;}
 case 'project-step':{const next=Number(el.dataset.step),error=gate(p,c,next);if(error)return toast(error,true);p.step=next;await save();render();break;}
 case 'select-angle':{
-const idx=Number(el.target.dataset.index);
+const idx=Number(el.dataset.index);
 const angle=p.researchAngles?.[idx]||'';
 p.researchAngle=angle;
 await save();
